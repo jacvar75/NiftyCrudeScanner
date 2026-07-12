@@ -705,6 +705,11 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "daily_pnl": daily_pnl,
         "market_regime": active_trade.get('market_regime', ''),
         "signal_quality": active_trade.get('signal_quality', 0),
+        "breakeven_locked": active_trade.get('breakeven_locked', False),
+        "trail_activated": active_trade.get('trail_active', False),
+        "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
+        "adx": active_trade.get('adx', 0),
+        "rsi": active_trade.get('rsi', 0),
         "is_sim": is_sim
     })
 
@@ -730,6 +735,12 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
                 "quality": active_trade.get('setup_quality', 0),
                 "signal_quality": active_trade.get('signal_quality', 0),
                 "dte": active_trade.get('dte', 0),
+                "adx": active_trade.get('adx', 0),
+                "rsi": active_trade.get('rsi', 0),
+                "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
+                "breakeven_locked": active_trade.get('breakeven_locked', False),
+                "trail_activated": active_trade.get('trail_active', False),
+                "daily_pnl": round(daily_pnl, 0),
                 "outcome": "WIN" if exit_pnl > 0 else "LOSS",
                 "exit_reason": reason_tag,
                 "market_regime": active_trade.get('market_regime', ''),
@@ -1112,17 +1123,28 @@ def run_crude_orderflow_scan():
 
             # ADX computation for dashboard
             adx_val = 0
+            rsi_val = 50
             if len(candles_15m) >= 14:
                 high, low, close = candles_15m['high'], candles_15m['low'], candles_15m['close']
-                tr = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(axis=1)
-                atr = tr.ewm(alpha=1/14, adjust=False).mean().iloc[-1]
+                tr = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(
+                    axis=1)
+                atr = tr.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
                 atr_safe = atr if atr != 0 else 1
-                dm_plus = ((high - high.shift()) > (low.shift() - low)).astype(float) * (high - high.shift()).clip(lower=0)
-                dm_minus = ((low.shift() - low) > (high - high.shift())).astype(float) * (low.shift() - low).clip(lower=0)
-                di_plus = 100 * dm_plus.ewm(alpha=1/14, adjust=False).mean() / atr_safe
-                di_minus = 100 * dm_minus.ewm(alpha=1/14, adjust=False).mean() / atr_safe
+                dm_plus = ((high - high.shift()) > (low.shift() - low)).astype(float) * (high - high.shift()).clip(
+                    lower=0)
+                dm_minus = ((low.shift() - low) > (high - high.shift())).astype(float) * (low.shift() - low).clip(
+                    lower=0)
+                di_plus = 100 * dm_plus.ewm(alpha=1 / 14, adjust=False).mean() / atr_safe
+                di_minus = 100 * dm_minus.ewm(alpha=1 / 14, adjust=False).mean() / atr_safe
                 dx = 100 * (di_plus - di_minus).abs() / (di_plus + di_minus).replace(0, 1)
-                adx_val = dx.ewm(alpha=1/14, adjust=False).mean().iloc[-1]
+                adx_val = dx.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+
+                delta = close.diff()
+                gain = delta.clip(lower=0).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+                loss = (-delta.clip(upper=0)).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+                rs = 999999 if loss == 0 else gain / loss
+                rsi_val = 100 - (100 / (1 + rs))
+
 
             market_regime = compute_market_regime(candles_15m, entry_atr, vwap)
             signal_quality = min(100, total_score)
@@ -1342,12 +1364,16 @@ def run_crude_orderflow_scan():
                     "lowest_premium": option_ltp,
                     "bias": bias,
                     "trail_active": False,
+                    "breakeven_locked": False,
                     "symbol": option_symbol,
                     "lots": 1,
                     "strike": candidate_strike,
                     "setup_quality": base_score,
                     "signal_quality": signal_quality,
                     "dte": dte,
+                    "adx": round(adx_val, 2),
+                    "rsi": round(rsi_val, 2),
+                    "entry_spread_pct": round(spread_pct, 2),
                     "underlying": "CRUDE",
                     "underlying_ltp": futures_ltp,
                     "fut_sym": fut_sym,
@@ -1379,9 +1405,13 @@ def run_crude_orderflow_scan():
                     "feature_scores": active_trade['feature_scores'],
                     "feature_snapshot": active_trade['feature_snapshot'],
                     "dte": dte,
+                    "adx": active_trade.get('adx', 0),
+                    "rsi": active_trade.get('rsi', 0),
+                    "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
                     "entry_atr": active_trade.get('entry_atr', 0),
                     "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
                     "is_sim": True
+                })
                 })
                 logging.info(f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
 

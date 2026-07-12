@@ -899,6 +899,10 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "daily_pnl": daily_pnl,
         "market_regime": active_trade.get('market_regime', ''),
         "signal_quality": active_trade.get('signal_quality', 0),
+        "breakeven_locked": active_trade.get('breakeven_locked', False),
+        "trail_activated": active_trade.get('trail_active', False),
+        "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
+        "rsi": active_trade.get('rsi', 0),
         "is_sim": is_sim
     })
 
@@ -926,6 +930,11 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
                 "dte": active_trade.get('dte', 0),
                 "vix": active_trade.get('vix_value', 0),
                 "adx": active_trade.get('adx', 0),
+                "rsi": active_trade.get('rsi', 0),
+                "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
+                "breakeven_locked": active_trade.get('breakeven_locked', False),
+                "trail_activated": active_trade.get('trail_active', False),
+                "daily_pnl": round(daily_pnl, 0),
                 "outcome": "WIN" if exit_pnl > 0 else "LOSS",
                 "exit_reason": reason_tag,
                 "market_regime": active_trade.get('market_regime', ''),
@@ -1408,6 +1417,7 @@ def run_nifty_orderflow_scan():
 
             # Compute ADX for logging
             adx_val = 0
+            rsi_val = 50  # neutral default if insufficient data
             if len(candles_15m) >= 14:
                 high, low, close = candles_15m['high'], candles_15m['low'], candles_15m['close']
                 tr = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(
@@ -1430,6 +1440,14 @@ def run_nifty_orderflow_scan():
                 denom = (di_plus + di_minus).replace(0, 1)
                 dx = 100 * (di_plus - di_minus).abs() / denom
                 adx_val = dx.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+
+                # RSI for logging (mirrors the internal calc composite_score() already does)
+                delta = close.diff()
+                gain = delta.clip(lower=0).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+                loss = (-delta.clip(upper=0)).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+                rs = 999999 if loss == 0 else gain / loss
+                rsi_val = 100 - (100 / (1 + rs))
+
 
             # HTF confirmation — must use futures token; index candles carry zero volume,
             # which makes calculate_vwap() return 0 and permanently fails this check.
@@ -1647,6 +1665,8 @@ def run_nifty_orderflow_scan():
                     "dte": dte,
                     "vix_value": round(vix_ltp, 2),
                     "adx": round(adx_val, 2),
+                    "rsi": round(rsi_val, 2),
+                    "entry_spread_pct": round(spread_pct, 2),
                     "underlying": "NIFTY",
                     "underlying_ltp": spot_ltp,
                     "signal_id": signal_id,
@@ -1678,6 +1698,9 @@ def run_nifty_orderflow_scan():
                     "feature_snapshot": active_trade['feature_snapshot'],
                     "dte": dte,
                     "vix": vix_ltp,
+                    "adx": active_trade.get('adx', 0),
+                    "rsi": active_trade.get('rsi', 0),
+                    "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
                     "entry_atr": active_trade.get('entry_atr', 0),
                     "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
                     "is_sim": True
