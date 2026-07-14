@@ -912,6 +912,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "trail_activated": active_trade.get('trail_active', False),
         "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
         "rsi": active_trade.get('rsi', 0),
+        "entry_atr": active_trade.get('entry_atr', 0),
+        "vix_value": active_trade.get('vix_value', 0),
         "is_sim": is_sim
     })
 
@@ -951,6 +953,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
                 "entry_atr": active_trade.get('entry_atr', 0),
                 "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
                 "feature_snapshot": json.dumps(active_trade.get('feature_snapshot', {}))
+                "vix_value": active_trade.get('vix_value', 0)
             }
             with update_lock:  # Protect the write
                 append_csv_row_safe(summary_file, row)
@@ -1097,7 +1100,8 @@ def run_nifty_orderflow_scan():
                             # If stale for more than 10 seconds, force exit...
                             if stale_duration > 10:
                                 logging.warning(f"🚨 Stale quote for {opt_symbol} for >10s – forcing exit.")
-                                exit_pnl = force_close_trade("STALE QUOTE TIMEOUT", "STALE QUOTE", stale_price,
+                                underlying_price = active_trade.get('underlying_ltp', 0)
+                                exit_pnl = force_close_trade("STALE QUOTE TIMEOUT", "STALE QUOTE", underlying_price,
                                                              is_sim=True)
                                 current_signal = {"decision": "EXIT — STALE QUOTE",
                                                   "reason": f"Quote stale >10s | PnL: ₹{exit_pnl:.0f}"}

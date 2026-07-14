@@ -722,6 +722,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
         "adx": active_trade.get('adx', 0),
         "rsi": active_trade.get('rsi', 0),
+        "entry_atr": active_trade.get('entry_atr', 0),
+        "vix_value": active_trade.get('vix_value', 0),
         "is_sim": is_sim
     })
 
@@ -906,7 +908,8 @@ def run_crude_orderflow_scan():
                             # If stale for more than 10 seconds, force exit...
                             if stale_duration > 10:
                                 logging.warning(f"🚨 Stale quote for {opt_symbol} for >10s – forcing exit.")
-                                exit_pnl = force_close_trade("STALE QUOTE TIMEOUT", "STALE QUOTE", stale_price,
+                                underlying_price = active_trade.get('underlying_ltp', 0)
+                                exit_pnl = force_close_trade("STALE QUOTE TIMEOUT", "STALE QUOTE", underlying_price,
                                                              is_sim=True)
                                 current_signal = {"decision": "EXIT — STALE QUOTE",
                                                   "reason": f"Quote stale >10s | PnL: ₹{exit_pnl:.0f}"}
