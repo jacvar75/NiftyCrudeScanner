@@ -1246,6 +1246,7 @@ def run_nifty_orderflow_scan():
                         "signal_id": active_trade.get('signal_id'),
                         "last_scan": now.strftime("%H:%M:%S"),
                         "primary_reason": "[SIM] Monitoring only (loss cap reached)",
+                        "expiry_date": expiry_date.isoformat(),
                     }
                     safe_emit('nifty_orderflow_signal', monitor_signal)
                 print(f"🔴 REJECTED: Daily loss cap reached (PnL: {daily_pnl})") # for debugging purpose
@@ -1590,6 +1591,7 @@ def run_nifty_orderflow_scan():
                         "max_loss": round(
                             (entry_option_ltp - active_trade.get('sl_price',
                                                                  max(entry_option_ltp - 30, 10.0))) * NIFTY_LOT_SIZE, 0),
+                        "expiry_date": expiry_date.isoformat(),
                     }
                     safe_emit('nifty_orderflow_signal', monitor_signal)
                 return
@@ -1759,6 +1761,7 @@ def run_nifty_orderflow_scan():
                     "max_loss": round(
                         (entry_option_ltp - active_trade.get('sl_price',
                                                              max(entry_option_ltp - 30, 10.0))) * NIFTY_LOT_SIZE, 0),
+                    "expiry_date": expiry_date.isoformat(),
                 }
                 safe_emit('nifty_orderflow_signal', monitor_signal)
 

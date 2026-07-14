@@ -729,6 +729,10 @@
                     <span class="value" id="dteVal">—</span>
                 </div>
                 <div class="status-pill">
+                    <span class="label">Expiry</span>
+                    <span class="value" id="expiryDateVal">—</span>
+                </div>
+                <div class="status-pill">
                     <span class="label">VIX</span>
                     <span class="value" id="vixVal">—</span>
                 </div>
@@ -897,6 +901,7 @@
         const forceExitBtn = $('forceExitBtn');
 
         const maxLossVal = $('maxLossVal');
+        const expiryDateVal = $('expiryDateVal');
 
         // ─── State ──────────────────────────────────────────────
         let tradeActive = false;
@@ -1102,7 +1107,7 @@
     : 'Not active yet';
 
             maxLossVal.textContent = (d.max_loss !== undefined && d.max_loss !== null) ? '₹' + d.max_loss.toFixed(0) : '—';
-            
+
             // --- SYMBOL: use actual symbol if available, otherwise build from strike+decision ---
             let symbol = d.symbol || entrySymbol || d.json?.order?.tradingsymbol || d.trading_symbol || '';
 
@@ -1157,6 +1162,7 @@
             thetaTimerDisplay.textContent = (elapsed !== undefined && elapsed !== null) ? Math.round(elapsed) + ' min' : '—';
 
             dteVal.textContent = d.dte !== undefined ? d.dte : '—';
+            expiryDateVal.textContent = d.expiry_date || '—';
             vixVal.textContent = d.vix_value ?? '—';
             spotVal.textContent = d.spot_price ?? '—';
 
