@@ -783,6 +783,7 @@
                     <div class="trade-item"><span class="label">Stop Loss</span><span class="value danger" id="optionSlVal">—</span></div>
                     <div class="trade-item"><span class="label">Max Premium</span><span class="value warning" id="highestPremiumVal">—</span></div>
                     <div class="trade-item"><span class="label">Trail Stop</span><span class="value warning" id="trailStopVal">—</span></div>
+                    <div class="trade-item"><span class="label">Max Loss</span><span class="value danger" id="maxLossVal">—</span></div>
                     <div class="trade-item full"><span class="label">Symbol</span><span class="value symbol" id="symbolDisplay">—</span></div>
                 </div>
             </div>
@@ -895,6 +896,8 @@
         const lastScan = $('lastScan');
         const forceExitBtn = $('forceExitBtn');
 
+        const maxLossVal = $('maxLossVal');
+
         // ─── State ──────────────────────────────────────────────
         let tradeActive = false;
         let entryDecision = '';
@@ -955,7 +958,7 @@
                         tradeActive = true;
                         entryDecision = d.decision || 'ACTIVE TRADE';
                         entryPrice = d.entry_ltp || d.option_ltp || 0;
-                        entrySymbol = d.json?.order?.tradingsymbol || d.trading_symbol || '';
+                        entrySymbol = d.symbol || d.json?.order?.tradingsymbol || d.trading_symbol || '';
                     }
                     decision.textContent = entryDecision;
                     updateFields(d, true);
@@ -968,7 +971,7 @@
                 tradeActive = true;
                 entryDecision = d.decision;
                 entryPrice = d.entry_ltp || d.option_ltp || 0;
-                entrySymbol = d.json?.order?.tradingsymbol || d.trading_symbol || '';
+                entrySymbol = d.symbol || d.json?.order?.tradingsymbol || d.trading_symbol || '';
                 renderSignal(d);
                 updateFields(d);
                 playAlert();
@@ -1050,6 +1053,17 @@
 
         // ─── Update fields ──────────────────────────────────────
         function updateFields(d, isMonitoring = false) {
+            // --- Debug: show raw data in a temporary div (remove later) ---
+            let debugDiv = document.getElementById('debugRaw');
+            if (!debugDiv) {
+                debugDiv = document.createElement('div');
+                debugDiv.id = 'debugRaw';
+                debugDiv.style.cssText = 'background:#1a1f2e;padding:8px;margin:8px 0;border-radius:8px;font-size:11px;color:#94a3b8;word-break:break-all;border:1px solid rgba(255,255,255,0.05);';
+                document.querySelector('.app').prepend(debugDiv);
+            }
+            debugDiv.textContent = 'Raw: ' + JSON.stringify(d, null, 2);
+
+
             strikeVal.textContent = d.strike || '—';
 
             if (isMonitoring && tradeActive) {
@@ -1082,10 +1096,22 @@
             optionTpVal.textContent = 'Trailing';
             optionSlVal.textContent = (d.option_sl !== undefined && d.option_sl !== null) ? '₹' + d.option_sl.toFixed(2) : '—';
             highestPremiumVal.textContent = (d.highest_premium !== undefined && d.highest_premium !== null) ? '₹' + d.highest_premium.toFixed(2) : '—';
-            trailStopVal.textContent = (d.trail_stop !== undefined && d.trail_stop !== null) ? '₹' + d.trail_stop.toFixed(2) : '—';
 
-            const symbol = entrySymbol || d.json?.order?.tradingsymbol || '';
+            trailStopVal.textContent = d.trail_active
+    ? ((d.trail_stop !== undefined && d.trail_stop !== null) ? '₹' + d.trail_stop.toFixed(2) : '—')
+    : 'Not active yet';
+
+            maxLossVal.textContent = (d.max_loss !== undefined && d.max_loss !== null) ? '₹' + d.max_loss.toFixed(0) : '—';
+            
+            // --- SYMBOL: use actual symbol if available, otherwise build from strike+decision ---
+            let symbol = d.symbol || entrySymbol || d.json?.order?.tradingsymbol || d.trading_symbol || '';
+
+            if (!symbol && d.strike && d.decision) {
+                const isCall = d.decision.includes('CALL');
+                symbol = d.strike + (isCall ? 'CE' : 'PE');
+            }
             symbolDisplay.textContent = symbol || '—';
+
             if (!symbol && d.json) {
                 console.warn("Symbol not found, d.json:", d.json);
                 if (typeof d.json === 'string') {

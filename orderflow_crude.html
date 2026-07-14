@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crude Buyers Engine v7.5</title>
+    <title>Crude Buyers Engine v7.0</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -761,7 +761,7 @@ function renderDashboard(data, isMonitoring = false) {
     let displayDecision = sig;
     let displayEntry = data.entry_ltp || data.option_ltp || 0;
     let liveLtp = data.option_ltp || 0;
-    let trailStopDisplay = data.trail_stop || null;
+    let trailStopDisplay = data.trail_active ? (data.trail_stop || null) : null;
 
     if (tradeActive) {
         displayDecision = entryDecision || sig;
@@ -797,7 +797,10 @@ function renderDashboard(data, isMonitoring = false) {
 
     const lotSize = qty;
     const pnl = (liveLtp - displayEntry) * lotSize;
-    const trailDisplay = (trailStopDisplay !== null && trailStopDisplay > 0) ? '₹' + trailStopDisplay.toFixed(2) : '--';
+
+    const trailDisplay = (trailStopDisplay !== null && trailStopDisplay > 0)
+    ? '₹' + trailStopDisplay.toFixed(2)
+    : (tradeActive ? 'Not active yet' : '--');
 
     let html = '';
 
@@ -860,7 +863,7 @@ function renderDashboard(data, isMonitoring = false) {
 
     // ─── Trade Card ──────────────────────────────────────────
     if (tradeActive || isCall || isPut || isMonitoring) {
-        const symbol = currentSymbol || data.json?.order?.tradingsymbol || (data.strike ? data.strike + (sig.includes('CALL') ? 'CE' : 'PE') : 'N/A');
+        const symbol = data.symbol || currentSymbol || data.json?.order?.tradingsymbol || (data.strike ? data.strike + (sig.includes('CALL') ? 'CE' : 'PE') : 'N/A');
         const isBullish = displayDecision.includes('CALL');
         const tradeCls = isBullish ? 'call' : 'put';
 
@@ -955,7 +958,8 @@ socket.on('crude_orderflow_signal', function(data) {
         if (data.entry_ltp) entryPrice = data.entry_ltp;
         if (data.lots) qty = data.lots * 100;
         if (data.option_ltp && data.option_ltp > 0) currentLivePrice = data.option_ltp;
-        if (data.trail_stop && data.trail_stop > 0) currentTrailStop = data.trail_stop;
+        if (data.trail_active && data.trail_stop && data.trail_stop > 0) currentTrailStop = data.trail_stop;
+        else if (!data.trail_active) currentTrailStop = null;
         if (data.strike) tradeData.strike = data.strike;
         if (data.option_sl) tradeData.option_sl = data.option_sl;
         if (data.option_tp) tradeData.option_tp = data.option_tp;
@@ -963,7 +967,8 @@ socket.on('crude_orderflow_signal', function(data) {
         if (data.setup_quality) tradeData.setup_quality = data.setup_quality;
         if (data.failed_criteria) tradeData.failed_criteria = data.failed_criteria;
         if (data.kills) tradeData.kills = data.kills;
-        if (data.json?.order?.tradingsymbol) currentSymbol = data.json.order.tradingsymbol;
+        if (data.symbol) currentSymbol = data.symbol;
+        else if (data.json?.order?.tradingsymbol) currentSymbol = data.json.order.tradingsymbol;
 
         if (data.time_elapsed !== undefined && data.time_elapsed > 0) {
             entryTime = Date.now() - (data.time_elapsed * 60000);
@@ -1001,7 +1006,8 @@ socket.on('crude_orderflow_signal', function(data) {
         if (data.setup_quality) tradeData.setup_quality = data.setup_quality;
         if (data.failed_criteria) tradeData.failed_criteria = data.failed_criteria;
         if (data.kills) tradeData.kills = data.kills;
-        if (data.json?.order?.tradingsymbol) currentSymbol = data.json.order.tradingsymbol;
+        if (data.symbol) currentSymbol = data.symbol;
+        else if (data.json?.order?.tradingsymbol) currentSymbol = data.json.order.tradingsymbol;
         entryTime = Date.now();
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(updateTimer, 1000);

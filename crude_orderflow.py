@@ -24,6 +24,16 @@ import math
 from scipy.stats import norm, pearsonr
 import concurrent.futures
 
+
+def convert_numpy(obj):
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
+
 load_dotenv(".env.orderflow")
 
 # === CONFIG ===
@@ -634,6 +644,7 @@ def get_key_levels(df_daily, df_intraday):
     return {"PDH": pdh, "PDL": pdl, "VWAP": vwap_val}
 
 def safe_emit(event, data):
+    print(f"🔥 safe_emit: {event}")
     try:
         socketio.emit(event, data)
         logging.info(f"EMIT {event}: {data.get('decision')} | {data.get('reason')}")
@@ -692,6 +703,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "exit_time": now_ist().isoformat(),
         "bias": active_trade.get('bias', ''),
         "strike": active_trade.get('strike', ''),
+        "symbol": active_trade.get('symbol', ''),
         "entry_price": entry,
         "exit_price": exit_ltp,
         "underlying_entry": active_trade.get('underlying_ltp', 0),
@@ -727,11 +739,11 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
                 "exit_price": round(exit_ltp, 2),
                 "underlying_entry": active_trade.get('underlying_ltp', 0),
                 "underlying_exit": underlying_ltp if underlying_ltp else 0,
-                "pnl": round(exit_pnl, 0),
-                "r_multiple": round(r_multiple, 2),
-                "mfe_pts": round(mfe_pts, 2),
-                "mae_pts": round(mae_pts, 2),
-                "holding_minutes": round((now_ist() - trade_entry_time).total_seconds() / 60, 1),
+                "pnl": round(convert_numpy(exit_pnl), 0),
+                "r_multiple": round(convert_numpy(r_multiple), 2),
+                "mfe_pts": round(convert_numpy(mfe_pts), 2),
+                "mae_pts": round(convert_numpy(mae_pts), 2),
+                "holding_minutes": round(convert_numpy((now_ist() - trade_entry_time).total_seconds() / 60), 1),
                 "quality": active_trade.get('setup_quality', 0),
                 "signal_quality": active_trade.get('signal_quality', 0),
                 "dte": active_trade.get('dte', 0),
@@ -740,7 +752,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
                 "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
                 "breakeven_locked": active_trade.get('breakeven_locked', False),
                 "trail_activated": active_trade.get('trail_active', False),
-                "daily_pnl": round(daily_pnl, 0),
+                "daily_pnl": round(convert_numpy(daily_pnl), 0),
                 "outcome": "WIN" if exit_pnl > 0 else "LOSS",
                 "exit_reason": reason_tag,
                 "market_regime": active_trade.get('market_regime', ''),
@@ -1158,7 +1170,7 @@ def run_crude_orderflow_scan():
                 )
 
             if total_score < 57 or bias == "NEUTRAL":
-                # print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < 57, Bias: {bias}")
+                print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < 57, Bias: {bias}")
                 current_signal = {"decision": "NO TRADE", "reason": f"Entry Score {round(total_score, 1)}"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 current_signal["score_breakdown"] = {
@@ -1204,7 +1216,15 @@ def run_crude_orderflow_scan():
                         "time_elapsed": round((now - trade_entry_time).total_seconds() / 60,
                                               1) if trade_entry_time else 0,
                         "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
-                        "trail_stop": round(active_trade.get('trail_distance', 0), 2),
+                        "trail_stop": round(
+                            active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance',
+                                                                                                     0), 2)
+                        if active_trade.get('trail_active', False) else None,
+                        "trail_active": active_trade.get('trail_active', False),
+                        "max_loss": round(
+                            (entry_option_ltp - active_trade.get('sl_price',
+                                                                 max(entry_option_ltp - 38, 10.0))) * CRUDE_LOT_SIZE,
+                            0),
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
                 return
@@ -1412,7 +1432,6 @@ def run_crude_orderflow_scan():
                     "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
                     "is_sim": True
                 })
-                })
                 logging.info(f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
 
             if active_trade:
@@ -1444,7 +1463,14 @@ def run_crude_orderflow_scan():
                     "failed_criteria": [],
                     "time_elapsed": round((now - trade_entry_time).total_seconds() / 60, 1) if trade_entry_time else 0,
                     "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
-                    "trail_stop": round(active_trade.get('trail_distance', 0), 2),
+                    "trail_stop": round(
+                        active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance', 0),
+                        2)
+                    if active_trade.get('trail_active', False) else None,
+                    "trail_active": active_trade.get('trail_active', False),
+                    "max_loss": round(
+                        (entry_option_ltp - active_trade.get('sl_price',
+                                                             max(entry_option_ltp - 38, 10.0))) * CRUDE_LOT_SIZE, 0),
                 }
                 safe_emit('crude_orderflow_signal', monitor_signal)
 
