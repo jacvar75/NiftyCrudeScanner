@@ -1,4 +1,4 @@
-# === CRUDES OIL ORDER-FLOW BUYER ENGINE v2.8 (SHADOW MODE) ===
+# === CRUDE OIL ORDER-FLOW BUYER ENGINE v2.8 (SHADOW MODE) ===
 # v2.8:
 #   - Full dashboard fields added (dte, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
