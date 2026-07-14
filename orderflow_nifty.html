@@ -987,15 +987,26 @@
                 return;
             }
 
+            // After processing exits, monitoring, and fresh buys, handle the fallback
             if (tradeActive) {
-                tradeActive = false;
-                entryDecision = '';
-                entryPrice = 0;
-                entrySymbol = '';
-                if (forceExitBtn) forceExitBtn.classList.remove('active');
+                // Trade is active – ignore stray NO TRADE signals (just update last scan)
+                if (d.last_scan) {
+                    lastScan.textContent = d.last_scan;
+                }
+                return;
+            } else {
+                // No active trade – render normally
+                renderSignal(d);
+                updateFields(d);
+
+                // tradeActive = false;
+                // entryDecision = '';
+                // entryPrice = 0;
+                // entrySymbol = '';
+                // if (forceExitBtn) forceExitBtn.classList.remove('active');
             }
-            renderSignal(d);
-            updateFields(d);
+
+
         }
 
         // ─── Render Signal Card ────────────────────────────────

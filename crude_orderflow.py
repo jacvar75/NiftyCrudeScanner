@@ -969,6 +969,7 @@ def run_crude_orderflow_scan():
                 else:
                     trail_distance = base_trail
 
+                active_trade['trail_distance'] = trail_distance
                 activation_threshold = active_trade.get('activation_threshold',
                                                         CRUDE_TRAIL_ACTIVATION)  # CRUDE_TRAIL_ACTIVATION in nifty
                 if not active_trade.get('trail_active', False):
@@ -1020,6 +1021,14 @@ def run_crude_orderflow_scan():
                         "signal_id": active_trade.get('signal_id'),
                         "last_scan": now.strftime("%H:%M:%S"),
                         "primary_reason": "[SIM] Monitoring only (loss cap reached)",
+                        "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
+                        "trail_stop": round(
+                            active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance',
+                                                                                                     0),
+                            2) if active_trade.get('trail_active', False) else None,
+                        "trail_active": active_trade.get('trail_active', False),
+                        "max_loss": round((entry_option_ltp - active_trade.get('sl_price', max(entry_option_ltp - 38,
+                                                                                               10.0))) * CRUDE_LOT_SIZE, 0),
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
                 return
@@ -1292,6 +1301,14 @@ def run_crude_orderflow_scan():
                             "signal_id": active_trade.get('signal_id'),
                             "last_scan": now.strftime("%H:%M:%S"),
                             "primary_reason": "[SIM] Monitoring (HTF penalty)",
+                            "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
+                            "trail_stop": round(
+                                active_trade.get('highest_premium', entry_option_ltp) - active_trade.get(
+                                    'trail_distance', 0), 2) if active_trade.get('trail_active', False) else None,
+                            "trail_active": active_trade.get('trail_active', False),
+                            "max_loss": round((entry_option_ltp - active_trade.get('sl_price',
+                                                                                   max(entry_option_ltp - 38,
+                                                                                       10.0))) * CRUDE_LOT_SIZE, 0),
                         }
                         safe_emit('crude_orderflow_signal', monitor_signal)
                     return

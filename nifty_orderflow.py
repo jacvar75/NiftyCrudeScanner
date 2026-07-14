@@ -1158,6 +1158,8 @@ def run_nifty_orderflow_scan():
                 else:
                     trail_distance = base_trail
 
+                active_trade['trail_distance'] = trail_distance
+
                 activation_threshold = active_trade.get('activation_threshold', NIFTY_TRAIL_ACTIVATION)
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
