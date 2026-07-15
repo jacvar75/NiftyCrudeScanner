@@ -55,7 +55,7 @@ HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry 
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.81"
+STRATEGY_VERSION = "v2.8"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
