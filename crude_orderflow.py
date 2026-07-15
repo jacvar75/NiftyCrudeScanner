@@ -34,6 +34,7 @@ def convert_numpy(obj):
         return obj.tolist()
     return obj
 
+
 load_dotenv(".env.orderflow")
 
 # === CONFIG ===
@@ -54,14 +55,9 @@ LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
 STRATEGY_VERSION = "v2.8"
-WEIGHT_FILE = "crude_feature_weights.json"
-REQUIRED_TRADES_FOR_UPDATE = 100
-WEIGHT_LEARNING_RATE = 0.2
-MIN_CORRELATION = 0.15
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 10.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
-FEATURE_NAMES = ["rvol", "oi_acceleration", "trend_efficiency", "relative_range", "breakout_acceptance"]
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -92,11 +88,6 @@ last_exit_time = None
 daily_pnl = 0
 max_daily_loss = -4500
 daily_reset_date = now_ist().date()
-
-feature_weights = {f: 0.0 for f in FEATURE_NAMES}
-weight_lock = threading.Lock()
-update_lock = threading.Lock()
-update_counter = 0
 
 _candle_cache = {}
 cached_candles = pd.DataFrame()
@@ -132,6 +123,17 @@ def kite_call_with_timeout(func, *args, timeout=5, **kwargs):
             executor.shutdown(wait=False)
 
 # ======================== JSON LOGGING ========================
+def _json_safe_default(obj):
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return str(obj)  # last-resort fallback so a write NEVER silently fails
+
 def log_json(event_type, data):
     json_log_path = os.path.join(LOG_DIR, "crude_orderflow.jsonl")
     try:
@@ -140,7 +142,7 @@ def log_json(event_type, data):
                 "timestamp": now_ist().isoformat(),
                 "event": event_type,
                 **data
-            }) + "\n")
+            }, default=_json_safe_default) + "\n")   # ✅ added default
     except Exception as e:
         logging.warning(f"JSON log write failed: {e}")
 
@@ -327,98 +329,6 @@ def log_score_distribution(now, total_score, base_score, bonus, interaction_bonu
     except Exception as e:
         logging.warning(f"Score distribution log failed: {e}")
 
-# ======================== ADAPTIVE WEIGHTS ========================
-def load_weights():
-    global feature_weights
-    try:
-        with open(WEIGHT_FILE, 'r') as f:
-            loaded = json.load(f)
-            for k in FEATURE_NAMES:
-                if k in loaded:
-                    feature_weights[k] = loaded[k]
-        logging.info(f"Loaded adaptive weights: {feature_weights}")
-    except FileNotFoundError:
-        feature_weights = {f: 0.0 for f in FEATURE_NAMES}
-        save_weights()
-
-def save_weights():
-    with open(WEIGHT_FILE, 'w') as f:
-        json.dump(feature_weights, f, indent=2)
-
-def update_weights_from_trades():
-    with update_lock:
-        global feature_weights, update_counter
-        summary_file = os.path.join(LOG_DIR, "crude_orderflow_sim_summary.csv")
-        if not os.path.exists(summary_file):
-            return
-        try:
-            with update_lock:  # Protect the read
-                df = pd.read_csv(summary_file)
-            if len(df) < REQUIRED_TRADES_FOR_UPDATE:
-                return
-            recent = df.tail(REQUIRED_TRADES_FOR_UPDATE)
-
-            if 'feature_scores' not in recent.columns:
-                return
-
-            scores_dict = {f: [] for f in FEATURE_NAMES}
-            pnls = []
-            skipped_rows = 0
-            for idx, row in recent.iterrows():
-                try:
-                    scores = json.loads(row['feature_scores'])
-                    for f in FEATURE_NAMES:
-                        scores_dict[f].append(scores.get(f, 0))
-                    pnls.append(row['pnl'])
-                except Exception as e:
-                    skipped_rows += 1
-                    continue
-
-            if skipped_rows > 0:
-                logging.warning(
-                    f"⚠️ Adaptive weight update skipped {skipped_rows}/{len(recent)} rows due to malformed feature_scores data")
-
-            if len(pnls) < 10:
-                return
-
-            correlations = {}
-            for f in FEATURE_NAMES:
-                if len(scores_dict[f]) == len(pnls):
-                    corr, _ = pearsonr(scores_dict[f], pnls)
-                    correlations[f] = corr if not np.isnan(corr) else 0
-
-            positive_weights = {f: max(0, corr) if corr > MIN_CORRELATION else 0
-                                for f, corr in correlations.items()}
-            total_pos = sum(positive_weights.values())
-            if total_pos == 0:
-                logging.warning(
-                    f"⚠️ Adaptive weights degenerate — no feature cleared MIN_CORRELATION "
-                    f"({MIN_CORRELATION}). Raw correlations: {correlations}. "
-                    f"Weights unchanged, staying at: {feature_weights}"
-                )
-                return
-
-            with weight_lock:
-                for f in FEATURE_NAMES:
-                    new_computed = (positive_weights[f] / total_pos) * 10
-                    feature_weights[f] = (WEIGHT_LEARNING_RATE * new_computed +
-                                          (1 - WEIGHT_LEARNING_RATE) * feature_weights[f])
-                save_weights()
-
-            logging.info(f"Updated adaptive weights: {feature_weights}")
-
-        except Exception as e:
-            logging.warning(f"Weight update failed: {e}")
-
-def compute_dynamic_bonus(feature_scores):
-    bonus = 0
-    with weight_lock:
-        for f, weight in feature_weights.items():
-            if weight == 0:
-                continue
-            score_val = feature_scores.get(f, {}).get("score", 0)
-            bonus += score_val * weight / 10.0
-    return bonus
 
 # ======================== COMPOSITE SCORE ========================
 def composite_score(candles, price_chg, oi_chg, key_levels):
@@ -654,7 +564,7 @@ def safe_emit(event, data):
 
 # ======================== FORCE CLOSE ========================
 def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None, is_sim=False):
-    global trade_entry_time, entry_option_ltp, active_trade, daily_pnl, last_exit_time, update_counter
+    global trade_entry_time, entry_option_ltp, active_trade, daily_pnl, last_exit_time
     if trade_entry_time is None or active_trade is None or entry_option_ltp is None:
         trade_entry_time = entry_option_ltp = active_trade = None
         save_state()
@@ -727,51 +637,6 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "is_sim": is_sim
     })
 
-    if is_sim:
-        try:
-            summary_file = os.path.join(LOG_DIR, "crude_orderflow_sim_summary.csv")
-            row = {
-                "signal_id": active_trade.get('signal_id'),
-                "strategy_version": STRATEGY_VERSION,
-                "entry_time": trade_entry_time.isoformat() if trade_entry_time else "",
-                "exit_time": now_ist().isoformat(),
-                "bias": active_trade.get('bias', ''),
-                "strike": active_trade.get('strike', ''),
-                "entry_price": round(entry, 2),
-                "exit_price": round(exit_ltp, 2),
-                "underlying_entry": active_trade.get('underlying_ltp', 0),
-                "underlying_exit": underlying_ltp if underlying_ltp else 0,
-                "pnl": round(convert_numpy(exit_pnl), 0),
-                "r_multiple": round(convert_numpy(r_multiple), 2),
-                "mfe_pts": round(convert_numpy(mfe_pts), 2),
-                "mae_pts": round(convert_numpy(mae_pts), 2),
-                "holding_minutes": round(convert_numpy((now_ist() - trade_entry_time).total_seconds() / 60), 1),
-                "quality": active_trade.get('setup_quality', 0),
-                "signal_quality": active_trade.get('signal_quality', 0),
-                "dte": active_trade.get('dte', 0),
-                "adx": active_trade.get('adx', 0),
-                "rsi": active_trade.get('rsi', 0),
-                "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
-                "breakeven_locked": active_trade.get('breakeven_locked', False),
-                "trail_activated": active_trade.get('trail_active', False),
-                "daily_pnl": round(convert_numpy(daily_pnl), 0),
-                "outcome": "WIN" if exit_pnl > 0 else "LOSS",
-                "exit_reason": reason_tag,
-                "market_regime": active_trade.get('market_regime', ''),
-                "feature_scores": json.dumps(active_trade.get('feature_scores', {})),
-                "entry_atr": active_trade.get('entry_atr', 0),
-                "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
-                "feature_snapshot": json.dumps(active_trade.get('feature_snapshot', {}))
-            }
-
-            with update_lock:  # Protect the write
-                append_csv_row_safe(summary_file, row)
-            update_counter += 1
-            if update_counter % REQUIRED_TRADES_FOR_UPDATE == 0:
-                threading.Thread(target=update_weights_from_trades, daemon=True).start()
-        except Exception as e:
-            logging.warning(f"CSV append failed: {e}")
-
     try:
         regime = active_trade.get('market_regime', 'UNKNOWN')
         regime_file = os.path.join(LOG_DIR, "crude_regime_performance.csv")
@@ -812,8 +677,10 @@ def save_state():
         "daily_reset_date": daily_reset_date.isoformat() if daily_reset_date else None
     }
     try:
-        with open(STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
+        tmp_path = STATE_FILE + ".tmp"
+        with open(tmp_path, 'w') as f:
+            json.dump(state, f, indent=2, default=_json_safe_default)
+        os.replace(tmp_path, STATE_FILE)  # atomic — never leaves a truncated file on disk
     except Exception as e:
         logging.error(f"🚨 save_state FAILED — active_trade may not persist across restart: {e}")
 
@@ -826,6 +693,12 @@ def load_state():
             trade_entry_time = datetime.datetime.fromisoformat(state["trade_entry_time"])
         entry_option_ltp = state.get("entry_option_ltp")
         active_trade = state.get("active_trade")
+        # --- NEW: convert last_quote_time ---
+        if active_trade and active_trade.get("last_quote_time"):
+            try:
+                active_trade["last_quote_time"] = datetime.datetime.fromisoformat(active_trade["last_quote_time"])
+            except (TypeError, ValueError):
+                active_trade["last_quote_time"] = now_ist()
         daily_pnl = state.get("daily_pnl", 0)
         if state.get("daily_reset_date"):
             daily_reset_date = datetime.date.fromisoformat(state["daily_reset_date"])
@@ -873,6 +746,9 @@ def run_crude_orderflow_scan():
             if active_trade is not None:
                 opt_symbol = active_trade.get('symbol')
                 if opt_symbol:
+                    # We'll track whether we got a fresh valid price
+                    fresh_price_received = False
+                    stale_duration = (now - active_trade.get('last_quote_time', now)).total_seconds()
                     try:
                         opt_quote = kite_call_with_timeout(kite.quote, [f"MCX:{opt_symbol}"])
                         if opt_quote is not None:
@@ -880,32 +756,41 @@ def run_crude_orderflow_scan():
                             ltp = opt_quote.get(f"MCX:{opt_symbol}", {}).get('last_price', 0)
                             bid = depth.get('buy', [{}])[0].get('price', 0)
 
-                            # --- Store LTP for SL/logging and bid for trailing stop ---
-                            active_trade['option_ltp'] = ltp if ltp > 0 else entry_option_ltp
-
-                            # Use bid for trailing logic, fallback to LTP if bid is 0
+                            # Use bid for trailing, fallback to LTP
                             if bid > 0:
                                 trail_premium = bid
-                            else:
+                                fresh_price_received = True
+                            elif ltp > 0:
                                 trail_premium = ltp
-                                if ltp > 0:
-                                    logging.warning(f"⚠️ No bid for {opt_symbol}, using LTP for trail")
+                                fresh_price_received = True
+                                logging.warning(f"⚠️ No bid for {opt_symbol}, using LTP for trail")
+                            else:
+                                trail_premium = 0
+                                logging.warning(f"⚠️ Zero price for {opt_symbol} – treating as stale")
 
-                            if trail_premium > 0:
+                            if fresh_price_received:
+                                # Update stored price and timestamp
+                                active_trade['option_ltp'] = ltp
                                 active_trade['trail_premium'] = trail_premium
                                 active_trade['last_quote_time'] = now
+                            else:
+                                # No fresh price – check staleness
+                                if stale_duration > 10:
+                                    logging.warning(f"🚨 Stale quote for {opt_symbol} for >10s – forcing exit.")
+                                    underlying_price = active_trade.get('underlying_ltp', 0)
+                                    exit_pnl = force_close_trade("STALE QUOTE TIMEOUT", "STALE QUOTE", underlying_price,
+                                                                 is_sim=True)
+                                    current_signal = {"decision": "EXIT — STALE QUOTE",
+                                                      "reason": f"Quote stale >10s | PnL: ₹{exit_pnl:.0f}"}
+                                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                                    safe_emit('crude_orderflow_signal', current_signal)
+                                    return
                         else:
-                            # Quote fetch failed – check if we've been stale for too long
-                            stale_price = active_trade.get('option_ltp', entry_option_ltp)
-                            last_quote_time = active_trade.get('last_quote_time', now)
-                            stale_duration = (now - last_quote_time).total_seconds()
-
+                            # Quote fetch failed (timeout or None) – also treat as stale
                             logging.warning(
                                 f"⚠️ Quote fetch failed for {opt_symbol} (stale for {stale_duration:.1f}s) – "
-                                f"using stale price {stale_price}."
+                                f"using stale price {active_trade.get('option_ltp', entry_option_ltp)}."
                             )
-
-                            # If stale for more than 10 seconds, force exit...
                             if stale_duration > 10:
                                 logging.warning(f"🚨 Stale quote for {opt_symbol} for >10s – forcing exit.")
                                 underlying_price = active_trade.get('underlying_ltp', 0)
@@ -918,7 +803,19 @@ def run_crude_orderflow_scan():
                                 return
                     except Exception as e:
                         logging.warning(
-                            f"⚠️ Option premium refresh failed for {opt_symbol} (using stale price {active_trade.get('option_ltp')}): {e}")
+                            f"⚠️ CRUDE option premium refresh exception for {opt_symbol}: {e} – treating as stale"
+                        )
+                        # Also check staleness here
+                        if stale_duration > 10:
+                            logging.warning(f"🚨 Stale quote for {opt_symbol} for >10s (exception) – forcing exit.")
+                            underlying_price = active_trade.get('underlying_ltp', 0)
+                            exit_pnl = force_close_trade("STALE QUOTE TIMEOUT", "STALE QUOTE", underlying_price,
+                                                         is_sim=True)
+                            current_signal = {"decision": "EXIT — STALE QUOTE",
+                                              "reason": f"Quote stale >10s (exception) | PnL: ₹{exit_pnl:.0f}"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
 
                 # --- Use trail_premium for high-water mark and trailing stop ---
                 current_premium = active_trade.get('trail_premium', entry_option_ltp)
@@ -1136,7 +1033,7 @@ def run_crude_orderflow_scan():
             base_score = comp["score"]
             bias = comp["bias"]
 
-            bonus = compute_dynamic_bonus(feature_scores)
+            bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
             total_score = base_score + bonus + interaction_bonus
 
@@ -1420,13 +1317,14 @@ def run_crude_orderflow_scan():
                     "signal_id": signal_id,
                     "market_regime": market_regime,
                     "sl_price": max(option_ltp - 38, 10.0),
-                    "feature_scores": {k: v['score'] for k, v in feature_scores.items()},
+                    "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
                     "trail_distance": max(20, min(55, int(entry_atr * 0.5))),
                     "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(55, int(entry_atr * 0.5)))),
                     "entry_atr": round(entry_atr, 2),
                     "distance_to_level_atr": distance_to_level_atr,
                     "last_quote_time": now,
-                    "feature_snapshot": {k: v['value'] for k, v in feature_scores.items()}
+                    "feature_snapshot": convert_numpy(
+                        {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()}),
                 }
                 save_state()
 
@@ -1553,8 +1451,6 @@ def handle_force_exit():
 
 if __name__ == "__main__":
     load_state()
-    load_weights()
-    threading.Thread(target=update_weights_from_trades, daemon=True).start()
     threading.Thread(target=background_scanner, daemon=True).start()
     print(f"🚀 Crude Order-Flow Engine (SHADOW) v{STRATEGY_VERSION} running on http://localhost:{PORT}")
     socketio.run(app, host='0.0.0.0', port=PORT, debug=False)
