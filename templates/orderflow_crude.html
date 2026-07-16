@@ -632,6 +632,30 @@
             .quality-num { font-size: 28px; }
             .trade-grid { grid-template-columns: 1fr; }
         }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-light);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .status-pill .label {
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-pill .value {
+            font-family: var(--mono);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
@@ -643,6 +667,14 @@
     </div>
     <div class="topbar-right">
         <div class="tier-badge" id="data-tier">TIER 1 : LIVE</div>
+        <div class="status-pill">
+            <span class="label">DTE</span>
+            <span class="value" id="dteVal">—</span>
+        </div>
+        <div class="status-pill">
+            <span class="label">Expiry</span>
+            <span class="value" id="expiryDateVal">—</span>
+        </div>
         <div class="live-indicator">
             <div class="live-dot"></div>
             <span>Connected</span>
@@ -943,6 +975,12 @@ socket.on('connect', () => {
 socket.on('crude_orderflow_signal', function(data) {
     const sig = data.decision || '';
     const isExit = sig.includes('EXIT');
+
+    // --- NEW: DTE/Expiry update ---
+    const dteVal = document.getElementById('dteVal');
+    const expiryDateVal = document.getElementById('expiryDateVal');
+    if (dteVal) dteVal.textContent = data.dte ?? '—';
+    if (expiryDateVal) expiryDateVal.textContent = data.expiry_date || '—';
 
     if (isExit) {
         renderDashboard(data);

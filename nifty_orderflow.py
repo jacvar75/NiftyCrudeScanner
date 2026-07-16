@@ -50,6 +50,8 @@ STATE_FILE = "nifty_orderflow_state.json"
 NIFTY_TRAIL_ACTIVATION = 8
 NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry premium
 NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
+NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
+NIFTY_DEAD_TRADE_MINUTES = 18   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
@@ -785,7 +787,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     mfe_pts = (highest - entry) * lots * NIFTY_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * NIFTY_LOT_SIZE)
 
-    sl_price = active_trade.get('sl_price', entry - 30)
+    sl_price = active_trade.get('sl_price', entry * (1 - NIFTY_SL_PCT))
     risk_per_lot = abs(entry - sl_price) * NIFTY_LOT_SIZE
     r_multiple = exit_pnl / risk_per_lot if risk_per_lot != 0 else 0
 
@@ -819,6 +821,9 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "rsi": active_trade.get('rsi', 0),
         "entry_atr": active_trade.get('entry_atr', 0),
         "vix_value": active_trade.get('vix_value', 0),
+        "feature_scores": active_trade.get('feature_scores'),
+        "dte": active_trade.get('dte'),
+        "adx": active_trade.get('adx'),
         "is_sim": is_sim
     })
 
@@ -1019,7 +1024,8 @@ def run_nifty_orderflow_scan():
                 if not active_trade.get('breakeven_locked', False):
                     breakeven_trigger = entry_option_ltp * NIFTY_BREAKEVEN_PCT
                     if highest_premium - entry_option_ltp >= breakeven_trigger:
-                        active_trade['sl_price'] = max(active_trade.get('sl_price', entry_option_ltp - 30),
+                        active_trade['sl_price'] = max(
+                            active_trade.get('sl_price', entry_option_ltp * (1 - NIFTY_SL_PCT)),
                                                        entry_option_ltp)
                         active_trade['breakeven_locked'] = True
                         logging.info(
@@ -1034,7 +1040,7 @@ def run_nifty_orderflow_scan():
                 except Exception as e:
                     logging.warning(f"⚠️ NIFTY underlying LTP refresh failed (using stale price {underlying_ltp}): {e}")
 
-                sl_price = active_trade.get('sl_price', max(entry_option_ltp - 30, 10.0))
+                sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0))
                 active_trade['sl_price'] = sl_price
                 if current_premium <= sl_price:
                     exit_pnl = force_close_trade(f"SL HIT (₹{abs(entry_option_ltp - sl_price):.0f})", "STOP LOSS",
@@ -1044,12 +1050,25 @@ def run_nifty_orderflow_scan():
                     safe_emit('nifty_orderflow_signal', current_signal)
                     return
 
+                # --- DEAD-TRADE CUT: if trail never activated within NIFTY_DEAD_TRADE_MINUTES, exit ---
+                if not active_trade.get('trail_active', False):
+                    minutes_in_trade = (now - trade_entry_time).total_seconds() / 60
+                    if minutes_in_trade >= NIFTY_DEAD_TRADE_MINUTES:
+                        exit_pnl = force_close_trade(
+                            f"DEAD TRADE CUT ({minutes_in_trade:.0f}m, never trailed)",
+                            "DEAD TRADE", underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — DEAD TRADE",
+                                          "reason": f"No trail activation in {NIFTY_DEAD_TRADE_MINUTES}m | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('nifty_orderflow_signal', current_signal)
+                        return
+
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at NIFTY_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 8)
                 mfe = highest_premium - entry_option_ltp
-                if mfe >= base_trail * 3:
+                if mfe >= base_trail * 2.5:
                     trail_distance = max(NIFTY_TRAIL_FLOOR, base_trail * 0.5)
-                elif mfe >= base_trail * 2:
+                elif mfe >= base_trail * 1.5:
                     trail_distance = max(NIFTY_TRAIL_FLOOR, base_trail * 0.7)
                 else:
                     trail_distance = base_trail
@@ -1136,7 +1155,8 @@ def run_nifty_orderflow_scan():
                         "symbol": active_trade.get('symbol', ''),
                         "entry_ltp": round(entry_option_ltp, 2),
                         "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                        "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 30, 10.0)), 2),
+                        "option_sl": round(
+                            active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0)), 2),
                         "lots": active_trade.get('lots', 1),
                         "setup_quality": active_trade.get('setup_quality', 0),
                         "signal_quality": active_trade.get('signal_quality', 0),
@@ -1461,7 +1481,8 @@ def run_nifty_orderflow_scan():
                         "symbol": active_trade.get('symbol', ''),
                         "entry_ltp": round(entry_option_ltp, 2),
                         "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                        "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 30, 10.0)), 2),
+                        "option_sl": round(
+                            active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0)), 2),
                         "lots": active_trade.get('lots', 1),
                         "setup_quality": active_trade.get('setup_quality', 0),
                         "signal_quality": active_trade.get('signal_quality', 0),
@@ -1490,7 +1511,8 @@ def run_nifty_orderflow_scan():
                         "trail_active": active_trade.get('trail_active', False),
                         "max_loss": round(
                             (entry_option_ltp - active_trade.get('sl_price',
-                                                                 max(entry_option_ltp - 30, 10.0))) * NIFTY_LOT_SIZE, 0),
+                                                                 max(entry_option_ltp * (1 - NIFTY_SL_PCT),
+                                                                     10.0))) * NIFTY_LOT_SIZE, 0),
                         "expiry_date": expiry_date.isoformat(),
                     }
                     safe_emit('nifty_orderflow_signal', monitor_signal)
@@ -1589,7 +1611,7 @@ def run_nifty_orderflow_scan():
                     "underlying_ltp": spot_ltp,
                     "signal_id": signal_id,
                     "market_regime": market_regime,
-                    "sl_price": max(option_ltp - 30, 10.0),
+                    "sl_price": max(option_ltp * (1 - NIFTY_SL_PCT), 10.0),
                     "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
                     "trail_distance": max(8, min(25, int(entry_atr * 0.25))),
                     "activation_threshold": max(NIFTY_TRAIL_ACTIVATION, max(8, min(25, int(entry_atr * 0.25)))),
@@ -1633,7 +1655,7 @@ def run_nifty_orderflow_scan():
                     "symbol": active_trade.get('symbol', ''),
                     "entry_ltp": round(entry_option_ltp, 2),
                     "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                    "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 30, 10.0)), 2),
+                    "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0)), 2),
                     "lots": active_trade.get('lots', 1),
                     "setup_quality": active_trade.get('setup_quality', 0),
                     "signal_quality": active_trade.get('signal_quality', 0),
@@ -1660,7 +1682,8 @@ def run_nifty_orderflow_scan():
                     "trail_active": active_trade.get('trail_active', False),
                     "max_loss": round(
                         (entry_option_ltp - active_trade.get('sl_price',
-                                                             max(entry_option_ltp - 30, 10.0))) * NIFTY_LOT_SIZE, 0),
+                                                             max(entry_option_ltp * (1 - NIFTY_SL_PCT),
+                                                                 10.0))) * NIFTY_LOT_SIZE, 0),
                     "expiry_date": expiry_date.isoformat(),
                 }
                 safe_emit('nifty_orderflow_signal', monitor_signal)

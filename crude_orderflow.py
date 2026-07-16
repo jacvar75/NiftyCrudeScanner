@@ -950,9 +950,21 @@ def run_crude_orderflow_scan():
                 and i['expiry'] >= now_ist().date()
             ))
 
-            nearest_option_expiry = opt_expiries[0] if opt_expiries else None
-            dte = (nearest_option_expiry - now_ist().date()).days if nearest_option_expiry else (
-                        expiry_data['expiry'] - now_ist().date()).days
+            # --- Rollover: if DTE == 0, use the next available expiry ---
+            if opt_expiries:
+                nearest_option_expiry = opt_expiries[0]
+                dte = (nearest_option_expiry - now_ist().date()).days
+                # If today is expiry day, roll over to the next expiry (if available)
+                if dte == 0 and len(opt_expiries) > 1:
+                    nearest_option_expiry = opt_expiries[1]
+                    dte = (nearest_option_expiry - now_ist().date()).days
+                    logging.info(f"🔄 Rolled over to next expiry: {nearest_option_expiry} (DTE={dte})")
+            else:
+                nearest_option_expiry = None
+                dte = (expiry_data['expiry'] - now_ist().date()).days if expiry_data else 0
+
+            expiry_date_str = nearest_option_expiry.isoformat() if nearest_option_expiry else None
+
 
             # --- Expiry-Day Cutoff (no new entries near expiry) ---
             if active_trade is None:
@@ -1093,6 +1105,8 @@ def run_crude_orderflow_scan():
                     },
                     "reasons": comp["reasons"]
                 }
+                current_signal["dte"] = dte
+                current_signal["expiry_date"] = expiry_date_str
                 safe_emit('crude_orderflow_signal', current_signal)
 
                 if active_trade:
@@ -1184,6 +1198,8 @@ def run_crude_orderflow_scan():
                     current_signal = {"decision": "NO TRADE",
                                       "reason": f"HTF penalty dropped score below threshold ({round(total_score, 1)})"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                    current_signal["dte"] = dte
+                    current_signal["expiry_date"] = expiry_date_str
                     safe_emit('crude_orderflow_signal', current_signal)
                     if active_trade:
                         monitor_signal = {
@@ -1308,6 +1324,7 @@ def run_crude_orderflow_scan():
                     "setup_quality": base_score,
                     "signal_quality": signal_quality,
                     "dte": dte,
+                    "expiry_date": expiry_date_str,
                     "adx": round(adx_val, 2),
                     "rsi": round(rsi_val, 2),
                     "entry_spread_pct": round(spread_pct, 2),
@@ -1370,6 +1387,7 @@ def run_crude_orderflow_scan():
                     "primary_reason": f"[SIM] Score {active_trade.get('signal_quality', 0)}",
                     # Full dashboard fields
                     "dte": active_trade.get('dte', 0),
+                    "expiry_date": active_trade.get('expiry_date'),
                     "vix_value": 0.0,
                     "spot_price": round(futures_ltp, 2),
                     "scenario": compute_scenario_probs(base_score, bias),
@@ -1400,6 +1418,7 @@ def run_crude_orderflow_scan():
                     "last_scan": now.strftime("%H:%M:%S"),
                     "dte": dte,
                     "spot_price": round(futures_ltp, 2),
+                    "expiry_date": expiry_date_str,
                 }
                 safe_emit('crude_orderflow_signal', current_signal)
         except Exception as e:
