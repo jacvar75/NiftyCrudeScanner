@@ -51,6 +51,7 @@ STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
 CRUDE_BREAKEVEN_PCT = 0.12   # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 15       # tightest the trail can ratchet down to
+CRUDE_SL_PCT = 0.20          # SL = 20% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -599,7 +600,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     mfe_pts = (highest - entry) * lots * CRUDE_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * CRUDE_LOT_SIZE)
 
-    sl_price = active_trade.get('sl_price', entry - 38)
+    sl_price = active_trade.get('sl_price', entry * (1 - CRUDE_SL_PCT))
     risk_per_lot = abs(entry - sl_price) * CRUDE_LOT_SIZE
     r_multiple = exit_pnl / risk_per_lot if risk_per_lot != 0 else 0
 
@@ -632,6 +633,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
         "adx": active_trade.get('adx', 0),
         "rsi": active_trade.get('rsi', 0),
+        "feature_scores": active_trade.get('feature_scores'),
+        "dte": active_trade.get('dte'),
         "entry_atr": active_trade.get('entry_atr', 0),
         "vix_value": active_trade.get('vix_value', 0),
         "is_sim": is_sim
@@ -832,7 +835,8 @@ def run_crude_orderflow_scan():
                 if not active_trade.get('breakeven_locked', False):
                     breakeven_trigger = entry_option_ltp * CRUDE_BREAKEVEN_PCT
                     if highest_premium - entry_option_ltp >= breakeven_trigger:
-                        active_trade['sl_price'] = max(active_trade.get('sl_price', entry_option_ltp - 38),
+                        active_trade['sl_price'] = max(
+                            active_trade.get('sl_price', entry_option_ltp * (1 - CRUDE_SL_PCT)),
                                                        entry_option_ltp)
                         active_trade['breakeven_locked'] = True
                         logging.info(
@@ -849,7 +853,7 @@ def run_crude_orderflow_scan():
                         logging.warning(
                             f"⚠️ Underlying LTP refresh failed for {fut_sym} (using stale price {underlying_ltp}): {e}")
 
-                sl_price = active_trade.get('sl_price', max(entry_option_ltp - 38, 10.0))
+                sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))
                 active_trade['sl_price'] = sl_price
                 if current_premium <= sl_price:
                     exit_pnl = force_close_trade(f"SL HIT (₹{abs(entry_option_ltp - sl_price):.0f})", "STOP LOSS",
@@ -862,9 +866,9 @@ def run_crude_orderflow_scan():
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
                 mfe = highest_premium - entry_option_ltp
-                if mfe >= base_trail * 3:
+                if mfe >= base_trail * 2.5:
                     trail_distance = max(CRUDE_TRAIL_FLOOR, base_trail * 0.5)
-                elif mfe >= base_trail * 2:
+                elif mfe >= base_trail * 1.5:
                     trail_distance = max(CRUDE_TRAIL_FLOOR, base_trail * 0.7)
                 else:
                     trail_distance = base_trail
@@ -913,7 +917,7 @@ def run_crude_orderflow_scan():
                         "strike": active_trade.get('strike'),
                         "entry_ltp": round(entry_option_ltp, 2),
                         "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                        "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 38, 10.0)), 2),
+                        "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0)), 2),
                         "lots": active_trade.get('lots', 1),
                         "setup_quality": active_trade.get('setup_quality', 0),
                         "signal_quality": active_trade.get('signal_quality', 0),
@@ -927,7 +931,7 @@ def run_crude_orderflow_scan():
                                                                                                      0),
                             2) if active_trade.get('trail_active', False) else None,
                         "trail_active": active_trade.get('trail_active', False),
-                        "max_loss": round((entry_option_ltp - active_trade.get('sl_price', max(entry_option_ltp - 38,
+                        "max_loss": round((entry_option_ltp - active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT),
                                                                                                10.0))) * CRUDE_LOT_SIZE, 0),
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
@@ -1117,7 +1121,7 @@ def run_crude_orderflow_scan():
                         "strike": active_trade.get('strike'),
                         "entry_ltp": round(entry_option_ltp, 2),
                         "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                        "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 38, 10.0)), 2),
+                        "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0)), 2),
                         "lots": active_trade.get('lots', 1),
                         "setup_quality": active_trade.get('setup_quality', 0),
                         "signal_quality": active_trade.get('signal_quality', 0),
@@ -1127,6 +1131,7 @@ def run_crude_orderflow_scan():
                         "primary_reason": f"[SIM] Monitoring (entry score {round(total_score, 1)})",
                         # Full dashboard fields
                         "dte": active_trade.get('dte', 0),
+                        "expiry_date": active_trade.get('expiry_date', expiry_date_str),
                         "vix_value": 0.0,
                         "spot_price": round(futures_ltp, 2),
                         "scenario": compute_scenario_probs(base_score, bias),
@@ -1146,7 +1151,7 @@ def run_crude_orderflow_scan():
                         "trail_active": active_trade.get('trail_active', False),
                         "max_loss": round(
                             (entry_option_ltp - active_trade.get('sl_price',
-                                                                 max(entry_option_ltp - 38, 10.0))) * CRUDE_LOT_SIZE,
+                                                                 max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))) * CRUDE_LOT_SIZE,
                             0),
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
@@ -1209,7 +1214,7 @@ def run_crude_orderflow_scan():
                             "strike": active_trade.get('strike'),
                             "entry_ltp": round(entry_option_ltp, 2),
                             "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                            "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 38, 10.0)), 2),
+                            "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0)), 2),
                             "lots": active_trade.get('lots', 1),
                             "setup_quality": active_trade.get('setup_quality', 0),
                             "signal_quality": active_trade.get('signal_quality', 0),
@@ -1223,7 +1228,7 @@ def run_crude_orderflow_scan():
                                     'trail_distance', 0), 2) if active_trade.get('trail_active', False) else None,
                             "trail_active": active_trade.get('trail_active', False),
                             "max_loss": round((entry_option_ltp - active_trade.get('sl_price',
-                                                                                   max(entry_option_ltp - 38,
+                                                                                   max(entry_option_ltp * (1 - CRUDE_SL_PCT),
                                                                                        10.0))) * CRUDE_LOT_SIZE, 0),
                         }
                         safe_emit('crude_orderflow_signal', monitor_signal)
@@ -1231,9 +1236,9 @@ def run_crude_orderflow_scan():
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
-            if bias == "CALL" and key_levels.get("PDH") and futures_ltp < key_levels["PDH"] and entry_atr > 0:
+            if bias == "CALL" and key_levels.get("PDH") and entry_atr > 0:
                 distance_to_level_atr = round((key_levels["PDH"] - futures_ltp) / entry_atr, 2)
-            elif bias == "PUT" and key_levels.get("PDL") and futures_ltp > key_levels["PDL"] and entry_atr > 0:
+            elif bias == "PUT" and key_levels.get("PDL") and entry_atr > 0:
                 distance_to_level_atr = round((futures_ltp - key_levels["PDL"]) / entry_atr, 2)
 
 
@@ -1333,7 +1338,7 @@ def run_crude_orderflow_scan():
                     "fut_sym": fut_sym,
                     "signal_id": signal_id,
                     "market_regime": market_regime,
-                    "sl_price": max(option_ltp - 38, 10.0),
+                    "sl_price": max(option_ltp * (1 - CRUDE_SL_PCT), 10.0),
                     "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
                     "trail_distance": max(20, min(55, int(entry_atr * 0.5))),
                     "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(55, int(entry_atr * 0.5)))),
@@ -1377,7 +1382,7 @@ def run_crude_orderflow_scan():
                     "strike": active_trade.get('strike'),
                     "entry_ltp": round(entry_option_ltp, 2),
                     "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                    "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp - 38, 10.0)), 2),
+                    "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0)), 2),
                     "lots": active_trade.get('lots', 1),
                     "setup_quality": active_trade.get('setup_quality', 0),
                     "signal_quality": active_trade.get('signal_quality', 0),
@@ -1406,7 +1411,7 @@ def run_crude_orderflow_scan():
                     "trail_active": active_trade.get('trail_active', False),
                     "max_loss": round(
                         (entry_option_ltp - active_trade.get('sl_price',
-                                                             max(entry_option_ltp - 38, 10.0))) * CRUDE_LOT_SIZE, 0),
+                                                             max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))) * CRUDE_LOT_SIZE, 0),
                 }
                 safe_emit('crude_orderflow_signal', monitor_signal)
 

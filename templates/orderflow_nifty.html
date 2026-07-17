@@ -318,7 +318,7 @@
         socket.on('nifty_orderflow_signal', (d) => {
             console.log('📡 Signal:', d);
 
-            const isExit = d.decision && d.decision.includes('EXIT');
+            const isExit = (d.decision && d.decision.includes('EXIT')) || d.reason === 'Market Closed';
             const isMonitoring = d.is_monitoring === true;
             const isBuy = d.decision && d.decision.includes('BUY');
 
@@ -453,8 +453,8 @@
                 adxVal.className = 'value';
             }
             if (d.momentum_checks !== undefined && d.momentum_checks !== null) {
-                momentumVal.textContent = d.momentum_checks + '/3';
-                momentumVal.className = 'value ' + (d.momentum_checks >= 3 ? 'success' : (d.momentum_checks >= 2 ? 'warning' : 'danger'));
+                momentumVal.textContent = d.momentum_checks + '/2';
+                momentumVal.className = 'value ' + (d.momentum_checks >= 2 ? 'success' : (d.momentum_checks >= 1 ? 'warning' : 'danger'));
             } else {
                 momentumVal.textContent = '—';
                 momentumVal.className = 'value';

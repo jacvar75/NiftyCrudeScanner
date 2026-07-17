@@ -1443,9 +1443,9 @@ def run_nifty_orderflow_scan():
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
-            if bias == "CALL" and key_levels.get("PDH") and spot_ltp < key_levels["PDH"] and entry_atr > 0:
+            if bias == "CALL" and key_levels.get("PDH") and entry_atr > 0:
                 distance_to_level_atr = round((key_levels["PDH"] - spot_ltp) / entry_atr, 2)
-            elif bias == "PUT" and key_levels.get("PDL") and spot_ltp > key_levels["PDL"] and entry_atr > 0:
+            elif bias == "PUT" and key_levels.get("PDL") and entry_atr > 0:
                 distance_to_level_atr = round((spot_ltp - key_levels["PDL"]) / entry_atr, 2)
 
             if total_score < 52 or bias == "NEUTRAL":
