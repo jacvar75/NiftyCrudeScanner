@@ -1360,6 +1360,8 @@ def run_crude_orderflow_scan():
                     "entry_price": option_ltp,
                     "underlying_entry": futures_ltp,
                     "base_score": base_score,
+                    "oi_class": comp.get("oi_class"),
+                    "score_reasons": comp.get("reasons"),
                     "signal_quality": signal_quality,
                     "market_regime": market_regime,
                     "feature_scores": active_trade['feature_scores'],
