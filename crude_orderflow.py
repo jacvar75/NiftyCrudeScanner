@@ -303,8 +303,8 @@ _score_lock = threading.Lock()
 
 def log_score_distribution(now, total_score, base_score, bonus, interaction_bonus, bias,
                            futures_ltp, market_regime, dte, reason):
-    """Append score details to logs/score_distribution.csv on every scan."""
-    score_log_path = os.path.join(LOG_DIR, "score_distribution.csv")
+    """Append score details to logs/crude_score_distribution.csv on every scan."""
+    score_log_path = os.path.join(LOG_DIR, "crude_score_distribution.csv")
     try:
         with _score_lock:
             write_header = not os.path.exists(score_log_path)
