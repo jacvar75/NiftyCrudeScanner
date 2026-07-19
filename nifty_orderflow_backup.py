@@ -1520,19 +1520,9 @@ def run_nifty_orderflow_scan():
 
             atm = round(spot_ltp / 100) * 100
             if dte > 2:
-                if vix_ltp <= 15:
-                    offset = 100
-                elif vix_ltp <= 20:
-                    offset = 200
-                elif vix_ltp <= 25:
-                    offset = 300
-                else:
-                    offset = 400
-                candidate_strike = atm + offset if bias == "CALL" else atm - offset
+                candidate_strike = atm + 100 if bias == "CALL" else atm - 100
             else:
                 candidate_strike = atm
-
-
             option_type = "CE" if bias == "CALL" else "PE"
 
             try:
