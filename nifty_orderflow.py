@@ -52,6 +52,7 @@ NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry prem
 NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
 NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
 NIFTY_DEAD_TRADE_MINUTES = 18   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
+NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
@@ -823,6 +824,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "vix_value": active_trade.get('vix_value', 0),
         "feature_scores": active_trade.get('feature_scores'),
         "dte": active_trade.get('dte'),
+        "dead_trade_minutes": active_trade.get('dead_trade_minutes'),
         "adx": active_trade.get('adx'),
         "is_sim": is_sim
     })
@@ -1050,19 +1052,6 @@ def run_nifty_orderflow_scan():
                     safe_emit('nifty_orderflow_signal', current_signal)
                     return
 
-                # --- DEAD-TRADE CUT: if trail never activated within NIFTY_DEAD_TRADE_MINUTES, exit ---
-                if not active_trade.get('trail_active', False):
-                    minutes_in_trade = (now - trade_entry_time).total_seconds() / 60
-                    if minutes_in_trade >= NIFTY_DEAD_TRADE_MINUTES:
-                        exit_pnl = force_close_trade(
-                            f"DEAD TRADE CUT ({minutes_in_trade:.0f}m, never trailed)",
-                            "DEAD TRADE", underlying_ltp, is_sim=True)
-                        current_signal = {"decision": "EXIT — DEAD TRADE",
-                                          "reason": f"No trail activation in {NIFTY_DEAD_TRADE_MINUTES}m | PnL: ₹{exit_pnl:.0f}"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
-                        return
-
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at NIFTY_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 8)
                 mfe = highest_premium - entry_option_ltp
@@ -1074,21 +1063,26 @@ def run_nifty_orderflow_scan():
                     trail_distance = base_trail
 
                 active_trade['trail_distance'] = trail_distance
-
                 activation_threshold = active_trade.get('activation_threshold', NIFTY_TRAIL_ACTIVATION)
+
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
                         active_trade['trail_active'] = True
 
-                if active_trade.get('trail_active', False):
-                    if highest_premium - current_premium >= trail_distance:
+                # --- DEAD-TRADE CUT: if trail never activated within the trade's window, exit ---
+                # (checked AFTER trail-activation so a trade that just crossed the threshold
+                # this tick isn't force-closed on a stale trail_active=False read)
+                if not active_trade.get('trail_active', False):
+                    minutes_in_trade = (now - trade_entry_time).total_seconds() / 60
+                    dead_trade_limit = active_trade.get('dead_trade_minutes', NIFTY_DEAD_TRADE_MINUTES)
+                    if minutes_in_trade >= dead_trade_limit:
                         exit_pnl = force_close_trade(
-                            f"TRAILING STOP (peak {round(highest_premium, 2)}, exit {round(current_premium, 2)})",
-                            "TRAILING STOP", underlying_ltp, is_sim=True)
-                        current_signal = {"decision": "EXIT — TRAILING STOP",
-                                          "reason": f"Peak {round(highest_premium, 2)} → {round(current_premium, 2)} | PnL: ₹{exit_pnl:.0f}"}
+                            f"DEAD TRADE CUT ({minutes_in_trade:.1f}m / {dead_trade_limit}m limit)",
+                            "DEAD TRADE", underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — DEAD TRADE",
+                                          "reason": f"No trail activation in {dead_trade_limit}m | PnL: ₹{exit_pnl:.0f}"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)  # 'nifty_orderflow_signal' in nifty
+                        safe_emit('nifty_orderflow_signal', current_signal)
                         return
 
             # === COOLDOWN: wait after an exit before re-entering ===
@@ -1613,6 +1607,7 @@ def run_nifty_orderflow_scan():
                     "setup_quality": base_score,
                     "signal_quality": signal_quality,
                     "dte": dte,
+                    "dead_trade_minutes": NIFTY_DEAD_TRADE_MINUTES_ATM if dte <= 2 else NIFTY_DEAD_TRADE_MINUTES,
                     "vix_value": round(vix_ltp, 2),
                     "adx": round(adx_val, 2),
                     "rsi": round(rsi_val, 2),
@@ -1649,6 +1644,7 @@ def run_nifty_orderflow_scan():
                     "feature_scores": active_trade['feature_scores'],
                     "feature_snapshot": active_trade['feature_snapshot'],
                     "dte": dte,
+                    "dead_trade_minutes": active_trade.get('dead_trade_minutes'),
                     "vix": vix_ltp,
                     "adx": active_trade.get('adx', 0),
                     "rsi": active_trade.get('rsi', 0),
