@@ -52,6 +52,10 @@ CRUDE_TRAIL_ACTIVATION = 15
 CRUDE_BREAKEVEN_PCT = 0.12   # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 15       # tightest the trail can ratchet down to
 CRUDE_SL_PCT = 0.20          # SL = 20% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
+CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 60      # minutes, DTE > 2 — force exit if trail never activated
+CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30  # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
+                                           # the log yet, this is extrapolated from the crude 18/10 ratio.
+                                           # Revisit once you have real DTE<=2 samples.
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -630,11 +634,13 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "signal_quality": active_trade.get('signal_quality', 0),
         "breakeven_locked": active_trade.get('breakeven_locked', False),
         "trail_activated": active_trade.get('trail_active', False),
+        "minutes_to_trail_activation": active_trade.get('minutes_to_trail_activation'),
         "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
         "adx": active_trade.get('adx', 0),
         "rsi": active_trade.get('rsi', 0),
         "feature_scores": active_trade.get('feature_scores'),
         "dte": active_trade.get('dte'),
+        "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
         "entry_atr": active_trade.get('entry_atr', 0),
         "vix_value": active_trade.get('vix_value', 0),
         "is_sim": is_sim
@@ -875,10 +881,31 @@ def run_crude_orderflow_scan():
 
                 active_trade['trail_distance'] = trail_distance
                 activation_threshold = active_trade.get('activation_threshold',
-                                                        CRUDE_TRAIL_ACTIVATION)  # CRUDE_TRAIL_ACTIVATION in nifty
+                                                        CRUDE_TRAIL_ACTIVATION)  # CRUDE_TRAIL_ACTIVATION in Crude
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
                         active_trade['trail_active'] = True
+                        active_trade['trail_activated_at'] = now
+                        active_trade['minutes_to_trail_activation'] = round(
+                            (now - trade_entry_time).total_seconds() / 60, 1)
+                        logging.info(
+                            f"📈 [SIM] Trail activated after "
+                            f"{active_trade['minutes_to_trail_activation']} min")
+                    else:
+                        # --- DEAD-TRADE CUTOFF: trail never activated within the allotted window ---
+                        dte_active = active_trade.get('dte', 99)
+                        cutoff_minutes = (CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte_active <= 2
+                                          else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT)
+                        minutes_elapsed = (now - trade_entry_time).total_seconds() / 60
+                        if minutes_elapsed >= cutoff_minutes:
+                            exit_pnl = force_close_trade(
+                                f"DEAD TRADE CUTOFF ({round(minutes_elapsed, 1)}m, DTE {dte_active}, "
+                                f"trail never activated)", "DEAD TRADE CUTOFF", underlying_ltp, is_sim=True)
+                            current_signal = {"decision": "EXIT — DEAD TRADE CUTOFF",
+                                              "reason": f"No trail activation after {cutoff_minutes}m | PnL: ₹{exit_pnl:.0f}"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
 
                 if active_trade.get('trail_active', False):
                     if highest_premium - current_premium >= trail_distance:
@@ -1322,6 +1349,8 @@ def run_crude_orderflow_scan():
                     "lowest_premium": option_ltp,
                     "bias": bias,
                     "trail_active": False,
+                    "trail_activated_at": None,
+                    "minutes_to_trail_activation": None,
                     "breakeven_locked": False,
                     "symbol": option_symbol,
                     "lots": 1,
@@ -1367,6 +1396,7 @@ def run_crude_orderflow_scan():
                     "feature_scores": active_trade['feature_scores'],
                     "feature_snapshot": active_trade['feature_snapshot'],
                     "dte": dte,
+                    "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
                     "adx": active_trade.get('adx', 0),
                     "rsi": active_trade.get('rsi', 0),
                     "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
