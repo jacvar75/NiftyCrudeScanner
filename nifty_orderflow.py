@@ -1042,6 +1042,7 @@ def run_nifty_orderflow_scan():
                 except Exception as e:
                     logging.warning(f"⚠️ NIFTY underlying LTP refresh failed (using stale price {underlying_ltp}): {e}")
 
+                # --- Fixed SL: only apply if trail is NOT active ---
                 if not active_trade.get('trail_active', False):
                     sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0))
                     active_trade['sl_price'] = sl_price

@@ -859,15 +859,17 @@ def run_crude_orderflow_scan():
                         logging.warning(
                             f"⚠️ Underlying LTP refresh failed for {fut_sym} (using stale price {underlying_ltp}): {e}")
 
-                sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))
-                active_trade['sl_price'] = sl_price
-                if current_premium <= sl_price:
-                    exit_pnl = force_close_trade(f"SL HIT (₹{abs(entry_option_ltp - sl_price):.0f})", "STOP LOSS",
-                                                 underlying_ltp, is_sim=True)
-                    current_signal = {"decision": "EXIT — STOP LOSS", "reason": f"SL hit | PnL: ₹{exit_pnl:.0f}"}
-                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('crude_orderflow_signal', current_signal)
-                    return
+                # --- Fixed SL: only apply if trail is NOT active ---
+                if not active_trade.get('trail_active', False):
+                    sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))
+                    active_trade['sl_price'] = sl_price
+                    if current_premium <= sl_price:
+                        exit_pnl = force_close_trade(f"SL HIT (₹{abs(entry_option_ltp - sl_price):.0f})", "STOP LOSS",
+                                                     underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — STOP LOSS", "reason": f"SL hit | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('crude_orderflow_signal', current_signal)
+                        return
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
