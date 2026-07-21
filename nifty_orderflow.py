@@ -1151,6 +1151,7 @@ def run_nifty_orderflow_scan():
                         "symbol": active_trade.get('symbol', ''),
                         "entry_ltp": round(entry_option_ltp, 2),
                         "option_ltp": round(active_trade.get('option_ltp', 0), 2),
+                        "bid_price": round(active_trade.get('trail_premium', active_trade.get('option_ltp', 0)), 2),
                         "option_sl": round(
                             active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0)), 2),
                         "lots": active_trade.get('lots', 1),
@@ -1477,6 +1478,7 @@ def run_nifty_orderflow_scan():
                         "symbol": active_trade.get('symbol', ''),
                         "entry_ltp": round(entry_option_ltp, 2),
                         "option_ltp": round(active_trade.get('option_ltp', 0), 2),
+                        "bid_price": round(active_trade.get('trail_premium', active_trade.get('option_ltp', 0)), 2),
                         "option_sl": round(
                             active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0)), 2),
                         "lots": active_trade.get('lots', 1),
@@ -1665,6 +1667,7 @@ def run_nifty_orderflow_scan():
                     "symbol": active_trade.get('symbol', ''),
                     "entry_ltp": round(entry_option_ltp, 2),
                     "option_ltp": round(active_trade.get('option_ltp', 0), 2),
+                    "bid_price": round(active_trade.get('trail_premium', active_trade.get('option_ltp', 0)), 2),
                     "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0)), 2),
                     "lots": active_trade.get('lots', 1),
                     "setup_quality": active_trade.get('setup_quality', 0),

@@ -206,6 +206,7 @@
                     <div class="trade-item"><span class="label">Strike</span><span class="value" id="strikeVal">—</span></div>
                     <div class="trade-item"><span class="label">Entry LTP</span><span class="value highlight" id="entryLtpVal">—</span></div>
                     <div class="trade-item"><span class="label">Current LTP</span><span class="value" id="ltpVal">—</span></div>
+                    <div class="trade-item"><span class="label">Bid Price</span><span class="value" id="bidPriceVal">—</span></div>
                     <div class="trade-item"><span class="label">P&L</span><span class="value" id="pnlVal">—</span></div>
                     <div class="trade-item"><span class="label">Take Profit</span><span class="value success" id="optionTpVal">—</span></div>
                     <div class="trade-item"><span class="label">Stop Loss</span><span class="value danger" id="optionSlVal">—</span></div>
@@ -364,6 +365,16 @@
             // --- Current LTP ---
             const currentLtp = d.option_ltp || 0;
             ltpVal.textContent = currentLtp ? '₹' + currentLtp.toFixed(2) : '—';
+            // --- Bid Price ---
+            const bidPrice = d.bid_price || 0;
+            const bidPriceEl = $('bidPriceVal');
+            if (bidPrice > 0) {
+                bidPriceEl.textContent = '₹' + bidPrice.toFixed(2);
+                bidPriceEl.className = 'value highlight';
+            } else {
+                bidPriceEl.textContent = '—';
+                bidPriceEl.className = 'value';
+            }
             if (entryPrice > 0 && currentLtp > 0) {
                 const diff = currentLtp - entryPrice;
                 ltpVal.className = 'value ' + (diff > 0 ? 'success' : (diff < 0 ? 'danger' : ''));

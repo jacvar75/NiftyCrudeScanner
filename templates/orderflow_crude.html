@@ -464,7 +464,7 @@
 
         .trade-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
         }
 
@@ -793,6 +793,7 @@ function renderDashboard(data, isMonitoring = false) {
     let displayDecision = sig;
     let displayEntry = data.entry_ltp || data.option_ltp || 0;
     let liveLtp = data.option_ltp || 0;
+    let bidPrice = data.bid_price || 0;
     let trailStopDisplay = data.trail_stop || null;
 
     if (tradeActive) {
@@ -903,7 +904,8 @@ function renderDashboard(data, isMonitoring = false) {
                 <div class="trade-type-badge ${tradeCls}">${isBullish ? '📈 CALL BUY' : '📉 PUT BUY'}${tradeActive ? ' — ACTIVE' : ''}</div>
             </div>
             <div class="trade-grid">
-                <div class="trade-stat"><div class="trade-stat-label">Live Price</div><div class="trade-stat-value" style="color:${liveLtp > displayEntry ? 'var(--success)' : 'var(--danger)'}">₹${liveLtp.toFixed(2)}</div></div>
+                <div class="trade-stat"><div class="trade-stat-label">Live Price (LTP)</div><div class="trade-stat-value" style="color:${liveLtp > displayEntry ? 'var(--success)' : 'var(--danger)'}">₹${liveLtp.toFixed(2)}</div></div>
+                <div class="trade-stat"><div class="trade-stat-label">Bid Price</div><div class="trade-stat-value" style="color:${bidPrice > 0 ? 'var(--accent-primary)' : 'var(--text-muted)'}">${bidPrice > 0 ? '₹' + bidPrice.toFixed(2) : '--'}</div></div>
                 <div class="trade-stat"><div class="trade-stat-label">Max Loss</div><div class="trade-stat-value" style="color:var(--danger)">₹${tradeData.max_loss || '--'}</div></div>
                 <div class="trade-stat"><div class="trade-stat-label">Trail Stop</div><div class="trade-stat-value" style="color:var(--warning)">${trailDisplay}</div></div>
             </div>
