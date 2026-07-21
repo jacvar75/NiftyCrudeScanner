@@ -1071,6 +1071,19 @@ def run_nifty_orderflow_scan():
                     if current_premium >= entry_option_ltp + activation_threshold:
                         active_trade['trail_active'] = True
 
+                # --- TRAILING STOP EXIT (only if trail is active) ---
+                if active_trade.get('trail_active', False):
+                    if highest_premium - current_premium >= trail_distance:
+                        exit_pnl = force_close_trade(
+                            f"TRAILING STOP (peak {round(highest_premium, 2)}, exit {round(current_premium, 2)})",
+                            "TRAILING STOP", underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — TRAILING STOP",
+                                          "reason": f"Peak {round(highest_premium, 2)} → {round(current_premium, 2)} | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('nifty_orderflow_signal', current_signal)
+                        return
+
+
                 # --- DEAD-TRADE CUT: if trail never activated within the trade's window, exit ---
                 # (checked AFTER trail-activation so a trade that just crossed the threshold
                 # this tick isn't force-closed on a stale trail_active=False read)
