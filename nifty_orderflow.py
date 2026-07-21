@@ -1042,15 +1042,16 @@ def run_nifty_orderflow_scan():
                 except Exception as e:
                     logging.warning(f"⚠️ NIFTY underlying LTP refresh failed (using stale price {underlying_ltp}): {e}")
 
-                sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0))
-                active_trade['sl_price'] = sl_price
-                if current_premium <= sl_price:
-                    exit_pnl = force_close_trade(f"SL HIT (₹{abs(entry_option_ltp - sl_price):.0f})", "STOP LOSS",
-                                                 underlying_ltp, is_sim=True)
-                    current_signal = {"decision": "EXIT — STOP LOSS", "reason": f"SL hit | PnL: ₹{exit_pnl:.0f}"}
-                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('nifty_orderflow_signal', current_signal)
-                    return
+                if not active_trade.get('trail_active', False):
+                    sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - NIFTY_SL_PCT), 10.0))
+                    active_trade['sl_price'] = sl_price
+                    if current_premium <= sl_price:
+                        exit_pnl = force_close_trade(f"SL HIT (₹{abs(entry_option_ltp - sl_price):.0f})", "STOP LOSS",
+                                                     underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — STOP LOSS", "reason": f"SL hit | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('nifty_orderflow_signal', current_signal)
+                        return
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at NIFTY_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 8)
