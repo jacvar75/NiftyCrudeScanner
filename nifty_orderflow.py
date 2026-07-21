@@ -919,8 +919,8 @@ def run_nifty_orderflow_scan():
             if daily_reset_date is None:
                 daily_reset_date = now_ist().date()
 
-            market_open = now.replace(hour=9, minute=15, second=0, microsecond=0)
-            market_close = now.replace(hour=15, minute=00, second=0, microsecond=0)
+            market_open = now.replace(hour=9, minute=45, second=0, microsecond=0)
+            market_close = now.replace(hour=15, minute=15, second=0, microsecond=0)
             if not (market_open <= now <= market_close):
                 if active_trade:
                     force_close_trade("Market Closed", "MARKET CLOSE", None, is_sim=True)
@@ -1218,9 +1218,9 @@ def run_nifty_orderflow_scan():
             if active_trade is None:
                 cutoff = None
                 if dte == 0:
-                    cutoff = now.replace(hour=15, minute=0, second=0, microsecond=0)
+                    cutoff = now.replace(hour=15, minute=15, second=0, microsecond=0)
                 elif dte == 1:
-                    cutoff = now.replace(hour=15, minute=0, second=0, microsecond=0)
+                    cutoff = now.replace(hour=15, minute=15, second=0, microsecond=0)
                 if cutoff and now >= cutoff:
                     current_signal = {"decision": "NO TRADE",
                                       "reason": f"No entries on DTE {dte} after {cutoff.strftime('%H:%M')}"}
