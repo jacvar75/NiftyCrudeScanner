@@ -49,13 +49,13 @@ MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
-CRUDE_BREAKEVEN_PCT = 0.12   # lock breakeven once profit hits 12% of entry premium
-CRUDE_TRAIL_FLOOR = 15       # tightest the trail can ratchet down to
-CRUDE_SL_PCT = 0.20          # SL = 20% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
-CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 60      # minutes, DTE > 2 — force exit if trail never activated
-CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30  # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
-                                           # the log yet, this is extrapolated from the crude 18/10 ratio.
-                                           # Revisit once you have real DTE<=2 samples.
+CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
+CRUDE_TRAIL_FLOOR = 15                      # tightest the trail can ratchet down to
+CRUDE_SL_PCT = 0.20                         # SL = 20% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
+CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 100       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
+CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
+                                            # the log yet, this is extrapolated from the crude 18/10 ratio.
+                                            # Revisit once you have real DTE<=2 samples.
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
