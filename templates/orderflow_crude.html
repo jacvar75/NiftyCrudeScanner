@@ -831,6 +831,7 @@ function renderDashboard(data, isMonitoring = false) {
     const lotSize = qty;
     const pnl = (liveLtp - displayEntry) * lotSize;
     const trailDisplay = (trailStopDisplay !== null && trailStopDisplay > 0) ? '₹' + trailStopDisplay.toFixed(2) : '--';
+    const dailyLossCap = data.daily_loss_cap || 0;
 
     let html = '';
 
@@ -908,6 +909,7 @@ function renderDashboard(data, isMonitoring = false) {
                 <div class="trade-stat"><div class="trade-stat-label">Bid Price</div><div class="trade-stat-value" style="color:${bidPrice > 0 ? 'var(--accent-primary)' : 'var(--text-muted)'}">${bidPrice > 0 ? '₹' + bidPrice.toFixed(2) : '--'}</div></div>
                 <div class="trade-stat"><div class="trade-stat-label">Max Loss</div><div class="trade-stat-value" style="color:var(--danger)">₹${tradeData.max_loss || '--'}</div></div>
                 <div class="trade-stat"><div class="trade-stat-label">Trail Stop</div><div class="trade-stat-value" style="color:var(--warning)">${trailDisplay}</div></div>
+                <div class="trade-stat"><div class="trade-stat-label">Daily Loss Cap</div><div class="trade-stat-value" style="color:${dailyLossCap < 0 ? 'var(--danger)' : 'var(--text-primary)'}">₹${dailyLossCap.toFixed(0)}</div></div>
             </div>
         </div>`;
     }
