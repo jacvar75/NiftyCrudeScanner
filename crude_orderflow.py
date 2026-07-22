@@ -1204,11 +1204,7 @@ def run_crude_orderflow_scan():
 
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
-                original_score = round(total_score, 1)
-                total_score -= HTF_MISMATCH_PENALTY
-                signal_quality = max(0, min(100, total_score))  # recompute — the earlier value is now stale
-                logging.info(
-                    f"⚠️ REJECTED: HTF mismatch ({ht_bias} vs {bias}). Penalising score {original_score} -> {round(total_score, 1)}")
+                logging.info(f"🔴 HTF mismatch ({ht_bias} vs {bias}). Hard reject — no entry.")
 
                 try:
                     htf_log_file = os.path.join(LOG_DIR, "crude_htf_rejections.csv")
@@ -1216,55 +1212,22 @@ def run_crude_orderflow_scan():
                         "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
                         "futures_price": round(futures_ltp, 2),
                         "entry_tf_bias": bias,
-                        "original_score": original_score,
-                        "penalised_score": round(total_score, 1),
                         "entry_tf_score": round(total_score, 1),
                         "htf_bias": ht_bias,
                         "htf_vwap": round(ht_vwap, 2),
                         "market_regime": market_regime,
-                        "outcome": "PROCEEDED" if total_score >= 57 and bias != "NEUTRAL" else "STILL_REJECTED",
+                        "outcome": "HARD_REJECTED",
                     })
                 except Exception as e:
                     logging.warning(f"⚠️ Failed to log HTF rejection: {e}")
 
-                # --- REQUIRED: Crude's score threshold check runs BEFORE this block (unlike
-                # Nifty's, which runs after). Without this second check, the penalty would
-                # never actually filter anything — the trade already passed that gate earlier. ---
-                if total_score < 57 or bias == "NEUTRAL":
-                    current_signal = {"decision": "NO TRADE",
-                                      "reason": f"HTF penalty dropped score below threshold ({round(total_score, 1)})"}
-                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    current_signal["dte"] = dte
-                    current_signal["expiry_date"] = expiry_date_str
-                    safe_emit('crude_orderflow_signal', current_signal)
-                    if active_trade:
-                        monitor_signal = {
-                            "decision": f"{active_trade.get('bias', '')} BUY ([SIM])",
-                            "is_monitoring": True,
-                            "symbol": active_trade.get('symbol', ''),
-                            "strike": active_trade.get('strike'),
-                            "entry_ltp": round(entry_option_ltp, 2),
-                            "option_ltp": round(active_trade.get('option_ltp', 0), 2),
-                            "bid_price": round(active_trade.get('trail_premium', active_trade.get('option_ltp', 0)), 2),
-                            "option_sl": round(active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0)), 2),
-                            "lots": active_trade.get('lots', 1),
-                            "setup_quality": active_trade.get('setup_quality', 0),
-                            "signal_quality": active_trade.get('signal_quality', 0),
-                            "market_regime": active_trade.get('market_regime', ''),
-                            "signal_id": active_trade.get('signal_id'),
-                            "last_scan": now.strftime("%H:%M:%S"),
-                            "primary_reason": "[SIM] Monitoring (HTF penalty)",
-                            "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
-                            "trail_stop": round(
-                                active_trade.get('highest_premium', entry_option_ltp) - active_trade.get(
-                                    'trail_distance', 0), 2) if active_trade.get('trail_active', False) else None,
-                            "trail_active": active_trade.get('trail_active', False),
-                            "max_loss": round((entry_option_ltp - active_trade.get('sl_price',
-                                                                                   max(entry_option_ltp * (1 - CRUDE_SL_PCT),
-                                                                                       10.0))) * CRUDE_LOT_SIZE, 0),
-                        }
-                        safe_emit('crude_orderflow_signal', monitor_signal)
-                    return
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('crude_orderflow_signal', current_signal)
+                return
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
