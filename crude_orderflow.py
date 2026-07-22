@@ -51,7 +51,7 @@ STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 15                      # tightest the trail can ratchet down to
-CRUDE_SL_PCT = 0.20                         # SL = 20% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
+CRUDE_SL_PCT = 0.10                         # SL = 10% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
 CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 100       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
 CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
@@ -963,6 +963,7 @@ def run_crude_orderflow_scan():
                         "trail_active": active_trade.get('trail_active', False),
                         "max_loss": round((entry_option_ltp - active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT),
                                                                                                10.0))) * CRUDE_LOT_SIZE, 0),
+                        "daily_loss_cap": max_daily_loss,
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
                 return
@@ -1184,6 +1185,7 @@ def run_crude_orderflow_scan():
                             (entry_option_ltp - active_trade.get('sl_price',
                                                                  max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))) * CRUDE_LOT_SIZE,
                             0),
+                        "daily_loss_cap": max_daily_loss,
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
                 return
@@ -1413,6 +1415,7 @@ def run_crude_orderflow_scan():
                     "max_loss": round(
                         (entry_option_ltp - active_trade.get('sl_price',
                                                              max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))) * CRUDE_LOT_SIZE, 0),
+                    "daily_loss_cap": max_daily_loss,
                 }
                 safe_emit('crude_orderflow_signal', monitor_signal)
 
