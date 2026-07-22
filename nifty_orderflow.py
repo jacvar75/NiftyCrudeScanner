@@ -1512,12 +1512,10 @@ def run_nifty_orderflow_scan():
                         "momentum_checks": 2 if adx_val > 25 else 1 if adx_val > 20 else 0,
                         "kills": [],
                         "failed_criteria": [],
-                        "time_elapsed": round((now - trade_entry_time).total_seconds() / 60,
-                                              1) if trade_entry_time else 0,
+                        "time_elapsed": round((now - trade_entry_time).total_seconds() / 60, 1) if trade_entry_time else 0,
                         "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
                         "trail_stop": round(
-                            active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance',
-                                                                                                     0), 2)
+                            active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance', 0), 2)
                         if active_trade.get('trail_active', False) else None,
                         "trail_active": active_trade.get('trail_active', False),
                         "max_loss": round(
@@ -1527,6 +1525,17 @@ def run_nifty_orderflow_scan():
                         "expiry_date": expiry_date.isoformat(),
                     }
                     safe_emit('nifty_orderflow_signal', monitor_signal)
+                return
+
+            rvol_score = feature_scores.get("rvol", {}).get("score", 0)
+            oi_accel_score = feature_scores.get("oi_acceleration", {}).get("score", 0)
+            if rvol_score <= 0 and oi_accel_score <= 0:
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"No participation confirmation (RVOL {rvol_score}, OI accel {oi_accel_score})",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('nifty_orderflow_signal', current_signal)
                 return
 
             atm = round(spot_ltp / 100) * 100
