@@ -560,7 +560,7 @@ def get_candles(token, interval="5minute", days=2, force=False):
     global _candle_cache
     now = now_ist()
     cache_key = (token, interval)
-    cache_timeout = {"5minute": 60, "15minute": 120, "day": 300, "60minute": 180}.get(interval, 60)
+    cache_timeout = {"5minute": 60, "15minute": 120, "day": 300, "30minute": 180}.get(interval, 60)
     if not force and cache_key in _candle_cache:
         cached_time, cached_df = _candle_cache[cache_key]
         if (now - cached_time).seconds < cache_timeout:
@@ -711,7 +711,8 @@ def get_higher_tf_candles(token, force=False):
     try:
         to_date = now
         from_date = to_date - datetime.timedelta(days=10)
-        data = kite_call_with_timeout(kite.historical_data, token, from_date.strftime("%Y-%m-%d"), to_date.strftime("%Y-%m-%d"), "60minute")
+        data = kite_call_with_timeout(kite.historical_data, token, from_date.strftime("%Y-%m-%d"), to_date.strftime("%Y-%m-%d"), "30minute")
+
         if data is None:
             data = []
         df = pd.DataFrame(data)
@@ -1410,13 +1411,16 @@ def run_nifty_orderflow_scan():
                 f"ht_candles_volume_sum={sanity_vol}"
             )
 
-            if ht_candles.empty or len(ht_candles) < 8:
+            if ht_candles.empty or len(ht_candles) < 16:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF data unavailable — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
 
-            ht_vwap = calculate_vwap(ht_candles.tail(20))
+            today = now.date()
+            ht_candles_today = ht_candles[pd.to_datetime(
+                ht_candles['date']).dt.date == today] if 'date' in ht_candles.columns else ht_candles.tail(40)
+            ht_vwap = calculate_vwap(ht_candles_today if not ht_candles_today.empty else ht_candles.tail(40))
             if ht_vwap <= 0:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF VWAP invalid — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
@@ -1450,7 +1454,7 @@ def run_nifty_orderflow_scan():
                 }
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
-            
+
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
