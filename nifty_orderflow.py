@@ -1425,31 +1425,32 @@ def run_nifty_orderflow_scan():
 
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
-                original_score = round(total_score, 1)
-                total_score -= HTF_MISMATCH_PENALTY
-                signal_quality = max(0, min(100, total_score))  # recompute — the earlier value is now stale
-                logging.info(
-                    f"⚠️ HTF mismatch ({ht_bias} vs {bias}). Penalising score {original_score} -> {round(total_score, 1)}")
+                logging.info(f"🔴 HTF mismatch ({ht_bias} vs {bias}). Hard reject — no entry.")
 
-                # --- Same file, same trigger condition (ht_bias != bias) as your existing baseline
-                # data — just tagging whether the penalised trade still proceeded or not ---
                 try:
                     htf_log_file = os.path.join(LOG_DIR, "nifty_htf_rejections.csv")
                     append_csv_row_safe(htf_log_file, {
                         "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
                         "spot_price": round(spot_ltp, 2),
                         "entry_tf_bias": bias,
-                        "original_score": original_score,
-                        "penalised_score": round(total_score, 1),
                         "entry_tf_score": round(total_score, 1),
                         "htf_bias": ht_bias,
                         "htf_vwap": round(ht_vwap, 2),
                         "vix_value": round(vix_ltp, 2),
                         "market_regime": market_regime,
-                        "outcome": "PROCEEDED" if total_score >= 52 and bias != "NEUTRAL" else "STILL_REJECTED",
+                        "outcome": "HARD_REJECTED",
                     })
                 except Exception as e:
                     logging.warning(f"⚠️ Failed to log HTF rejection: {e}")
+
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('nifty_orderflow_signal', current_signal)
+                return
+            
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
