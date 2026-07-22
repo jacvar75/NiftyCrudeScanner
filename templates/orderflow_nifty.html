@@ -208,10 +208,9 @@
                     <div class="trade-item"><span class="label">Current LTP</span><span class="value" id="ltpVal">—</span></div>
                     <div class="trade-item"><span class="label">Bid Price</span><span class="value" id="bidPriceVal">—</span></div>
                     <div class="trade-item"><span class="label">P&L</span><span class="value" id="pnlVal">—</span></div>
-                    <div class="trade-item"><span class="label">Take Profit</span><span class="value success" id="optionTpVal">—</span></div>
+                    <div class="trade-item"><span class="label">Trail Stop</span><span class="value warning" id="trailStopVal">—</span></div>
                     <div class="trade-item"><span class="label">Stop Loss</span><span class="value danger" id="optionSlVal">—</span></div>
                     <div class="trade-item"><span class="label">Max Premium</span><span class="value warning" id="highestPremiumVal">—</span></div>
-                    <div class="trade-item"><span class="label">Trail Stop</span><span class="value warning" id="trailStopVal">—</span></div>
                     <div class="trade-item"><span class="label">Max Loss</span><span class="value danger" id="maxLossVal">—</span></div>
                     <div class="trade-item full"><span class="label">Symbol</span><span class="value symbol" id="symbolDisplay">—</span></div>
                 </div>
@@ -394,7 +393,7 @@
             }
 
             // --- Trade details ---
-            optionTpVal.textContent = 'Trailing';
+            // optionTpVal.textContent = 'Trailing';
             optionSlVal.textContent = (d.option_sl !== undefined && d.option_sl !== null) ? '₹' + d.option_sl.toFixed(2) : '—';
             highestPremiumVal.textContent = (d.highest_premium !== undefined && d.highest_premium !== null) ? '₹' + d.highest_premium.toFixed(2) : '—';
             trailStopVal.textContent = d.trail_active
