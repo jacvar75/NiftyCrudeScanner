@@ -1674,8 +1674,9 @@ def run_nifty_orderflow_scan():
                         "feature_snapshot": convert_numpy(
                             {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()})
                     }
-
-                save_state()
+                    save_state()
+                    entry_snapshot = active_trade  # local ref — safe even if another thread
+                    # clears active_trade right after lock release
 
                 log_json("TRADE_OPENED", {
                     "signal_id": signal_id,
