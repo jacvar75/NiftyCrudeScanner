@@ -503,12 +503,17 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
 
             rsi = 100 - (100 / (1 + rs))
 
-            if adx > 25 and ((bias == "CALL" and rsi > 50) or (bias == "PUT" and rsi < 50)):
+            if 20 <= adx <= 27:
                 score += 10
-                reasons.append("Trend momentum confirms bias")
+                reasons.append("Moderate trend momentum")
+            elif adx > 30:
+                score -= 10
+                reasons.append("ADX overextended – late entry risk")
             elif adx < 20:
                 score -= 5
                 reasons.append("Weak trend – cautious")
+
+
     score = max(0, min(100, score))
     if bias == "NEUTRAL":
         bias = "CALL" if score > 50 else "PUT" if score > 40 else "NEUTRAL"
@@ -560,7 +565,7 @@ def get_candles(token, interval="5minute", days=2, force=False):
     global _candle_cache
     now = now_ist()
     cache_key = (token, interval)
-    cache_timeout = {"5minute": 60, "15minute": 120, "day": 300, "30minute": 180}.get(interval, 60)
+    cache_timeout = {"5minute": 60, "15minute": 120, "day": 300, "60minute": 180}.get(interval, 60)
     if not force and cache_key in _candle_cache:
         cached_time, cached_df = _candle_cache[cache_key]
         if (now - cached_time).seconds < cache_timeout:
@@ -711,7 +716,7 @@ def get_higher_tf_candles(token, force=False):
     try:
         to_date = now
         from_date = to_date - datetime.timedelta(days=10)
-        data = kite_call_with_timeout(kite.historical_data, token, from_date.strftime("%Y-%m-%d"), to_date.strftime("%Y-%m-%d"), "30minute")
+        data = kite_call_with_timeout(kite.historical_data, token, from_date.strftime("%Y-%m-%d"), to_date.strftime("%Y-%m-%d"), "60minute")
 
         if data is None:
             data = []
@@ -1411,7 +1416,7 @@ def run_nifty_orderflow_scan():
                 f"ht_candles_volume_sum={sanity_vol}"
             )
 
-            if ht_candles.empty or len(ht_candles) < 16:
+            if ht_candles.empty or len(ht_candles) < 8:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF data unavailable — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 safe_emit('nifty_orderflow_signal', current_signal)
@@ -1419,8 +1424,8 @@ def run_nifty_orderflow_scan():
 
             today = now.date()
             ht_candles_today = ht_candles[pd.to_datetime(
-                ht_candles['date']).dt.date == today] if 'date' in ht_candles.columns else ht_candles.tail(40)
-            ht_vwap = calculate_vwap(ht_candles_today if not ht_candles_today.empty else ht_candles.tail(40))
+                ht_candles['date']).dt.date == today] if 'date' in ht_candles.columns else ht_candles.tail(20)
+            ht_vwap = calculate_vwap(ht_candles_today if not ht_candles_today.empty else ht_candles.tail(20))
             if ht_vwap <= 0:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF VWAP invalid — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
