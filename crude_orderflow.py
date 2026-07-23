@@ -1,5 +1,5 @@
-# === CRUDE OIL ORDER-FLOW BUYER ENGINE v2.8 (SHADOW MODE) ===
-# v2.8:
+# === CRUDE OIL ORDER-FLOW BUYER ENGINE v2.9 (SHADOW MODE) ===
+# v2.9:
 #   - Full dashboard fields added (dte, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
 #   - All previous fixes retained (exit-checks unconditional, caching, etc.)
@@ -52,16 +52,16 @@ CRUDE_TRAIL_ACTIVATION = 15
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 15                      # tightest the trail can ratchet down to
 CRUDE_SL_PCT = 0.10                         # SL = 10% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
-CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 100       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
+CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 120       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
 CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
                                             # Revisit once you have real DTE<=2 samples.
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.8"
+STRATEGY_VERSION = "v2.9"
 ENTRY_COOLDOWN_SECONDS = 300
-MAX_SPREAD_PCT = 10.0
+MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
@@ -570,84 +570,92 @@ def safe_emit(event, data):
 # ======================== FORCE CLOSE ========================
 def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None, is_sim=False):
     global trade_entry_time, entry_option_ltp, active_trade, daily_pnl, last_exit_time
-    if trade_entry_time is None or active_trade is None or entry_option_ltp is None:
-        trade_entry_time = entry_option_ltp = active_trade = None
-        save_state()
-        return 0
 
-    exit_ltp = active_trade.get('option_ltp', entry_option_ltp)
-    if active_trade.get('symbol'):
+    with state_lock:
+        if trade_entry_time is None or active_trade is None or entry_option_ltp is None:
+            trade_entry_time = entry_option_ltp = active_trade = None
+            save_state()
+            return 0
+        trade_snap = active_trade
+        entry_snap = entry_option_ltp
+        entry_time_snap = trade_entry_time
+        trade_entry_time = entry_option_ltp = active_trade = None
+
+    exit_ltp = trade_snap.get('option_ltp', entry_snap)
+    if trade_snap.get('symbol'):
         try:
-            q = kite_call_with_timeout(kite.quote, [f"MCX:{active_trade['symbol']}"])
+            q = kite_call_with_timeout(kite.quote, [f"MCX:{trade_snap['symbol']}"])
             if q is None:
                 q = {}
-            depth = q.get(f"MCX:{active_trade['symbol']}", {}).get('depth', {})
+            depth = q.get(f"MCX:{trade_snap['symbol']}", {}).get('depth', {})
             fresh_bid = depth.get('buy', [{}])[0].get('price', 0)
             if fresh_bid > 0:
                 exit_ltp = fresh_bid  # simulate a realistic sell fill at the bid
             else:
-                fresh = q.get(f"MCX:{active_trade['symbol']}", {}).get('last_price')
+                fresh = q.get(f"MCX:{trade_snap['symbol']}", {}).get('last_price')
                 if fresh and fresh > 0:
                     exit_ltp = fresh
-                    logging.warning(f"⚠️ No bid price for {active_trade.get('symbol')}, falling back to LTP")
+                    logging.warning(f"⚠️ No bid price for {trade_snap.get('symbol')}, falling back to LTP")
         except Exception as e:
             logging.warning(
-                f"⚠️ Fresh exit-price fetch failed for {active_trade.get('symbol')} — using last known price {exit_ltp} for PnL calc: {e}")
+                f"⚠️ Fresh exit-price fetch failed for {trade_snap.get('symbol')} — using last known price {exit_ltp} for PnL calc: {e}")
 
-    lots = active_trade.get('lots', 1)
-    entry = entry_option_ltp
+    lots = trade_snap.get('lots', 1)
+    entry = entry_snap
     exit_pnl = (exit_ltp - entry) * lots * CRUDE_LOT_SIZE
-    daily_pnl += exit_pnl
+    with state_lock:
+        daily_pnl += exit_pnl
+        daily_pnl_snap = daily_pnl
 
-    highest = active_trade.get('highest_premium', entry)
-    lowest = active_trade.get('lowest_premium', entry)
+    highest = trade_snap.get('highest_premium', entry)
+    lowest = trade_snap.get('lowest_premium', entry)
     mfe_pts = (highest - entry) * lots * CRUDE_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * CRUDE_LOT_SIZE)
 
-    sl_price = active_trade.get('sl_price', entry * (1 - CRUDE_SL_PCT))
+    sl_price = trade_snap.get('sl_price', entry * (1 - CRUDE_SL_PCT))
     risk_per_lot = abs(entry - sl_price) * CRUDE_LOT_SIZE
     r_multiple = exit_pnl / risk_per_lot if risk_per_lot != 0 else 0
 
     prefix = "[SIM] " if is_sim else ""
-    logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl:.0f} | R: {r_multiple:.2f}")
+    logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl_snap:.0f} | R: {r_multiple:.2f}")
 
     log_json("TRADE_CLOSED", {
-        "signal_id": active_trade.get('signal_id'),
+        "signal_id": trade_snap.get('signal_id'),
         "strategy_version": STRATEGY_VERSION,
-        "entry_time": trade_entry_time.isoformat() if trade_entry_time else "",
+        "entry_time": entry_time_snap.isoformat() if entry_time_snap else "",
         "exit_time": now_ist().isoformat(),
-        "bias": active_trade.get('bias', ''),
-        "strike": active_trade.get('strike', ''),
-        "symbol": active_trade.get('symbol', ''),
+        "bias": trade_snap.get('bias', ''),
+        "strike": trade_snap.get('strike', ''),
+        "symbol": trade_snap.get('symbol', ''),
         "entry_price": entry,
         "exit_price": exit_ltp,
-        "underlying_entry": active_trade.get('underlying_ltp', 0),
+        "underlying_entry": trade_snap.get('underlying_ltp', 0),
         "underlying_exit": underlying_ltp if underlying_ltp else 0,
         "pnl": exit_pnl,
         "r_multiple": round(r_multiple, 2),
         "mfe_pts": round(mfe_pts, 2),
         "mae_pts": round(mae_pts, 2),
-        "holding_minutes": round((now_ist() - trade_entry_time).total_seconds() / 60, 1),
+        "holding_minutes": round((now_ist() - entry_time_snap).total_seconds() / 60, 1),
         "exit_reason": reason_tag,
-        "daily_pnl": daily_pnl,
-        "market_regime": active_trade.get('market_regime', ''),
-        "signal_quality": active_trade.get('signal_quality', 0),
-        "breakeven_locked": active_trade.get('breakeven_locked', False),
-        "trail_activated": active_trade.get('trail_active', False),
-        "minutes_to_trail_activation": active_trade.get('minutes_to_trail_activation'),
-        "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
-        "adx": active_trade.get('adx', 0),
-        "rsi": active_trade.get('rsi', 0),
-        "feature_scores": active_trade.get('feature_scores'),
-        "dte": active_trade.get('dte'),
-        "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if active_trade.get('dte', 99) <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
-        "entry_atr": active_trade.get('entry_atr', 0),
-        "vix_value": active_trade.get('vix_value', 0),
+        "daily_pnl": daily_pnl_snap,
+        "market_regime": trade_snap.get('market_regime', ''),
+        "signal_quality": trade_snap.get('signal_quality', 0),
+        "breakeven_locked": trade_snap.get('breakeven_locked', False),
+        "trail_activated": trade_snap.get('trail_active', False),
+        "minutes_to_trail_activation": trade_snap.get('minutes_to_trail_activation'),
+        "entry_spread_pct": trade_snap.get('entry_spread_pct', 0),
+        "adx": trade_snap.get('adx', 0),
+        "rsi": trade_snap.get('rsi', 0),
+        "feature_scores": trade_snap.get('feature_scores'),
+        "dte": trade_snap.get('dte'),
+        "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if trade_snap.get('dte', 99) <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
+        "entry_atr": trade_snap.get('entry_atr', 0),
+        "vix_value": trade_snap.get('vix_value', 0),
         "is_sim": is_sim
     })
 
     try:
-        regime = active_trade.get('market_regime', 'UNKNOWN')
+        regime = trade_snap.get('market_regime', 'UNKNOWN')
         regime_file = os.path.join(LOG_DIR, "crude_regime_performance.csv")
         regime_exists = os.path.exists(regime_file)
         if regime_exists:
@@ -670,7 +678,6 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     except Exception as e:
         logging.warning(f"Regime stats update failed: {e}")
 
-    trade_entry_time = entry_option_ltp = active_trade = None
     last_exit_time = now_ist()
     save_state()
     return exit_pnl
@@ -745,6 +752,7 @@ def run_crude_orderflow_scan():
                 current_signal = {"decision": "NO TRADE", "reason": "Market Closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 safe_emit('crude_orderflow_signal', current_signal)
+                print(f"🔴 REJECTED: Market Closed")  # delete it for debugging only
                 return
 
             if now_ist().date() != daily_reset_date:
@@ -1309,45 +1317,47 @@ def run_crude_orderflow_scan():
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
 
-
                 signal_id = str(uuid.uuid4())
-                trade_entry_time = now
-                entry_option_ltp = option_ltp
-                active_trade = {
-                    "option_ltp": option_ltp,
-                    "highest_premium": option_ltp,
-                    "lowest_premium": option_ltp,
-                    "bias": bias,
-                    "trail_active": False,
-                    "trail_activated_at": None,
-                    "minutes_to_trail_activation": None,
-                    "breakeven_locked": False,
-                    "symbol": option_symbol,
-                    "lots": 1,
-                    "strike": candidate_strike,
-                    "setup_quality": base_score,
-                    "signal_quality": signal_quality,
-                    "dte": dte,
-                    "expiry_date": expiry_date_str,
-                    "adx": round(adx_val, 2),
-                    "rsi": round(rsi_val, 2),
-                    "entry_spread_pct": round(spread_pct, 2),
-                    "underlying": "CRUDE",
-                    "underlying_ltp": futures_ltp,
-                    "fut_sym": fut_sym,
-                    "signal_id": signal_id,
-                    "market_regime": market_regime,
-                    "sl_price": max(option_ltp * (1 - CRUDE_SL_PCT), 10.0),
-                    "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                    "trail_distance": max(20, min(55, int(entry_atr * 0.5))),
-                    "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(55, int(entry_atr * 0.5)))),
-                    "entry_atr": round(entry_atr, 2),
-                    "distance_to_level_atr": distance_to_level_atr,
-                    "last_quote_time": now,
-                    "feature_snapshot": convert_numpy(
-                        {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()}),
-                }
-                save_state()
+                with state_lock:
+                    trade_entry_time = now
+                    entry_option_ltp = option_ltp
+                    active_trade = {
+                        "option_ltp": option_ltp,
+                        "highest_premium": option_ltp,
+                        "lowest_premium": option_ltp,
+                        "bias": bias,
+                        "trail_active": False,
+                        "trail_activated_at": None,
+                        "minutes_to_trail_activation": None,
+                        "breakeven_locked": False,
+                        "symbol": option_symbol,
+                        "lots": 1,
+                        "strike": candidate_strike,
+                        "setup_quality": base_score,
+                        "signal_quality": signal_quality,
+                        "dte": dte,
+                        "expiry_date": expiry_date_str,
+                        "adx": round(adx_val, 2),
+                        "rsi": round(rsi_val, 2),
+                        "entry_spread_pct": round(spread_pct, 2),
+                        "underlying": "CRUDE",
+                        "underlying_ltp": futures_ltp,
+                        "fut_sym": fut_sym,
+                        "signal_id": signal_id,
+                        "market_regime": market_regime,
+                        "sl_price": max(option_ltp * (1 - CRUDE_SL_PCT), 10.0),
+                        "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
+                        "trail_distance": max(20, min(55, int(entry_atr * 0.5))),
+                        "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(55, int(entry_atr * 0.5)))),
+                        "entry_atr": round(entry_atr, 2),
+                        "distance_to_level_atr": distance_to_level_atr,
+                        "last_quote_time": now,
+                        "feature_snapshot": convert_numpy(
+                            {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()}),
+                    }
+                    save_state()
+                    entry_snapshot = active_trade  # local ref — safe even if another thread
+                    # clears active_trade right after lock release
 
                 log_json("TRADE_OPENED", {
                     "signal_id": signal_id,
@@ -1363,15 +1373,15 @@ def run_crude_orderflow_scan():
                     "score_reasons": comp.get("reasons"),
                     "signal_quality": signal_quality,
                     "market_regime": market_regime,
-                    "feature_scores": active_trade['feature_scores'],
-                    "feature_snapshot": active_trade['feature_snapshot'],
+                    "feature_scores": entry_snapshot['feature_scores'],
+                    "feature_snapshot": entry_snapshot['feature_snapshot'],
                     "dte": dte,
                     "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
-                    "adx": active_trade.get('adx', 0),
-                    "rsi": active_trade.get('rsi', 0),
-                    "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
-                    "entry_atr": active_trade.get('entry_atr', 0),
-                    "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
+                    "adx": entry_snapshot.get('adx', 0),
+                    "rsi": entry_snapshot.get('rsi', 0),
+                    "entry_spread_pct": entry_snapshot.get('entry_spread_pct', 0),
+                    "entry_atr": entry_snapshot.get('entry_atr', 0),
+                    "distance_to_level_atr": entry_snapshot.get('distance_to_level_atr'),
                     "is_sim": True
                 })
                 logging.info(f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
