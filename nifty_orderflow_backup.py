@@ -1,5 +1,5 @@
-# === NIFTY ORDER-FLOW BUYER ENGINE v2.8 (SHADOW MODE) ===
-# v2.8:
+# === NIFTY ORDER-FLOW BUYER ENGINE v2.9 (SHADOW MODE) ===
+# v2.9:
 #   - Full dashboard fields added (dte, vix, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
 #   - All previous fixes retained (exit-checks unconditional, caching, etc.)
@@ -58,7 +58,7 @@ HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry 
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.8"
+STRATEGY_VERSION = "v2.9"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -503,12 +503,17 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
 
             rsi = 100 - (100 / (1 + rs))
 
-            if adx > 25 and ((bias == "CALL" and rsi > 50) or (bias == "PUT" and rsi < 50)):
+            if 20 <= adx <= 27:
                 score += 10
-                reasons.append("Trend momentum confirms bias")
+                reasons.append("Moderate trend momentum")
+            elif adx > 30:
+                score -= 10
+                reasons.append("ADX overextended – late entry risk")
             elif adx < 20:
                 score -= 5
                 reasons.append("Weak trend – cautious")
+
+
     score = max(0, min(100, score))
     if bias == "NEUTRAL":
         bias = "CALL" if score > 50 else "PUT" if score > 40 else "NEUTRAL"
@@ -712,6 +717,7 @@ def get_higher_tf_candles(token, force=False):
         to_date = now
         from_date = to_date - datetime.timedelta(days=10)
         data = kite_call_with_timeout(kite.historical_data, token, from_date.strftime("%Y-%m-%d"), to_date.strftime("%Y-%m-%d"), "60minute")
+
         if data is None:
             data = []
         df = pd.DataFrame(data)
@@ -1416,7 +1422,10 @@ def run_nifty_orderflow_scan():
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
 
-            ht_vwap = calculate_vwap(ht_candles.tail(20))
+            today = now.date()
+            ht_candles_today = ht_candles[pd.to_datetime(
+                ht_candles['date']).dt.date == today] if 'date' in ht_candles.columns else ht_candles.tail(20)
+            ht_vwap = calculate_vwap(ht_candles_today if not ht_candles_today.empty else ht_candles.tail(20))
             if ht_vwap <= 0:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF VWAP invalid — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
@@ -1425,31 +1434,32 @@ def run_nifty_orderflow_scan():
 
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
-                original_score = round(total_score, 1)
-                total_score -= HTF_MISMATCH_PENALTY
-                signal_quality = max(0, min(100, total_score))  # recompute — the earlier value is now stale
-                logging.info(
-                    f"⚠️ HTF mismatch ({ht_bias} vs {bias}). Penalising score {original_score} -> {round(total_score, 1)}")
+                logging.info(f"🔴 HTF mismatch ({ht_bias} vs {bias}). Hard reject — no entry.")
 
-                # --- Same file, same trigger condition (ht_bias != bias) as your existing baseline
-                # data — just tagging whether the penalised trade still proceeded or not ---
                 try:
                     htf_log_file = os.path.join(LOG_DIR, "nifty_htf_rejections.csv")
                     append_csv_row_safe(htf_log_file, {
                         "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
                         "spot_price": round(spot_ltp, 2),
                         "entry_tf_bias": bias,
-                        "original_score": original_score,
-                        "penalised_score": round(total_score, 1),
                         "entry_tf_score": round(total_score, 1),
                         "htf_bias": ht_bias,
                         "htf_vwap": round(ht_vwap, 2),
                         "vix_value": round(vix_ltp, 2),
                         "market_regime": market_regime,
-                        "outcome": "PROCEEDED" if total_score >= 52 and bias != "NEUTRAL" else "STILL_REJECTED",
+                        "outcome": "HARD_REJECTED",
                     })
                 except Exception as e:
                     logging.warning(f"⚠️ Failed to log HTF rejection: {e}")
+
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('nifty_orderflow_signal', current_signal)
+                return
+
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
@@ -1512,12 +1522,10 @@ def run_nifty_orderflow_scan():
                         "momentum_checks": 2 if adx_val > 25 else 1 if adx_val > 20 else 0,
                         "kills": [],
                         "failed_criteria": [],
-                        "time_elapsed": round((now - trade_entry_time).total_seconds() / 60,
-                                              1) if trade_entry_time else 0,
+                        "time_elapsed": round((now - trade_entry_time).total_seconds() / 60, 1) if trade_entry_time else 0,
                         "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
                         "trail_stop": round(
-                            active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance',
-                                                                                                     0), 2)
+                            active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance', 0), 2)
                         if active_trade.get('trail_active', False) else None,
                         "trail_active": active_trade.get('trail_active', False),
                         "max_loss": round(
@@ -1527,6 +1535,17 @@ def run_nifty_orderflow_scan():
                         "expiry_date": expiry_date.isoformat(),
                     }
                     safe_emit('nifty_orderflow_signal', monitor_signal)
+                return
+
+            rvol_score = feature_scores.get("rvol", {}).get("score", 0)
+            oi_accel_score = feature_scores.get("oi_acceleration", {}).get("score", 0)
+            if rvol_score <= 0 and oi_accel_score <= 0:
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"No participation confirmation (RVOL {rvol_score}, OI accel {oi_accel_score})",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('nifty_orderflow_signal', current_signal)
                 return
 
             atm = round(spot_ltp / 100) * 100
