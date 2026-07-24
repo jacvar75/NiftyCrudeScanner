@@ -170,6 +170,13 @@ def append_csv_row_safe(csv_path, row):
     with open(csv_path, 'r', newline='') as f:
         existing_header = next(csv.reader(f), [])
 
+    if not existing_header:
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+            writer.writeheader()
+            writer.writerow(row)
+        return
+
     if list(row.keys()) == existing_header:
         with open(csv_path, 'a', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=existing_header)
@@ -311,7 +318,7 @@ def log_score_distribution(now, total_score, base_score, bonus, interaction_bonu
     score_log_path = os.path.join(LOG_DIR, "crude_score_distribution.csv")
     try:
         with _score_lock:
-            write_header = not os.path.exists(score_log_path)
+            write_header = not os.path.exists(score_log_path) or os.path.getsize(score_log_path) == 0
             with open(score_log_path, 'a', newline='') as f:
                 writer = csv.writer(f)
                 if write_header:
@@ -657,7 +664,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     try:
         regime = trade_snap.get('market_regime', 'UNKNOWN')
         regime_file = os.path.join(LOG_DIR, "crude_regime_performance.csv")
-        regime_exists = os.path.exists(regime_file)
+        regime_exists = os.path.exists(regime_file) and os.path.getsize(regime_file) > 0
         if regime_exists:
             df_reg = pd.read_csv(regime_file)
         else:
@@ -673,7 +680,11 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         else:
             new_row = {"regime": regime, "trades": 1, "wins": 1 if exit_pnl > 0 else 0,
                        "win_rate": 1 if exit_pnl > 0 else 0, "avg_pnl": exit_pnl}
-            df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
+            if df_reg.empty:
+                df_reg = pd.DataFrame([new_row])
+            else:
+                df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
+
         df_reg.to_csv(regime_file, index=False)
     except Exception as e:
         logging.warning(f"Regime stats update failed: {e}")
@@ -1235,6 +1246,8 @@ def run_crude_orderflow_scan():
                     "decision": "NO TRADE",
                     "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
                     "last_scan": now.strftime("%H:%M:%S"),
+                    "dte": dte,
+                    "expiry_date": expiry_date_str,
                 }
                 safe_emit('crude_orderflow_signal', current_signal)
                 return

@@ -1,5 +1,5 @@
-# === NIFTY ORDER-FLOW BUYER ENGINE v2.9 (SHADOW MODE) ===
-# v2.9:
+# === NIFTY ORDER-FLOW BUYER ENGINE v2.10 (SHADOW MODE) ===
+# v2.10:
 #   - Full dashboard fields added (dte, vix, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
 #   - All previous fixes retained (exit-checks unconditional, caching, etc.)
@@ -51,14 +51,14 @@ NIFTY_TRAIL_ACTIVATION = 8
 NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry premium
 NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
 NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
-NIFTY_DEAD_TRADE_MINUTES = 18   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
-NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
+NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
+NIFTY_DEAD_TRADE_MINUTES_ATM = 7   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.9"
+STRATEGY_VERSION = "v2.10"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -177,6 +177,13 @@ def append_csv_row_safe(csv_path, row):
 
     with open(csv_path, 'r', newline='') as f:
         existing_header = next(csv.reader(f), [])
+
+    if not existing_header:
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+            writer.writeheader()
+            writer.writerow(row)
+        return
 
     if list(row.keys()) == existing_header:
         with open(csv_path, 'a', newline='') as f:
@@ -372,7 +379,7 @@ def log_score_distribution(now, total_score, base_score, bonus, interaction_bonu
     score_log_path = os.path.join(LOG_DIR, "nifty_score_distribution.csv")
     try:
         with _score_lock:
-            write_header = not os.path.exists(score_log_path)
+            write_header = not os.path.exists(score_log_path) or os.path.getsize(score_log_path) == 0
             with open(score_log_path, 'a', newline='') as f:
                 writer = csv.writer(f)
                 if write_header:
@@ -850,7 +857,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     try:
         regime = trade_snap.get('market_regime', 'UNKNOWN')
         regime_file = os.path.join(LOG_DIR, "nifty_regime_performance.csv")
-        regime_exists = os.path.exists(regime_file)
+
+        regime_exists = os.path.exists(regime_file) and os.path.getsize(regime_file) > 0
         if regime_exists:
             df_reg = pd.read_csv(regime_file)
         else:
@@ -866,7 +874,11 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         else:
             new_row = {"regime": regime, "trades": 1, "wins": 1 if exit_pnl > 0 else 0,
                        "win_rate": 1 if exit_pnl > 0 else 0, "avg_pnl": exit_pnl}
-            df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
+            if df_reg.empty:
+                df_reg = pd.DataFrame([new_row])
+            else:
+                df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
+
         df_reg.to_csv(regime_file, index=False)
     except Exception as e:
         logging.warning(f"Regime stats update failed: {e}")
@@ -1467,6 +1479,23 @@ def run_nifty_orderflow_scan():
                     "decision": "NO TRADE",
                     "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
                     "last_scan": now.strftime("%H:%M:%S"),
+                    "dte": dte,
+                    "expiry_date": expiry_date.isoformat(),
+                    "vix_value": round(vix_ltp, 2),
+                    "spot_price": round(spot_ltp, 2),
+                    "scenario": compute_scenario_probs(base_score, bias),
+                    "vix_regime": vix_regime,
+                    "vix_direction": vix_direction,
+                    "adx": round(adx_val, 2),
+                    "momentum_checks": 2 if adx_val > 25 else 1 if adx_val > 20 else 0,
+                    "kills": [],
+                    "failed_criteria": [],
+                    "time_elapsed": 0,
+                    "highest_premium": 0,
+                    "trail_stop": 0,
+                    "setup_quality": base_score,
+                    "signal_quality": signal_quality,
+                    "market_regime": market_regime,
                 }
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
@@ -1793,15 +1822,28 @@ def index():
 
 @socketio.on('request_signal')
 def handle_request():
-    with state_lock:
+    if state_lock.acquire(timeout=0.5):
+        try:
+            sig = current_signal.copy()
+        finally:
+            state_lock.release()
+    else:
+        # Scan is mid-cycle (likely waiting on a Kite quote) — serve the
+        # last known signal instead of hanging the client.
         sig = current_signal.copy()
     safe_emit('nifty_orderflow_signal', sig)
 
 @socketio.on('connect')
 def handle_connect():
     print("✅ Client connected to Socket.IO")
-    with state_lock:
+    if state_lock.acquire(timeout=0.5):
+        try:
+            sig = current_signal.copy()
+        finally:
+            state_lock.release()
+    else:
         sig = current_signal.copy()
+
     emit('nifty_orderflow_signal', sig)
 
 @socketio.on('disconnect')
