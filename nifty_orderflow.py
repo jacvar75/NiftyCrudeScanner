@@ -322,9 +322,9 @@ def compute_breakout_acceptance(candles, key_levels):
     high = candles['high'].iloc[-1]
     low = candles['low'].iloc[-1]
     if high > pdh and close > pdh * 0.998:
-        return {"value": 1, "score": 10, "reason": "Breakout above PDH accepted"}
+        return {"value": 1, "score": 15, "reason": "Breakout above PDH accepted"}
     elif low < pdl and close < pdl * 1.002:
-        return {"value": 1, "score": 10, "reason": "Breakout below PDL accepted"}
+        return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"}
     return {"value": 0, "score": 0, "reason": "No breakout"}
 
 def compute_market_regime(candles, atr, vwap):
