@@ -1371,7 +1371,7 @@ def run_nifty_orderflow_scan():
 
             bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
-            total_score = base_score + bonus + interaction_bonus
+            total_score = base_score + bonus + interaction_bonus + breakout["score"]
 
             market_regime = compute_market_regime(candles_5m, entry_atr, vwap)
             signal_quality = min(100, total_score)
