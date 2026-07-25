@@ -1,5 +1,5 @@
-# === NIFTY ORDER-FLOW BUYER ENGINE v2.10 (SHADOW MODE) ===
-# v2.10:
+# === NIFTY ORDER-FLOW BUYER ENGINE v2.11 (SHADOW MODE) ===
+# v2.11:
 #   - Full dashboard fields added (dte, vix, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
 #   - All previous fixes retained (exit-checks unconditional, caching, etc.)
@@ -58,7 +58,7 @@ HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry 
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.10"
+STRATEGY_VERSION = "v2.11"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -430,7 +430,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     if oi_chg != 0:
         if price_chg > 0 and oi_chg > 0:
             oi_class = "FRESH_LONGS"
-            score += 20
+            score += 15
             bias = "CALL" if bias != "PUT" else bias
             reasons.append("Fresh longs building")
         elif price_chg > 0 and oi_chg < 0:
@@ -440,7 +440,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
             reasons.append("Short covering")
         elif price_chg < 0 and oi_chg > 0:
             oi_class = "FRESH_SHORTS"
-            score += 20
+            score += 15
             bias = "PUT" if bias != "CALL" else bias
             reasons.append("Fresh shorts building")
         elif price_chg < 0 and oi_chg < 0:
@@ -456,10 +456,12 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
         if poc is not None:
             price = candles['close'].iloc[-1]
             if price > poc * 0.995:
-                score += 15
+                score += 5
                 reasons.append("Price near POC")
             else:
-                score += 5
+                score += 15
+                reasons.append("Price away from POC")
+
     if len(candles) >= 5:
         high = candles['high'].iloc[-1]
         close = candles['close'].iloc[-1]
