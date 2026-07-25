@@ -419,11 +419,11 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     if vwap is not None and vwap > 0:
         price = candles['close'].iloc[-1]
         if price > vwap:
-            score += 20
+            score += 10
             bias = "CALL" if bias == "NEUTRAL" else bias
             reasons.append("Price above VWAP")
         else:
-            score += 10
+            score += 20
             bias = "PUT" if bias == "NEUTRAL" else bias
             reasons.append("Price below VWAP")
     oi_class = "NEUTRAL"
@@ -519,8 +519,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
                 score -= 10
                 reasons.append("ADX overextended – late entry risk")
             elif adx < 20:
-                score -= 5
-                reasons.append("Weak trend – cautious")
+                pass  # neutral — n=7 sample showed no evidence this band deserves a penalty
 
 
     score = max(0, min(100, score))
