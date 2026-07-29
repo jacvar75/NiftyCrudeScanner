@@ -955,7 +955,7 @@ def run_nifty_orderflow_scan():
             if daily_reset_date is None:
                 daily_reset_date = now_ist().date()
 
-            market_open = now.replace(hour=9, minute=45, second=0, microsecond=0)
+            market_open = now.replace(hour=10, minute=00, second=0, microsecond=0)
             market_close = now.replace(hour=15, minute=15, second=0, microsecond=0)
             if not (market_open <= now <= market_close):
                 if active_trade:
@@ -1127,14 +1127,24 @@ def run_nifty_orderflow_scan():
                     minutes_in_trade = (now - trade_entry_time).total_seconds() / 60
                     dead_trade_limit = active_trade.get('dead_trade_minutes', NIFTY_DEAD_TRADE_MINUTES)
                     if minutes_in_trade >= dead_trade_limit:
-                        exit_pnl = force_close_trade(
+                        current_premium = active_trade.get('trail_premium', entry_option_ltp)
+                        # If the trade is in profit, move SL to breakeven and let it run.
+                        if current_premium > entry_option_ltp:
+                            active_trade['sl_price'] = max(active_trade.get('sl_price', entry_option_ltp),
+                                                           entry_option_ltp)
+                            active_trade['breakeven_locked'] = True
+                            logging.info(
+                                f"🔒 Dead-trade lock: trade in profit after {dead_trade_limit}m – SL moved to breakeven")
+                            return
+                        else:
+                            exit_pnl = force_close_trade(
                             f"DEAD TRADE CUT ({minutes_in_trade:.1f}m / {dead_trade_limit}m limit)",
                             "DEAD TRADE", underlying_ltp, is_sim=True)
-                        current_signal = {"decision": "EXIT — DEAD TRADE",
+                            current_signal = {"decision": "EXIT — DEAD TRADE",
                                           "reason": f"No trail activation in {dead_trade_limit}m | PnL: ₹{exit_pnl:.0f}"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
-                        return
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('nifty_orderflow_signal', current_signal)
+                            return
 
             # === COOLDOWN: wait after an exit before re-entering ===
             if active_trade is None and last_exit_time:
