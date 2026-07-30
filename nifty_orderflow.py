@@ -335,7 +335,7 @@ def compute_breakout_acceptance(candles, key_levels, bias=None):
         if low < pdl and close < pdl * 1.002:
             return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"} if close < pdl * 0.997 else {
                 "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
-            return {"value": 0, "score": 0, "reason": "No PDL breakout to support PUT bias"}
+        return {"value": 0, "score": 0, "reason": "No PDL breakout to support PUT bias"}
 
     return {"value": 0, "score": 0, "reason": "No breakout (bias not yet resolved)"}
 
