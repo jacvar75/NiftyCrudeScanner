@@ -52,13 +52,13 @@ NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry prem
 NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
 NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
 NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
-NIFTY_DEAD_TRADE_MINUTES_ATM = 7   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
+NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.11"
+STRATEGY_VERSION = "v2.12"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -322,9 +322,11 @@ def compute_breakout_acceptance(candles, key_levels):
     high = candles['high'].iloc[-1]
     low = candles['low'].iloc[-1]
     if high > pdh and close > pdh * 0.998:
-        return {"value": 1, "score": 15, "reason": "Breakout above PDH accepted"}
+        return {"value": 1, "score": 15, "reason": "Breakout above PDH accepted"} if close > pdh * 1.003 else {
+            "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
     elif low < pdl and close < pdl * 1.002:
-        return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"}
+        return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"} if close < pdl * 0.997 else {
+            "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
     return {"value": 0, "score": 0, "reason": "No breakout"}
 
 def compute_market_regime(candles, atr, vwap):
@@ -461,7 +463,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
         poc = poc_bin.mid if hasattr(poc_bin, 'mid') else None
         if poc is not None:
             price = candles['close'].iloc[-1]
-            if price > poc * 0.995:
+            if price > poc * 0.995 and price < poc * 1.005:
                 score += 5
                 reasons.append("Price near POC")
             else:
