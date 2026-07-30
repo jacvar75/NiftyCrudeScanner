@@ -53,6 +53,9 @@ NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
 NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
 NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
 NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
+NIFTY_EARLY_BAIL_ENABLED = False
+NIFTY_EARLY_BAIL_CHECK_MIN = 4
+NIFTY_EARLY_BAIL_MFE_FLOOR = 150
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
@@ -311,7 +314,7 @@ def compute_option_wall(chain_df, option_type, spot_price, atr):
 
     return {"strike": strike, "oi": oi, "score": score, "reason": reason}
 
-def compute_breakout_acceptance(candles, key_levels):
+def compute_breakout_acceptance(candles, key_levels, bias=None):
     if candles.empty or len(candles) < 2:
         return {"value": 0, "score": 0, "reason": "no data"}
     pdh = key_levels.get("PDH")
@@ -321,13 +324,21 @@ def compute_breakout_acceptance(candles, key_levels):
     close = candles['close'].iloc[-1]
     high = candles['high'].iloc[-1]
     low = candles['low'].iloc[-1]
-    if high > pdh and close > pdh * 0.998:
-        return {"value": 1, "score": 15, "reason": "Breakout above PDH accepted"} if close > pdh * 1.003 else {
-            "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
-    elif low < pdl and close < pdl * 1.002:
-        return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"} if close < pdl * 0.997 else {
-            "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
-    return {"value": 0, "score": 0, "reason": "No breakout"}
+
+    if bias == "CALL":
+        if high > pdh and close > pdh * 0.998:
+            return {"value": 1, "score": 15, "reason": "Breakout above PDH accepted"} if close > pdh * 1.003 else {
+                "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
+        return {"value": 0, "score": 0, "reason": "No PDH breakout to support CALL bias"}
+
+    if bias == "PUT":
+        if low < pdl and close < pdl * 1.002:
+            return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"} if close < pdl * 0.997 else {
+                "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
+            return {"value": 0, "score": 0, "reason": "No PDL breakout to support PUT bias"}
+
+    return {"value": 0, "score": 0, "reason": "No breakout (bias not yet resolved)"}
+
 
 def compute_market_regime(candles, atr, vwap):
     if candles.empty:
@@ -1060,6 +1071,39 @@ def run_nifty_orderflow_scan():
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
 
+                lots_now = active_trade.get('lots', 1)
+                held_minutes_now = (now - trade_entry_time).total_seconds() / 60
+                running_mfe = (highest_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE
+                running_mae = max(0, (entry_option_ltp - lowest_premium)) * lots_now * NIFTY_LOT_SIZE
+                log_json("TRADE_TICK", {
+                    "signal_id": active_trade.get('signal_id'),
+                    "held_minutes": round(held_minutes_now, 2),
+                    "unrealized_pnl": round((current_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE, 2),
+                    "running_mfe": round(running_mfe, 2),
+                    "running_mae": round(running_mae, 2),
+                })
+
+                if (held_minutes_now >= NIFTY_EARLY_BAIL_CHECK_MIN
+                        and running_mfe < NIFTY_EARLY_BAIL_MFE_FLOOR
+                        and not active_trade.get('trail_active', False)
+                        and not active_trade.get('early_bail_logged', False)):
+                    active_trade['early_bail_logged'] = True
+                    log_json("EARLY_BAIL_SIGNAL", {
+                        "signal_id": active_trade.get('signal_id'),
+                        "held_minutes": round(held_minutes_now, 1),
+                        "running_mfe": round(running_mfe, 2),
+                        "would_exit": NIFTY_EARLY_BAIL_ENABLED,
+                    })
+                    if NIFTY_EARLY_BAIL_ENABLED:
+                        exit_pnl = force_close_trade(
+                            f"EARLY BAIL (MFE ₹{running_mfe:.0f} < ₹{NIFTY_EARLY_BAIL_MFE_FLOOR} @ {held_minutes_now:.1f}m)",
+                            "EARLY BAIL", active_trade.get('underlying_ltp'), is_sim=True)
+                        current_signal = {"decision": "EXIT — EARLY BAIL",
+                                          "reason": f"No momentum by {NIFTY_EARLY_BAIL_CHECK_MIN}m | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('nifty_orderflow_signal', current_signal)
+                        return
+
                 # --- BREAKEVEN LOCK: once MFE clears NIFTY_BREAKEVEN_PCT of entry premium, SL -> entry ---
                 if not active_trade.get('breakeven_locked', False):
                     breakeven_trigger = entry_option_ltp * NIFTY_BREAKEVEN_PCT
@@ -1371,7 +1415,12 @@ def run_nifty_orderflow_scan():
             strike_rot = compute_strike_rotation(chain_df, spot_ltp)
             call_wall = compute_option_wall(chain_df, "CE", spot_ltp, entry_atr)
             put_wall = compute_option_wall(chain_df, "PE", spot_ltp, entry_atr)
-            breakout = compute_breakout_acceptance(candles_5m, key_levels)
+
+            comp = composite_score(candles_15m, price_chg, oi_chg, key_levels, volume_candles=candles_15m_vol)
+            base_score = comp["score"]
+            bias = comp["bias"]
+
+            breakout = compute_breakout_acceptance(candles_5m, key_levels, bias=bias)
 
             feature_scores = {
                 "rvol": rvol,
