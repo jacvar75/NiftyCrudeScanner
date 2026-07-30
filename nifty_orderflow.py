@@ -53,7 +53,7 @@ NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
 NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
 NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
 NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
-NIFTY_EARLY_BAIL_ENABLED = False
+NIFTY_EARLY_BAIL_ENABLED = True
 NIFTY_EARLY_BAIL_CHECK_MIN = 4
 NIFTY_EARLY_BAIL_MFE_FLOOR = 150
 MAX_SPREAD_PCT = 5.0
@@ -1422,6 +1422,12 @@ def run_nifty_orderflow_scan():
 
             breakout = compute_breakout_acceptance(candles_5m, key_levels, bias=bias)
 
+            # --- DEFENSIVE GUARD: ensure breakout matches bias ---
+            if breakout["value"] == 1 and bias == "PUT" and "PDH" in breakout["reason"]:
+                logging.error(f"⚠️ breakout_acceptance bias mismatch! bias={bias} reason={breakout['reason']}")
+            if breakout["value"] == 1 and bias == "CALL" and "PDL" in breakout["reason"]:
+                logging.error(f"⚠️ breakout_acceptance bias mismatch! bias={bias} reason={breakout['reason']}")
+
             feature_scores = {
                 "rvol": rvol,
                 "oi_acceleration": oi_acc,
@@ -1431,10 +1437,6 @@ def run_nifty_orderflow_scan():
                 "put_wall": put_wall,
                 "breakout_acceptance": breakout
             }
-
-            comp = composite_score(candles_15m, price_chg, oi_chg, key_levels, volume_candles=candles_15m_vol)
-            base_score = comp["score"]
-            bias = comp["bias"]
 
             bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
@@ -1459,7 +1461,6 @@ def run_nifty_orderflow_scan():
                 tr = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(
                     axis=1)
                 atr = tr.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
-
                 dm_plus = ((high - high.shift()) > (low.shift() - low)).astype(float) * (high - high.shift()).clip(
                     lower=0)
                 dm_minus = ((low.shift() - low) > (high - high.shift())).astype(float) * (low.shift() - low).clip(
@@ -1484,6 +1485,19 @@ def run_nifty_orderflow_scan():
                 rs = 999999 if loss == 0 else gain / loss
                 rsi_val = 100 - (100 / (1 + rs))
 
+            # --- SURGICAL FILTER: Overextended Breakout Trap ---
+            # Data: ADX>35, RSI>70, Base<35, Breakout=1 is a losing pattern.
+            if (adx_val > 35 and
+                rsi_val > 70 and
+                base_score < 35 and
+                feature_scores.get("breakout_acceptance", {}).get("value", 0) == 1):
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"Overextended breakout trap (ADX {adx_val:.1f}, RSI {rsi_val:.1f}, Base {base_score})",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('nifty_orderflow_signal', current_signal)
+                return
 
             # HTF confirmation — must use futures token; index candles carry zero volume,
             # which makes calculate_vwap() return 0 and permanently fails this check.
@@ -1576,11 +1590,19 @@ def run_nifty_orderflow_scan():
             elif bias == "PUT" and key_levels.get("PDL") and entry_atr > 0:
                 distance_to_level_atr = round((spot_ltp - key_levels["PDL"]) / entry_atr, 2)
 
-            if total_score < 52 or bias == "NEUTRAL":
-                print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < 52, Bias: {bias}")
+            rvol_value = feature_scores.get("rvol", {}).get("value", 0)
+            if total_score < 52 or bias == "NEUTRAL" or rvol_value < 0.5:
+                # Specific rejection reason for RVOL
+                if rvol_value < 0.5:
+                    reject_reason = f"RVOL {rvol_value:.2f} below 0.5 floor"
+                    print(f"🔴 REJECTED: {reject_reason}")
+                else:
+                    reject_reason = f"Entry Score {round(total_score, 1)}"
+                    print(f"🔴 REJECTED: {reject_reason}, Bias: {bias}")
+
                 current_signal = {
                 "decision": "NO TRADE",
-                "reason": f"Entry Score {round(total_score, 1)}",
+                "reason": reject_reason,
                 "last_scan": now.strftime("%H:%M:%S"),
                 "dte": dte,
                 "expiry_date": expiry_date.isoformat(),
