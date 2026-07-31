@@ -56,6 +56,7 @@ NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — fa
 NIFTY_EARLY_BAIL_ENABLED = True
 NIFTY_EARLY_BAIL_CHECK_MIN = 4
 NIFTY_EARLY_BAIL_MFE_FLOOR = 150
+NIFTY_TRAIL_MIN_RETAIN_PCT = 0.55
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
@@ -1141,12 +1142,7 @@ def run_nifty_orderflow_scan():
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at NIFTY_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 8)
                 mfe = highest_premium - entry_option_ltp
-                if mfe >= base_trail * 2.5:
-                    trail_distance = max(NIFTY_TRAIL_FLOOR, base_trail * 0.5)
-                elif mfe >= base_trail * 1.5:
-                    trail_distance = max(NIFTY_TRAIL_FLOOR, base_trail * 0.7)
-                else:
-                    trail_distance = base_trail
+                trail_distance = max(NIFTY_TRAIL_FLOOR, min(base_trail, mfe * (1 - NIFTY_TRAIL_MIN_RETAIN_PCT)))
 
                 active_trade['trail_distance'] = trail_distance
                 activation_threshold = active_trade.get('activation_threshold', NIFTY_TRAIL_ACTIVATION)
@@ -1154,6 +1150,9 @@ def run_nifty_orderflow_scan():
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
                         active_trade['trail_active'] = True
+                        if not active_trade.get('breakeven_locked', False):
+                            active_trade['sl_price'] = max(active_trade.get('sl_price', entry_option_ltp * (1 - NIFTY_SL_PCT)), entry_option_ltp)
+                            active_trade['breakeven_locked'] = True
 
                 # --- TRAILING STOP EXIT (only if trail is active) ---
                 if active_trade.get('trail_active', False):
@@ -1544,6 +1543,20 @@ def run_nifty_orderflow_scan():
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
+
+            # --- NEW: HTF MAGNITUDE CHECK ---
+            # Require price to be at least 0.5x ATR away from 1H VWAP to avoid borderline flips.
+            if entry_atr > 0:
+                ht_distance_atr = abs(spot_ltp - ht_vwap) / entry_atr
+                if ht_distance_atr < 0.5:
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": f"HTF VWAP too close ({ht_distance_atr:.2f}x ATR) — borderline flip",
+                        "last_scan": now.strftime("%H:%M:%S"),
+                    }
+                    safe_emit('nifty_orderflow_signal', current_signal)
+                    return
+            # --- END HTF MAGNITUDE CHECK ---
 
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
