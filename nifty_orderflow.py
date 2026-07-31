@@ -426,6 +426,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     reasons = []
     score = 0
     bias = "NEUTRAL"
+    adx_for_log = 0
 
     # --- ADDED: swap in futures volume, keep spot price/levels untouched ---
     if volume_candles is not None and len(volume_candles) == len(candles):
@@ -518,6 +519,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
             denom = (di_plus + di_minus).replace(0, 1)
             dx = 100 * (di_plus - di_minus).abs() / denom
             adx = dx.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+            adx_for_log = adx
 
             delta = close.diff()
             gain = delta.clip(lower=0).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
@@ -544,7 +546,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     score = max(0, min(100, score))
     if bias == "NEUTRAL":
         bias = "CALL" if score > 50 else "PUT" if score > 40 else "NEUTRAL"
-    return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons}
+    return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons, "adx": adx_for_log}
 
 # ======================== NIFTY HELPERS ========================
 def get_nfo_instruments(force=False):
@@ -1075,25 +1077,25 @@ def run_nifty_orderflow_scan():
                 held_minutes_now = (now - trade_entry_time).total_seconds() / 60
                 running_mfe = (highest_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE
                 running_mae = max(0, (entry_option_ltp - lowest_premium)) * lots_now * NIFTY_LOT_SIZE
-                log_json("TRADE_TICK", {
-                    "signal_id": active_trade.get('signal_id'),
-                    "held_minutes": round(held_minutes_now, 2),
-                    "unrealized_pnl": round((current_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE, 2),
-                    "running_mfe": round(running_mfe, 2),
-                    "running_mae": round(running_mae, 2),
-                })
+                # log_json("TRADE_TICK", {
+                    # "signal_id": active_trade.get('signal_id'),
+                    # "held_minutes": round(held_minutes_now, 2),
+                    # "unrealized_pnl": round((current_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE, 2),
+                    # "running_mfe": round(running_mfe, 2),
+                    # "running_mae": round(running_mae, 2),
+                # })
 
                 if (held_minutes_now >= NIFTY_EARLY_BAIL_CHECK_MIN
                         and running_mfe < NIFTY_EARLY_BAIL_MFE_FLOOR
                         and not active_trade.get('trail_active', False)
                         and not active_trade.get('early_bail_logged', False)):
                     active_trade['early_bail_logged'] = True
-                    log_json("EARLY_BAIL_SIGNAL", {
-                        "signal_id": active_trade.get('signal_id'),
-                        "held_minutes": round(held_minutes_now, 1),
-                        "running_mfe": round(running_mfe, 2),
-                        "would_exit": NIFTY_EARLY_BAIL_ENABLED,
-                    })
+                    # log_json("EARLY_BAIL_SIGNAL", {
+                    #    "signal_id": active_trade.get('signal_id'),
+                    #    "held_minutes": round(held_minutes_now, 1),
+                    #    "running_mfe": round(running_mfe, 2),
+                    #    "would_exit": NIFTY_EARLY_BAIL_ENABLED,
+                    # })
                     if NIFTY_EARLY_BAIL_ENABLED:
                         exit_pnl = force_close_trade(
                             f"EARLY BAIL (MFE ₹{running_mfe:.0f} < ₹{NIFTY_EARLY_BAIL_MFE_FLOOR} @ {held_minutes_now:.1f}m)",
@@ -1441,6 +1443,12 @@ def run_nifty_orderflow_scan():
             bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
             total_score = base_score + bonus + interaction_bonus + breakout["score"]
+
+            # --- LOGGING ONLY: would a weak-trend/no-breakout penalty have fired? ---
+            # Not applied to total_score yet — n=2 so far, tracking before deciding.
+            weak_trend_noboost = comp.get("adx", 0) < 22 and breakout["score"] == 0
+            if weak_trend_noboost:
+                logging.info(f"⚑ weak_trend_flag would fire: adx={comp.get('adx', 0):.1f}, "f"score={total_score}, rvol={rvol.get('score', 0)}")
 
             market_regime = compute_market_regime(candles_5m, entry_atr, vwap)
             signal_quality = min(100, total_score)
