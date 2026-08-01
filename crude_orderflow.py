@@ -57,6 +57,11 @@ CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED:
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
                                             # Revisit once you have real DTE<=2 samples.
 LOG_DIR = "logs"
+# --- NEW RULE CONSTANTS ---
+BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this ADX
+NEAR_MISS_MFE_PCT = 0.5        # MFE must reach 50% of trail threshold
+NEAR_MISS_GIVEBACK_PCT = 0.7   # giveback must exceed 70% of MFE
+
 os.makedirs(LOG_DIR, exist_ok=True)
 
 STRATEGY_VERSION = "v2.9"
@@ -1207,6 +1212,18 @@ def run_crude_orderflow_scan():
                         "daily_loss_cap": max_daily_loss,
                     }
                     safe_emit('crude_orderflow_signal', monitor_signal)
+                return
+
+            # === RULE 1: Reject breakout-driven high scores with weak trend confirmation ===
+            breakout_val = feature_scores.get("breakout_acceptance", {}).get("value", 0)
+            if breakout_val == 1 and total_score >= 70 and adx_val < BREAKOUT_ADX_REJECT_MAX:
+                reason_str = f"Breakout+high-score with ADX {adx_val:.1f} < {BREAKOUT_ADX_REJECT_MAX} — rejected"
+                print(f"🔴 REJECTED: {reason_str}")
+                current_signal = {"decision": "NO TRADE", "reason": reason_str}
+                current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                current_signal["dte"] = dte
+                current_signal["expiry_date"] = expiry_date_str
+                safe_emit('crude_orderflow_signal', current_signal)
                 return
 
             ht_candles = get_higher_tf_candles(fut_token)
