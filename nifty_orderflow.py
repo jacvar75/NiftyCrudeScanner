@@ -282,36 +282,64 @@ def compute_rvol(candles, period=5):
     score = min(20, max(0, (rvol - 0.8) * 25))
     return {"value": rvol, "score": round(score, 2), "reason": f"RVOL {rvol:.2f}"}
 
-
 def compute_oi_acceleration(oi_dq, lookback_minutes=None):
     """
-    Second derivative of ATM (CE+PE) OI over time, using the same
-    time-anchored lookback as oi_chg — reads timestamps, not array
-    position, so it's stable whether scans run every 60s or every 1s.
+    Second derivative of ATM (CE+PE) OI over time.
+
+    OI acceleration is used as a SECONDARY participation confirmation.
+    It must not be allowed to rescue extremely weak volume by itself.
+
+    The raw acceleration is logged unchanged. The score is intentionally
+    capped because the original scaling was uncalibrated.
     """
     lookback = lookback_minutes or OI_LOOKBACK_MINUTES
+
     if oi_dq is None or len(oi_dq) < 3:
-        return {"value": 0, "score": 0, "reason": "insufficient OI history"}
+        return {
+            "value": 0,
+            "score": 0,
+            "reason": "insufficient OI history"
+        }
 
     now_ts, oi_now = oi_dq[-1]
+
     t1 = now_ts - datetime.timedelta(minutes=lookback)
     t2 = now_ts - datetime.timedelta(minutes=lookback * 2)
 
-    oi_1 = next((oi for ts, oi in reversed(oi_dq) if ts <= t1), None)
-    oi_2 = next((oi for ts, oi in reversed(oi_dq) if ts <= t2), None)
+    oi_1 = next(
+        (oi for ts, oi in reversed(oi_dq) if ts <= t1),
+        None
+    )
+
+    oi_2 = next(
+        (oi for ts, oi in reversed(oi_dq) if ts <= t2),
+        None
+    )
 
     if oi_1 is None or oi_2 is None:
-        return {"value": 0, "score": 0, "reason": f"insufficient OI history (need {lookback*2}min)"}
+        return {
+            "value": 0,
+            "score": 0,
+            "reason": f"insufficient OI history (need {lookback * 2}min)"
+        }
 
     diff1 = oi_now - oi_1
     diff2 = oi_1 - oi_2
+
     accel = diff1 - diff2
 
-    # UNCALIBRATED divisor — ATM CE+PE OI moves on a different scale
-    # than Crude's futures OI. Log raw `accel` for a week before trusting
-    # the score magnitude; adjust the divisor from that distribution.
-    score = min(18, max(-10, accel / 20000 * 2))
-    return {"value": accel, "score": round(score, 2), "reason": f"OI accel {accel:.0f}"}
+    # OI acceleration is intentionally capped at ±10.
+    # It is a confirmation feature, NOT a primary entry signal.
+    #
+    # IMPORTANT:
+    # The raw acceleration value is preserved for future calibration.
+    score = min(10, max(-8, accel / 20000 * 2))
+
+    return {
+        "value": accel,
+        "score": round(score, 2),
+        "reason": f"OI accel {accel:.0f}"
+    }
 
 def compute_value_area(candles, period=20):
     if len(candles) < period:
@@ -1790,13 +1818,49 @@ def run_nifty_orderflow_scan():
                 return
 
             rvol_score = feature_scores.get("rvol", {}).get("score", 0)
+            rvol_value = feature_scores.get("rvol", {}).get("value", 0)
+
             oi_accel_score = feature_scores.get("oi_acceleration", {}).get("score", 0)
-            if rvol_score <= 0 and oi_accel_score <= 0:
+            oi_accel_value = feature_scores.get("oi_acceleration", {}).get("value", 0)
+
+            # ============================================================
+            # PARTICIPATION CONFIRMATION
+            # ============================================================
+            #
+            # OI acceleration is SECONDARY evidence.
+            #
+            # We do NOT allow weak/zero RVOL to be rescued by a small
+            # OI acceleration reading.
+            #
+            # Strong RVOL is sufficient.
+            #
+            # OI acceleration can act as confirmation only when it is
+            # materially positive AND RVOL is at least present.
+            # ============================================================
+
+            strong_rvol = rvol_value >= 1.20
+            adequate_rvol = rvol_value >= 0.80
+            strong_oi_accel = oi_accel_score >= 6
+
+            participation_confirmed = (
+                    strong_rvol
+                    or
+                    (adequate_rvol and strong_oi_accel)
+            )
+
+            if not participation_confirmed:
                 current_signal = {
                     "decision": "NO TRADE",
-                    "reason": f"No participation confirmation (RVOL {rvol_score}, OI accel {oi_accel_score})",
+                    "reason": (
+                        f"No strong participation confirmation "
+                        f"(RVOL {rvol_value:.2f}, "
+                        f"RVOL score {rvol_score:.1f}, "
+                        f"OI accel {oi_accel_value:.0f}, "
+                        f"OI accel score {oi_accel_score:.1f})"
+                    ),
                     "last_scan": now.strftime("%H:%M:%S"),
                 }
+
                 throttled_emit_signal(current_signal, active_trade)
                 return
 
