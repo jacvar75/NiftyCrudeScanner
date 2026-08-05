@@ -1818,6 +1818,77 @@ def run_nifty_orderflow_scan():
                 return
 
             rvol_score = feature_scores.get("rvol", {}).get("score", 0)
+            # ============================================================
+            # PRIORITY 3 — MEDIOCRE SCORE PARTICIPATION FILTER
+            # ============================================================
+            #
+            # For scores 52–64, require BOTH:
+            #
+            #   1. RVOL >= 1.00
+            #   2. OI direction confirms the existing trade bias
+            #
+            # This is an additional filter.
+            # Priority 2 participation logic below remains UNCHANGED.
+            #
+            # Scores 65+ are NOT affected by Priority 3.
+            # ============================================================
+
+            if 52 <= total_score < 65:
+
+                oi_class = comp.get("oi_class", "NEUTRAL")
+
+                if bias == "CALL":
+                    oi_confirms_bias = oi_class in (
+                        "FRESH_LONGS",
+                        "SHORT_COVERING"
+                    )
+
+                elif bias == "PUT":
+                    oi_confirms_bias = oi_class in (
+                        "FRESH_SHORTS",
+                        "LONG_UNWINDING"
+                    )
+
+                else:
+                    oi_confirms_bias = False
+
+                rvol_value = feature_scores.get("rvol", {}).get("value", 0)
+
+                # Requirement 1: real participation
+                if rvol_value < 1.00:
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": (
+                            f"Priority 3 — mediocre score rejected: "
+                            f"RVOL {rvol_value:.2f} < 1.00 "
+                            f"(Score {total_score:.1f}, Bias {bias}, OI {oi_class})"
+                        ),
+                        "last_scan": now.strftime("%H:%M:%S"),
+                    }
+
+                    throttled_emit_signal(current_signal, active_trade)
+                    return
+
+                # Requirement 2: directional OI confirmation
+                if not oi_confirms_bias:
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": (
+                            f"Priority 3 — mediocre score rejected: "
+                            f"OI not aligned "
+                            f"(Score {total_score:.1f}, "
+                            f"RVOL {rvol_value:.2f}, "
+                            f"Bias {bias}, OI {oi_class})"
+                        ),
+                        "last_scan": now.strftime("%H:%M:%S"),
+                    }
+
+                    throttled_emit_signal(current_signal, active_trade)
+                    return
+
+            # ============================================================
+            # END PRIORITY 3
+            # ============================================================
             rvol_value = feature_scores.get("rvol", {}).get("value", 0)
 
             oi_accel_score = feature_scores.get("oi_acceleration", {}).get("score", 0)
