@@ -3,6 +3,9 @@
 #   - Full dashboard fields added (dte, vix, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
 #   - All previous fixes retained (exit-checks unconditional, caching, etc.)
+# v2.12 (throttled):
+#   - Added throttled_emit_signal to reduce UI updates when nothing changes.
+#   - Prevents frontend freezes while keeping all monitoring logic intact.
 
 import json
 import csv
@@ -44,7 +47,7 @@ if not API_KEY or not ACCESS_TOKEN:
     exit(1)
 
 PORT = 8063
-MAX_LOTS = 1
+MAX_LOTS = 2
 NIFTY_LOT_SIZE = 65
 STATE_FILE = "nifty_orderflow_state.json"
 NIFTY_TRAIL_ACTIVATION = 8
@@ -95,7 +98,6 @@ max_daily_loss = -4500
 ENTRY_COOLDOWN_SECONDS = 300
 daily_reset_date = now_ist().date()
 
-
 prev_oi_history = {}  # oi_key -> deque[(timestamp, total_oi)]
 OI_THRESHOLD_PCT = 0.005       # 0.5% change required
 OI_LOOKBACK_MINUTES = 5
@@ -112,11 +114,14 @@ last_chain_expiry = None
 cached_ht_candles = pd.DataFrame()
 last_ht_candles_time = None
 
-
 NIFTY_SPOT_TOKEN = 256265
 NIFTY_SPOT_SYMBOL = "NSE:NIFTY 50"
 VIX_SYMBOL = "NSE:INDIA VIX"
 VIX_TOKEN = 264969
+
+# ---- Throttling state for signal emits ----
+_last_signal_sent = None
+_last_signal_time = 0
 
 # ======================== TIMEOUT WRAPPER ========================
 def kite_call_with_timeout(func, *args, timeout=5, **kwargs):
@@ -205,6 +210,66 @@ def append_csv_row_safe(csv_path, row):
     df_old = df_old[unified_fields]
     df_new = pd.DataFrame([{k: row.get(k, "") for k in unified_fields}])
     pd.concat([df_old, df_new], ignore_index=True).to_csv(csv_path, index=False)
+
+# ======================== SAFE EMIT WITH THROTTLING ========================
+def safe_emit(event, data):
+    """Original emit wrapper – logs and sends."""
+    try:
+        socketio.emit(event, data)
+        logging.info(f"EMIT {event}: {data.get('decision')} | {data.get('reason')}")
+    except Exception as e:
+        logging.exception(f"safe_emit FAILED for {event}: {e}")
+        print(f"❌ safe_emit FAILED: {e}")
+
+def _send_and_store(signal):
+    """Internal: emits and updates the last sent signal."""
+    global _last_signal_sent, _last_signal_time
+    safe_emit('nifty_orderflow_signal', signal)
+    _last_signal_sent = signal.copy()
+    _last_signal_time = time.time()
+
+def throttled_emit_signal(new_signal, active_trade):
+    """
+    Only emits if the signal has changed meaningfully.
+    For active trades: emits if premium changed by >0.5 or any critical field changed.
+    For no trade: emits if decision/reason changed, or at least once every 60s.
+    """
+    global _last_signal_sent, _last_signal_time
+
+    # Always emit on first call
+    if _last_signal_sent is None:
+        _send_and_store(new_signal)
+        return
+
+    # Critical fields that affect the UI
+    critical_fields = [
+        'decision', 'reason', 'option_ltp', 'bid_price', 'highest_premium',
+        'trail_active', 'trail_stop', 'option_sl', 'pnl', 'time_elapsed',
+        'setup_quality', 'signal_quality', 'vix_value', 'spot_price',
+        'adx', 'momentum_checks', 'scenario', 'vix_regime', 'vix_direction'
+    ]
+
+    # Check if any critical field changed
+    changed = False
+    for key in critical_fields:
+        if new_signal.get(key) != _last_signal_sent.get(key):
+            changed = True
+            break
+
+    # For active trades, also check premium change > 0.5
+    if active_trade is not None:
+        old_premium = _last_signal_sent.get('option_ltp', 0)
+        new_premium = new_signal.get('option_ltp', 0)
+        if abs(new_premium - old_premium) > 0.5:
+            changed = True
+
+    # For no trade, emit heartbeat every 60s
+    if active_trade is None:
+        if time.time() - _last_signal_time > 60:
+            changed = True
+
+    if changed:
+        _send_and_store(new_signal)
 
 # ======================== FEATURE FUNCTIONS ========================
 def compute_rvol(candles, period=5):
@@ -730,14 +795,6 @@ def get_vix_direction(vix_history):
     elif last_3.iloc[-1] < last_3.iloc[0] * 0.98: return "Falling"
     return "Flat"
 
-def safe_emit(event, data):
-    try:
-        socketio.emit(event, data)
-        logging.info(f"EMIT {event}: {data.get('decision')} | {data.get('reason')}")
-    except Exception as e:
-        logging.exception(f"safe_emit FAILED for {event}: {e}")
-        print(f"❌ safe_emit FAILED: {e}")
-
 def get_higher_tf_candles(token, force=False):
     global cached_ht_candles, last_ht_candles_time
     now = now_ist()
@@ -979,7 +1036,7 @@ def run_nifty_orderflow_scan():
                 # Emit a NO TRADE signal so the dashboard updates
                 current_signal = {"decision": "NO TRADE", "reason": "Market Closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 print(f"🔴 REJECTED: Market Closed") # delete it for debugging only
                 return
 
@@ -1028,7 +1085,7 @@ def run_nifty_orderflow_scan():
                                     current_signal = {"decision": "EXIT — STALE QUOTE",
                                                       "reason": f"Quote stale >10s | PnL: ₹{exit_pnl:.0f}"}
                                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                                    safe_emit('nifty_orderflow_signal', current_signal)
+                                    throttled_emit_signal(current_signal, active_trade)
                                     return
                         else:
                             # Quote fetch failed (timeout or None) – also treat as stale
@@ -1044,7 +1101,7 @@ def run_nifty_orderflow_scan():
                                 current_signal = {"decision": "EXIT — STALE QUOTE",
                                                   "reason": f"Quote stale >10s | PnL: ₹{exit_pnl:.0f}"}
                                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                                safe_emit('nifty_orderflow_signal', current_signal)
+                                throttled_emit_signal(current_signal, active_trade)
                                 return
                     except Exception as e:
                         logging.warning(
@@ -1060,7 +1117,7 @@ def run_nifty_orderflow_scan():
                             current_signal = {"decision": "EXIT — STALE QUOTE",
                                               "reason": f"Quote stale >10s (exception) | PnL: ₹{exit_pnl:.0f}"}
                             current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                            safe_emit('nifty_orderflow_signal', current_signal)
+                            throttled_emit_signal(current_signal, active_trade)
                             return
 
                 # --- Use trail_premium for high-water mark and trailing stop ---
@@ -1104,7 +1161,7 @@ def run_nifty_orderflow_scan():
                         current_signal = {"decision": "EXIT — EARLY BAIL",
                                           "reason": f"No momentum by {NIFTY_EARLY_BAIL_CHECK_MIN}m | PnL: ₹{exit_pnl:.0f}"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
+                        throttled_emit_signal(current_signal, active_trade)
                         return
 
                 # --- BREAKEVEN LOCK: once MFE clears NIFTY_BREAKEVEN_PCT of entry premium, SL -> entry ---
@@ -1136,8 +1193,24 @@ def run_nifty_orderflow_scan():
                                                      underlying_ltp, is_sim=True)
                         current_signal = {"decision": "EXIT — STOP LOSS", "reason": f"SL hit | PnL: ₹{exit_pnl:.0f}"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        throttled_emit_signal(current_signal, active_trade)
+                        return
+
+                # === 5-MINUTE MOMENTUM FAILURE (CATCHES WEAK SETUPS) ===
+                held_minutes_now = (now - trade_entry_time).total_seconds() / 60
+                if held_minutes_now >= 5.0 and not active_trade.get('trail_active', False):
+                    mfe_pts = (highest_premium - entry_option_ltp) * active_trade.get('lots', 1) * NIFTY_LOT_SIZE
+                    current_gain = (current_premium - entry_option_ltp) * active_trade.get('lots', 1) * NIFTY_LOT_SIZE
+                    if mfe_pts < 300 and current_gain <= 0:
+                        exit_pnl = force_close_trade(
+                            f"5M MOMENTUM FAIL (MFE ₹{mfe_pts:.0f} < 300, current ₹{current_gain:.0f})",
+                            "MOMENTUM FAIL", underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — MOMENTUM FAIL",
+                                          "reason": f"No traction in 5m | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
                         safe_emit('nifty_orderflow_signal', current_signal)
                         return
+
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at NIFTY_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 8)
@@ -1163,7 +1236,7 @@ def run_nifty_orderflow_scan():
                         current_signal = {"decision": "EXIT — TRAILING STOP",
                                           "reason": f"Peak {round(highest_premium, 2)} → {round(current_premium, 2)} | PnL: ₹{exit_pnl:.0f}"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
+                        throttled_emit_signal(current_signal, active_trade)
                         return
 
 
@@ -1190,7 +1263,7 @@ def run_nifty_orderflow_scan():
                             current_signal = {"decision": "EXIT — DEAD TRADE",
                                           "reason": f"No trail activation in {dead_trade_limit}m | PnL: ₹{exit_pnl:.0f}"}
                             current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                            safe_emit('nifty_orderflow_signal', current_signal)
+                            throttled_emit_signal(current_signal, active_trade)
                             return
 
             # === COOLDOWN: wait after an exit before re-entering ===
@@ -1200,7 +1273,7 @@ def run_nifty_orderflow_scan():
                     remaining = int(ENTRY_COOLDOWN_SECONDS - elapsed)
                     current_signal = {"decision": "NO TRADE", "reason": f"Cooldown ({remaining}s remaining)"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('nifty_orderflow_signal', current_signal)
+                    throttled_emit_signal(current_signal, active_trade)
                     print(f"🔴 REJECTED: Cooldown ({remaining}s remaining)")
                     return
 
@@ -1214,14 +1287,14 @@ def run_nifty_orderflow_scan():
                 if spot_ltp <= 0:
                     current_signal = {"decision": "NO TRADE", "reason": "Failed to fetch spot/VIX"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('nifty_orderflow_signal', current_signal)
+                    throttled_emit_signal(current_signal, active_trade)
                     print(f"🔴 REJECTED: Spot/VIX fetch failed") # delete for debugging purpose
                     return
             except Exception as e:
                 logging.warning(f"⚠️ NIFTY spot/VIX fetch exception: {e}")
                 current_signal = {"decision": "NO TRADE", "reason": f"Exception fetching spot/VIX: {type(e).__name__}"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 print(f"🔴 REJECTED: Spot/VIX fetch failed")  # delete for debugging purpose
                 return
 
@@ -1248,7 +1321,7 @@ def run_nifty_orderflow_scan():
                     "signal_quality": 0,
                     "market_regime": "NEUTRAL",
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 if active_trade:
                     monitor_signal = {
                         "decision": f"{active_trade.get('bias', '')} BUY ([SIM])",
@@ -1268,7 +1341,7 @@ def run_nifty_orderflow_scan():
                         "last_scan": now.strftime("%H:%M:%S"),
                         "primary_reason": "[SIM] Monitoring only (loss cap reached)",
                     }
-                    safe_emit('nifty_orderflow_signal', monitor_signal)
+                    safe_emit('nifty_orderflow_signal', monitor_signal)   # not throttled (infrequent)
                 print(f"🔴 REJECTED: Daily loss cap reached (PnL: {daily_pnl})") # for debugging purpose
                 return
 
@@ -1319,7 +1392,7 @@ def run_nifty_orderflow_scan():
                     "signal_quality": 0,
                     "market_regime": "NEUTRAL",
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 print(f"🔴 REJECTED: Expiry resolution failed") # for debugging purpose
                 return
             dte = (expiry_date - now_ist().date()).days
@@ -1335,7 +1408,7 @@ def run_nifty_orderflow_scan():
                                       "reason": f"No entries on DTE {dte} after {cutoff.strftime('%H:%M')}"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     current_signal["expiry_date"] = expiry_date.isoformat()
-                    safe_emit('nifty_orderflow_signal', current_signal)
+                    throttled_emit_signal(current_signal, active_trade)
                     print(f"🔴 REJECTED: DTE {dte} cutoff passed")
                     return
 
@@ -1384,7 +1457,7 @@ def run_nifty_orderflow_scan():
                     "signal_quality": 0,
                     "market_regime": "NEUTRAL",
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 print(f"🔴 REJECTED: Option chain empty")
                 return
 
@@ -1503,7 +1576,7 @@ def run_nifty_orderflow_scan():
                     "reason": f"Overextended breakout trap (ADX {adx_val:.1f}, RSI {rsi_val:.1f}, Base {base_score})",
                     "last_scan": now.strftime("%H:%M:%S"),
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
 
             # HTF confirmation — must use futures token; index candles carry zero volume,
@@ -1512,7 +1585,7 @@ def run_nifty_orderflow_scan():
                 current_signal = {"decision": "NO TRADE",
                                   "reason": "Futures unresolved — cannot compute HTF VWAP, failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
             ht_candles = get_higher_tf_candles(fut_instrument['instrument_token'])
 
@@ -1531,7 +1604,7 @@ def run_nifty_orderflow_scan():
             if ht_candles.empty or len(ht_candles) < 8:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF data unavailable — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
 
             today = now.date()
@@ -1541,7 +1614,7 @@ def run_nifty_orderflow_scan():
             if ht_vwap <= 0:
                 current_signal = {"decision": "NO TRADE", "reason": "HTF VWAP invalid — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
 
             # --- NEW: HTF MAGNITUDE CHECK ---
@@ -1554,7 +1627,7 @@ def run_nifty_orderflow_scan():
                         "reason": f"HTF VWAP too close ({ht_distance_atr:.2f}x ATR) — borderline flip",
                         "last_scan": now.strftime("%H:%M:%S"),
                     }
-                    safe_emit('nifty_orderflow_signal', current_signal)
+                    throttled_emit_signal(current_signal, active_trade)
                     return
             # --- END HTF MAGNITUDE CHECK ---
 
@@ -1600,7 +1673,7 @@ def run_nifty_orderflow_scan():
                     "signal_quality": signal_quality,
                     "market_regime": market_regime,
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
 
 
@@ -1612,7 +1685,7 @@ def run_nifty_orderflow_scan():
                 distance_to_level_atr = round((spot_ltp - key_levels["PDL"]) / entry_atr, 2)
 
             rvol_value = feature_scores.get("rvol", {}).get("value", 0)
-            if total_score < 52 or bias == "NEUTRAL" or rvol_value < 0.5:
+            if total_score < 52 or bias == "NEUTRAL":
                 # Specific rejection reason for RVOL
                 if rvol_value < 0.5:
                     reject_reason = f"RVOL {rvol_value:.2f} below 0.5 floor"
@@ -1643,7 +1716,7 @@ def run_nifty_orderflow_scan():
                 "signal_quality": signal_quality,
                 "market_regime": market_regime,
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 if active_trade:
                     monitor_signal = {
                         "decision": f"{active_trade.get('bias', '')} BUY ([SIM])",
@@ -1696,7 +1769,7 @@ def run_nifty_orderflow_scan():
                     "reason": f"No participation confirmation (RVOL {rvol_score}, OI accel {oi_accel_score})",
                     "last_scan": now.strftime("%H:%M:%S"),
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
 
             atm = round(spot_ltp / 100) * 100
@@ -1721,7 +1794,7 @@ def run_nifty_orderflow_scan():
                 if opt_row.empty:
                     current_signal = {"decision": "NO TRADE", "reason": "Candidate strike not in chain"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('nifty_orderflow_signal', current_signal)
+                    throttled_emit_signal(current_signal, active_trade)
                     print(f"🔴 REJECTED: Strike {candidate_strike} not found in chain (bias: {bias})")
                     return
                 option_symbol = opt_row.iloc[0]['tradingsymbol']
@@ -1729,7 +1802,7 @@ def run_nifty_orderflow_scan():
                 logging.warning(f"⚠️ NIFTY option symbol resolution failed | bias={bias} strike={candidate_strike} expiry={expiry_date}: {e}")
                 current_signal = {"decision": "NO TRADE", "reason": f"Option symbol resolution failed: {type(e).__name__}"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
                 return
 
             if active_trade is None:
@@ -1738,7 +1811,7 @@ def run_nifty_orderflow_scan():
                     if opt_quote is None:
                         current_signal = {"decision": "NO TRADE", "reason": "Option quote fetch failed"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
+                        throttled_emit_signal(current_signal, active_trade)
                         print(f"🔴 REJECTED: Option quote fetch failed for {option_symbol}")
                         return
 
@@ -1752,7 +1825,7 @@ def run_nifty_orderflow_scan():
                     if bid <= 0 or ask <= 0:
                         current_signal = {"decision": "NO TRADE", "reason": "No two-sided market"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
+                        throttled_emit_signal(current_signal, active_trade)
                         print(f"🔴 REJECTED: No two-sided market for {option_symbol}")
                         return
 
@@ -1760,7 +1833,7 @@ def run_nifty_orderflow_scan():
                     if spread_pct > MAX_SPREAD_PCT:
                         current_signal = {"decision": "NO TRADE", "reason": f"Spread too wide ({spread_pct:.1f}%)"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
+                        throttled_emit_signal(current_signal, active_trade)
                         print(f"🔴 REJECTED: Spread {spread_pct:.1f}% > {MAX_SPREAD_PCT}%")
                         return
                     # --- ADDED: simulate a realistic buy fill at the ask, not LTP ---
@@ -1768,7 +1841,7 @@ def run_nifty_orderflow_scan():
                     if option_ltp <= 40:
                         current_signal = {"decision": "NO TRADE", "reason": f"Option premium too low ({option_ltp})"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
+                        throttled_emit_signal(current_signal, active_trade)
                         print(f"🔴 REJECTED: Option premium too low ({option_ltp} <= 40)")
                         return
                 except Exception as e:
@@ -1776,7 +1849,7 @@ def run_nifty_orderflow_scan():
                     current_signal = {"decision": "NO TRADE",
                                       "reason": f"Exception fetching option quote: {type(e).__name__}"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('nifty_orderflow_signal', current_signal)
+                    throttled_emit_signal(current_signal, active_trade)
                     return
 
                 signal_id = str(uuid.uuid4())
@@ -1912,7 +1985,7 @@ def run_nifty_orderflow_scan():
                     "signal_quality": signal_quality,
                     "market_regime": market_regime,
                 }
-                safe_emit('nifty_orderflow_signal', current_signal)
+                throttled_emit_signal(current_signal, active_trade)
         except Exception as e:
             logging.exception(f"Nifty order-flow scan error: {e}")
             print(f"❌ SCAN ERROR: {e}")

@@ -1,5 +1,5 @@
-# === NIFTY ORDER-FLOW BUYER ENGINE v2.9 (SHADOW MODE) ===
-# v2.9:
+# === NIFTY ORDER-FLOW BUYER ENGINE v2.11 (SHADOW MODE) ===
+# v2.11:
 #   - Full dashboard fields added (dte, vix, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
 #   - All previous fixes retained (exit-checks unconditional, caching, etc.)
@@ -51,14 +51,18 @@ NIFTY_TRAIL_ACTIVATION = 8
 NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry premium
 NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
 NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
-NIFTY_DEAD_TRADE_MINUTES = 18   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
+NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
 NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
+NIFTY_EARLY_BAIL_ENABLED = True
+NIFTY_EARLY_BAIL_CHECK_MIN = 4
+NIFTY_EARLY_BAIL_MFE_FLOOR = 150
+NIFTY_TRAIL_MIN_RETAIN_PCT = 0.55
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.9"
+STRATEGY_VERSION = "v2.12"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -178,6 +182,13 @@ def append_csv_row_safe(csv_path, row):
     with open(csv_path, 'r', newline='') as f:
         existing_header = next(csv.reader(f), [])
 
+    if not existing_header:
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=list(row.keys()))
+            writer.writeheader()
+            writer.writerow(row)
+        return
+
     if list(row.keys()) == existing_header:
         with open(csv_path, 'a', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=existing_header)
@@ -285,7 +296,7 @@ def compute_strike_rotation(chain_df, spot):
     reason = f"Strike rotation {rotation}" if abs(rotation) >= 50 else "No significant rotation"
     return {"value": rotation, "score": score, "reason": reason}
 
-def compute_option_wall(chain_df, option_type):
+def compute_option_wall(chain_df, option_type, spot_price, atr):
     if chain_df.empty:
         return {"strike": None, "oi": 0, "score": 0, "reason": "no chain"}
     wall_df = chain_df[chain_df['instrument_type'] == option_type]
@@ -294,11 +305,17 @@ def compute_option_wall(chain_df, option_type):
     max_oi_row = wall_df.loc[wall_df['oi'].idxmax()]
     strike = max_oi_row['strike']
     oi = max_oi_row['oi']
-    score = 5
-    reason = f"Option wall at {strike}"
+    distance_atr = abs(spot_price - strike) / atr if atr > 0 else 999
+    if distance_atr <= 1.0:
+        score = 5
+        reason = f"Option wall at {strike} ({distance_atr:.2f}x ATR away)"
+    else:
+        score = 0
+        reason = f"Option wall at {strike} too far ({distance_atr:.2f}x ATR)"
+
     return {"strike": strike, "oi": oi, "score": score, "reason": reason}
 
-def compute_breakout_acceptance(candles, key_levels):
+def compute_breakout_acceptance(candles, key_levels, bias=None):
     if candles.empty or len(candles) < 2:
         return {"value": 0, "score": 0, "reason": "no data"}
     pdh = key_levels.get("PDH")
@@ -308,11 +325,21 @@ def compute_breakout_acceptance(candles, key_levels):
     close = candles['close'].iloc[-1]
     high = candles['high'].iloc[-1]
     low = candles['low'].iloc[-1]
-    if high > pdh and close > pdh * 0.998:
-        return {"value": 1, "score": 10, "reason": "Breakout above PDH accepted"}
-    elif low < pdl and close < pdl * 1.002:
-        return {"value": 1, "score": 10, "reason": "Breakout below PDL accepted"}
-    return {"value": 0, "score": 0, "reason": "No breakout"}
+
+    if bias == "CALL":
+        if high > pdh and close > pdh * 0.998:
+            return {"value": 1, "score": 15, "reason": "Breakout above PDH accepted"} if close > pdh * 1.003 else {
+                "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
+        return {"value": 0, "score": 0, "reason": "No PDH breakout to support CALL bias"}
+
+    if bias == "PUT":
+        if low < pdl and close < pdl * 1.002:
+            return {"value": 1, "score": 15, "reason": "Breakout below PDL accepted"} if close < pdl * 0.997 else {
+                "value": 0, "score": 0, "reason": "Breakout too shallow to confirm"}
+        return {"value": 0, "score": 0, "reason": "No PDL breakout to support PUT bias"}
+
+    return {"value": 0, "score": 0, "reason": "No breakout (bias not yet resolved)"}
+
 
 def compute_market_regime(candles, atr, vwap):
     if candles.empty:
@@ -372,7 +399,7 @@ def log_score_distribution(now, total_score, base_score, bonus, interaction_bonu
     score_log_path = os.path.join(LOG_DIR, "nifty_score_distribution.csv")
     try:
         with _score_lock:
-            write_header = not os.path.exists(score_log_path)
+            write_header = not os.path.exists(score_log_path) or os.path.getsize(score_log_path) == 0
             with open(score_log_path, 'a', newline='') as f:
                 writer = csv.writer(f)
                 if write_header:
@@ -400,6 +427,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     reasons = []
     score = 0
     bias = "NEUTRAL"
+    adx_for_log = 0
 
     # --- ADDED: swap in futures volume, keep spot price/levels untouched ---
     if volume_candles is not None and len(volume_candles) == len(candles):
@@ -412,18 +440,18 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     if vwap is not None and vwap > 0:
         price = candles['close'].iloc[-1]
         if price > vwap:
-            score += 20
+            score += 10
             bias = "CALL" if bias == "NEUTRAL" else bias
             reasons.append("Price above VWAP")
         else:
-            score += 10
+            score += 20
             bias = "PUT" if bias == "NEUTRAL" else bias
             reasons.append("Price below VWAP")
     oi_class = "NEUTRAL"
     if oi_chg != 0:
         if price_chg > 0 and oi_chg > 0:
             oi_class = "FRESH_LONGS"
-            score += 20
+            score += 15
             bias = "CALL" if bias != "PUT" else bias
             reasons.append("Fresh longs building")
         elif price_chg > 0 and oi_chg < 0:
@@ -433,7 +461,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
             reasons.append("Short covering")
         elif price_chg < 0 and oi_chg > 0:
             oi_class = "FRESH_SHORTS"
-            score += 20
+            score += 15
             bias = "PUT" if bias != "CALL" else bias
             reasons.append("Fresh shorts building")
         elif price_chg < 0 and oi_chg < 0:
@@ -448,11 +476,13 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
         poc = poc_bin.mid if hasattr(poc_bin, 'mid') else None
         if poc is not None:
             price = candles['close'].iloc[-1]
-            if price > poc * 0.995:
-                score += 15
+            if price > poc * 0.995 and price < poc * 1.005:
+                score += 5
                 reasons.append("Price near POC")
             else:
-                score += 5
+                score += 15
+                reasons.append("Price away from POC")
+
     if len(candles) >= 5:
         high = candles['high'].iloc[-1]
         close = candles['close'].iloc[-1]
@@ -490,6 +520,7 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
             denom = (di_plus + di_minus).replace(0, 1)
             dx = 100 * (di_plus - di_minus).abs() / denom
             adx = dx.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
+            adx_for_log = adx
 
             delta = close.diff()
             gain = delta.clip(lower=0).ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
@@ -510,14 +541,13 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
                 score -= 10
                 reasons.append("ADX overextended – late entry risk")
             elif adx < 20:
-                score -= 5
-                reasons.append("Weak trend – cautious")
+                pass  # neutral — n=7 sample showed no evidence this band deserves a penalty
 
 
     score = max(0, min(100, score))
     if bias == "NEUTRAL":
         bias = "CALL" if score > 50 else "PUT" if score > 40 else "NEUTRAL"
-    return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons}
+    return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons, "adx": adx_for_log}
 
 # ======================== NIFTY HELPERS ========================
 def get_nfo_instruments(force=False):
@@ -760,85 +790,98 @@ def get_key_levels(df_daily, df_intraday):
 # ======================== FORCE CLOSE ========================
 def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None, is_sim=False):
     global trade_entry_time, entry_option_ltp, active_trade, daily_pnl, last_exit_time
-    if trade_entry_time is None or active_trade is None or entry_option_ltp is None:
-        trade_entry_time = entry_option_ltp = active_trade = None
-        save_state()
-        return 0
 
-    exit_ltp = active_trade.get('option_ltp', entry_option_ltp)
-    if active_trade.get('symbol'):
+    with state_lock:
+        if trade_entry_time is None or active_trade is None or entry_option_ltp is None:
+            trade_entry_time = entry_option_ltp = active_trade = None
+            save_state()
+            return 0
+        # Snapshot + clear atomically so a concurrent caller (e.g. the manual
+        # force_exit socket handler) can never race this thread to the same
+        # active_trade. Slow work below (network quote, file I/O) reads the
+        # local snapshot only, so it no longer holds the lock while blocked on I/O.
+        trade_snap = active_trade
+        entry_snap = entry_option_ltp
+        entry_time_snap = trade_entry_time
+        trade_entry_time = entry_option_ltp = active_trade = None
+
+    exit_ltp = trade_snap.get('option_ltp', entry_snap)
+    if trade_snap.get('symbol'):
         try:
-            q = kite_call_with_timeout(kite.quote, [f"NFO:{active_trade['symbol']}"])
+            q = kite_call_with_timeout(kite.quote, [f"NFO:{trade_snap['symbol']}"])
             if q is None:
                 q = {}
-            depth = q.get(f"NFO:{active_trade['symbol']}", {}).get('depth', {})
+            depth = q.get(f"NFO:{trade_snap['symbol']}", {}).get('depth', {})
             fresh_bid = depth.get('buy', [{}])[0].get('price', 0)
             if fresh_bid > 0:
                 exit_ltp = fresh_bid  # simulate a realistic sell fill at the bid
             else:
-                fresh = q.get(f"NFO:{active_trade['symbol']}", {}).get('last_price')
+                fresh = q.get(f"NFO:{trade_snap['symbol']}", {}).get('last_price')
                 if fresh and fresh > 0:
                     exit_ltp = fresh
-                    logging.warning(f"⚠️ NIFTY no bid price for {active_trade.get('symbol')}, falling back to LTP")
+                    logging.warning(f"⚠️ NIFTY no bid price for {trade_snap.get('symbol')}, falling back to LTP")
         except Exception as e:
             logging.warning(
-                f"⚠️ NIFTY fresh exit-price fetch failed for {active_trade.get('symbol')} — using last known price {exit_ltp} for PnL calc: {e}")
+                f"⚠️ NIFTY fresh exit-price fetch failed for {trade_snap.get('symbol')} — using last known price {exit_ltp} for PnL calc: {e}")
 
-    lots = active_trade.get('lots', 1)
-    entry = entry_option_ltp
+    lots = trade_snap.get('lots', 1)
+    entry = entry_snap
     exit_pnl = (exit_ltp - entry) * lots * NIFTY_LOT_SIZE
-    daily_pnl += exit_pnl
+    with state_lock:
+        daily_pnl += exit_pnl
+        daily_pnl_snap = daily_pnl
 
-    highest = active_trade.get('highest_premium', entry)
-    lowest = active_trade.get('lowest_premium', entry)
+    highest = trade_snap.get('highest_premium', entry)
+    lowest = trade_snap.get('lowest_premium', entry)
     mfe_pts = (highest - entry) * lots * NIFTY_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * NIFTY_LOT_SIZE)
 
-    sl_price = active_trade.get('sl_price', entry * (1 - NIFTY_SL_PCT))
+    sl_price = trade_snap.get('sl_price', entry * (1 - NIFTY_SL_PCT))
     risk_per_lot = abs(entry - sl_price) * NIFTY_LOT_SIZE
     r_multiple = exit_pnl / risk_per_lot if risk_per_lot != 0 else 0
 
     prefix = "[SIM] " if is_sim else ""
-    logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl:.0f} | R: {r_multiple:.2f}")
+    logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl_snap:.0f} | R: {r_multiple:.2f}")
 
     log_json("TRADE_CLOSED", {
-        "signal_id": active_trade.get('signal_id'),
+        "signal_id": trade_snap.get('signal_id'),
         "strategy_version": STRATEGY_VERSION,
-        "entry_time": trade_entry_time.isoformat() if trade_entry_time else "",
+        "entry_time": entry_time_snap.isoformat() if entry_time_snap else "",
         "exit_time": now_ist().isoformat(),
-        "bias": active_trade.get('bias', ''),
-        "strike": active_trade.get('strike', ''),
-        "symbol": active_trade.get('symbol', ''),
+        "bias": trade_snap.get('bias', ''),
+        "strike": trade_snap.get('strike', ''),
+        "symbol": trade_snap.get('symbol', ''),
         "entry_price": entry,
         "exit_price": exit_ltp,
-        "underlying_entry": active_trade.get('underlying_ltp', 0),
+        "underlying_entry": trade_snap.get('underlying_ltp', 0),
         "underlying_exit": underlying_ltp if underlying_ltp else 0,
         "pnl": exit_pnl,
         "r_multiple": round(r_multiple, 2),
         "mfe_pts": round(mfe_pts, 2),
         "mae_pts": round(mae_pts, 2),
-        "holding_minutes": round((now_ist() - trade_entry_time).total_seconds() / 60, 1),
+        "holding_minutes": round((now_ist() - entry_time_snap).total_seconds() / 60, 1),
         "exit_reason": reason_tag,
-        "daily_pnl": daily_pnl,
-        "market_regime": active_trade.get('market_regime', ''),
-        "signal_quality": active_trade.get('signal_quality', 0),
-        "breakeven_locked": active_trade.get('breakeven_locked', False),
-        "trail_activated": active_trade.get('trail_active', False),
-        "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
-        "rsi": active_trade.get('rsi', 0),
-        "entry_atr": active_trade.get('entry_atr', 0),
-        "vix_value": active_trade.get('vix_value', 0),
-        "feature_scores": active_trade.get('feature_scores'),
-        "dte": active_trade.get('dte'),
-        "dead_trade_minutes": active_trade.get('dead_trade_minutes'),
-        "adx": active_trade.get('adx'),
+        "daily_pnl": daily_pnl_snap,
+        "market_regime": trade_snap.get('market_regime', ''),
+        "signal_quality": trade_snap.get('signal_quality', 0),
+        "breakeven_locked": trade_snap.get('breakeven_locked', False),
+        "trail_activated": trade_snap.get('trail_active', False),
+        "entry_spread_pct": trade_snap.get('entry_spread_pct', 0),
+        "rsi": trade_snap.get('rsi', 0),
+        "entry_atr": trade_snap.get('entry_atr', 0),
+        "vix_value": trade_snap.get('vix_value', 0),
+        "feature_scores": trade_snap.get('feature_scores'),
+        "dte": trade_snap.get('dte'),
+        "dead_trade_minutes": trade_snap.get('dead_trade_minutes'),
+        "adx": trade_snap.get('adx'),
         "is_sim": is_sim
     })
 
     try:
-        regime = active_trade.get('market_regime', 'UNKNOWN')
+        regime = trade_snap.get('market_regime', 'UNKNOWN')
         regime_file = os.path.join(LOG_DIR, "nifty_regime_performance.csv")
-        regime_exists = os.path.exists(regime_file)
+
+        regime_exists = os.path.exists(regime_file) and os.path.getsize(regime_file) > 0
         if regime_exists:
             df_reg = pd.read_csv(regime_file)
         else:
@@ -854,12 +897,15 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         else:
             new_row = {"regime": regime, "trades": 1, "wins": 1 if exit_pnl > 0 else 0,
                        "win_rate": 1 if exit_pnl > 0 else 0, "avg_pnl": exit_pnl}
-            df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
+            if df_reg.empty:
+                df_reg = pd.DataFrame([new_row])
+            else:
+                df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
+
         df_reg.to_csv(regime_file, index=False)
     except Exception as e:
         logging.warning(f"Regime stats update failed: {e}")
 
-    trade_entry_time = entry_option_ltp = active_trade = None
     last_exit_time = now_ist()
     save_state()
     return exit_pnl
@@ -1028,6 +1074,39 @@ def run_nifty_orderflow_scan():
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
 
+                lots_now = active_trade.get('lots', 1)
+                held_minutes_now = (now - trade_entry_time).total_seconds() / 60
+                running_mfe = (highest_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE
+                running_mae = max(0, (entry_option_ltp - lowest_premium)) * lots_now * NIFTY_LOT_SIZE
+                # log_json("TRADE_TICK", {
+                    # "signal_id": active_trade.get('signal_id'),
+                    # "held_minutes": round(held_minutes_now, 2),
+                    # "unrealized_pnl": round((current_premium - entry_option_ltp) * lots_now * NIFTY_LOT_SIZE, 2),
+                    # "running_mfe": round(running_mfe, 2),
+                    # "running_mae": round(running_mae, 2),
+                # })
+
+                if (held_minutes_now >= NIFTY_EARLY_BAIL_CHECK_MIN
+                        and running_mfe < NIFTY_EARLY_BAIL_MFE_FLOOR
+                        and not active_trade.get('trail_active', False)
+                        and not active_trade.get('early_bail_logged', False)):
+                    active_trade['early_bail_logged'] = True
+                    # log_json("EARLY_BAIL_SIGNAL", {
+                    #    "signal_id": active_trade.get('signal_id'),
+                    #    "held_minutes": round(held_minutes_now, 1),
+                    #    "running_mfe": round(running_mfe, 2),
+                    #    "would_exit": NIFTY_EARLY_BAIL_ENABLED,
+                    # })
+                    if NIFTY_EARLY_BAIL_ENABLED:
+                        exit_pnl = force_close_trade(
+                            f"EARLY BAIL (MFE ₹{running_mfe:.0f} < ₹{NIFTY_EARLY_BAIL_MFE_FLOOR} @ {held_minutes_now:.1f}m)",
+                            "EARLY BAIL", active_trade.get('underlying_ltp'), is_sim=True)
+                        current_signal = {"decision": "EXIT — EARLY BAIL",
+                                          "reason": f"No momentum by {NIFTY_EARLY_BAIL_CHECK_MIN}m | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('nifty_orderflow_signal', current_signal)
+                        return
+
                 # --- BREAKEVEN LOCK: once MFE clears NIFTY_BREAKEVEN_PCT of entry premium, SL -> entry ---
                 if not active_trade.get('breakeven_locked', False):
                     breakeven_trigger = entry_option_ltp * NIFTY_BREAKEVEN_PCT
@@ -1063,12 +1142,7 @@ def run_nifty_orderflow_scan():
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at NIFTY_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 8)
                 mfe = highest_premium - entry_option_ltp
-                if mfe >= base_trail * 2.5:
-                    trail_distance = max(NIFTY_TRAIL_FLOOR, base_trail * 0.5)
-                elif mfe >= base_trail * 1.5:
-                    trail_distance = max(NIFTY_TRAIL_FLOOR, base_trail * 0.7)
-                else:
-                    trail_distance = base_trail
+                trail_distance = max(NIFTY_TRAIL_FLOOR, min(base_trail, mfe * (1 - NIFTY_TRAIL_MIN_RETAIN_PCT)))
 
                 active_trade['trail_distance'] = trail_distance
                 activation_threshold = active_trade.get('activation_threshold', NIFTY_TRAIL_ACTIVATION)
@@ -1076,6 +1150,9 @@ def run_nifty_orderflow_scan():
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
                         active_trade['trail_active'] = True
+                        if not active_trade.get('breakeven_locked', False):
+                            active_trade['sl_price'] = max(active_trade.get('sl_price', entry_option_ltp * (1 - NIFTY_SL_PCT)), entry_option_ltp)
+                            active_trade['breakeven_locked'] = True
 
                 # --- TRAILING STOP EXIT (only if trail is active) ---
                 if active_trade.get('trail_active', False):
@@ -1097,14 +1174,24 @@ def run_nifty_orderflow_scan():
                     minutes_in_trade = (now - trade_entry_time).total_seconds() / 60
                     dead_trade_limit = active_trade.get('dead_trade_minutes', NIFTY_DEAD_TRADE_MINUTES)
                     if minutes_in_trade >= dead_trade_limit:
-                        exit_pnl = force_close_trade(
+                        current_premium = active_trade.get('trail_premium', entry_option_ltp)
+                        # If the trade is in profit, move SL to breakeven and let it run.
+                        if current_premium > entry_option_ltp:
+                            active_trade['sl_price'] = max(active_trade.get('sl_price', entry_option_ltp),
+                                                           entry_option_ltp)
+                            active_trade['breakeven_locked'] = True
+                            logging.info(
+                                f"🔒 Dead-trade lock: trade in profit after {dead_trade_limit}m – SL moved to breakeven")
+                            return
+                        else:
+                            exit_pnl = force_close_trade(
                             f"DEAD TRADE CUT ({minutes_in_trade:.1f}m / {dead_trade_limit}m limit)",
                             "DEAD TRADE", underlying_ltp, is_sim=True)
-                        current_signal = {"decision": "EXIT — DEAD TRADE",
+                            current_signal = {"decision": "EXIT — DEAD TRADE",
                                           "reason": f"No trail activation in {dead_trade_limit}m | PnL: ₹{exit_pnl:.0f}"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('nifty_orderflow_signal', current_signal)
-                        return
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('nifty_orderflow_signal', current_signal)
+                            return
 
             # === COOLDOWN: wait after an exit before re-entering ===
             if active_trade is None and last_exit_time:
@@ -1327,9 +1414,20 @@ def run_nifty_orderflow_scan():
             oi_acc = compute_oi_acceleration(dq)
             va = compute_value_area(candles_5m_vol)
             strike_rot = compute_strike_rotation(chain_df, spot_ltp)
-            call_wall = compute_option_wall(chain_df, "CE")
-            put_wall = compute_option_wall(chain_df, "PE")
-            breakout = compute_breakout_acceptance(candles_5m, key_levels)
+            call_wall = compute_option_wall(chain_df, "CE", spot_ltp, entry_atr)
+            put_wall = compute_option_wall(chain_df, "PE", spot_ltp, entry_atr)
+
+            comp = composite_score(candles_15m, price_chg, oi_chg, key_levels, volume_candles=candles_15m_vol)
+            base_score = comp["score"]
+            bias = comp["bias"]
+
+            breakout = compute_breakout_acceptance(candles_5m, key_levels, bias=bias)
+
+            # --- DEFENSIVE GUARD: ensure breakout matches bias ---
+            if breakout["value"] == 1 and bias == "PUT" and "PDH" in breakout["reason"]:
+                logging.error(f"⚠️ breakout_acceptance bias mismatch! bias={bias} reason={breakout['reason']}")
+            if breakout["value"] == 1 and bias == "CALL" and "PDL" in breakout["reason"]:
+                logging.error(f"⚠️ breakout_acceptance bias mismatch! bias={bias} reason={breakout['reason']}")
 
             feature_scores = {
                 "rvol": rvol,
@@ -1341,13 +1439,15 @@ def run_nifty_orderflow_scan():
                 "breakout_acceptance": breakout
             }
 
-            comp = composite_score(candles_15m, price_chg, oi_chg, key_levels, volume_candles=candles_15m_vol)
-            base_score = comp["score"]
-            bias = comp["bias"]
-
             bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
-            total_score = base_score + bonus + interaction_bonus
+            total_score = base_score + bonus + interaction_bonus + breakout["score"]
+
+            # --- LOGGING ONLY: would a weak-trend/no-breakout penalty have fired? ---
+            # Not applied to total_score yet — n=2 so far, tracking before deciding.
+            weak_trend_noboost = comp.get("adx", 0) < 22 and breakout["score"] == 0
+            if weak_trend_noboost:
+                logging.info(f"⚑ weak_trend_flag would fire: adx={comp.get('adx', 0):.1f}, "f"score={total_score}, rvol={rvol.get('score', 0)}")
 
             market_regime = compute_market_regime(candles_5m, entry_atr, vwap)
             signal_quality = min(100, total_score)
@@ -1368,7 +1468,6 @@ def run_nifty_orderflow_scan():
                 tr = pd.concat([high - low, (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(
                     axis=1)
                 atr = tr.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1]
-
                 dm_plus = ((high - high.shift()) > (low.shift() - low)).astype(float) * (high - high.shift()).clip(
                     lower=0)
                 dm_minus = ((low.shift() - low) > (high - high.shift())).astype(float) * (low.shift() - low).clip(
@@ -1393,6 +1492,19 @@ def run_nifty_orderflow_scan():
                 rs = 999999 if loss == 0 else gain / loss
                 rsi_val = 100 - (100 / (1 + rs))
 
+            # --- SURGICAL FILTER: Overextended Breakout Trap ---
+            # Data: ADX>35, RSI>70, Base<35, Breakout=1 is a losing pattern.
+            if (adx_val > 35 and
+                rsi_val > 70 and
+                base_score < 35 and
+                feature_scores.get("breakout_acceptance", {}).get("value", 0) == 1):
+                current_signal = {
+                    "decision": "NO TRADE",
+                    "reason": f"Overextended breakout trap (ADX {adx_val:.1f}, RSI {rsi_val:.1f}, Base {base_score})",
+                    "last_scan": now.strftime("%H:%M:%S"),
+                }
+                safe_emit('nifty_orderflow_signal', current_signal)
+                return
 
             # HTF confirmation — must use futures token; index candles carry zero volume,
             # which makes calculate_vwap() return 0 and permanently fails this check.
@@ -1432,6 +1544,20 @@ def run_nifty_orderflow_scan():
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
 
+            # --- NEW: HTF MAGNITUDE CHECK ---
+            # Require price to be at least 0.5x ATR away from 1H VWAP to avoid borderline flips.
+            if entry_atr > 0:
+                ht_distance_atr = abs(spot_ltp - ht_vwap) / entry_atr
+                if ht_distance_atr < 0.5:
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": f"HTF VWAP too close ({ht_distance_atr:.2f}x ATR) — borderline flip",
+                        "last_scan": now.strftime("%H:%M:%S"),
+                    }
+                    safe_emit('nifty_orderflow_signal', current_signal)
+                    return
+            # --- END HTF MAGNITUDE CHECK ---
+
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
                 logging.info(f"🔴 HTF mismatch ({ht_bias} vs {bias}). Hard reject — no entry.")
@@ -1456,6 +1582,23 @@ def run_nifty_orderflow_scan():
                     "decision": "NO TRADE",
                     "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
                     "last_scan": now.strftime("%H:%M:%S"),
+                    "dte": dte,
+                    "expiry_date": expiry_date.isoformat(),
+                    "vix_value": round(vix_ltp, 2),
+                    "spot_price": round(spot_ltp, 2),
+                    "scenario": compute_scenario_probs(base_score, bias),
+                    "vix_regime": vix_regime,
+                    "vix_direction": vix_direction,
+                    "adx": round(adx_val, 2),
+                    "momentum_checks": 2 if adx_val > 25 else 1 if adx_val > 20 else 0,
+                    "kills": [],
+                    "failed_criteria": [],
+                    "time_elapsed": 0,
+                    "highest_premium": 0,
+                    "trail_stop": 0,
+                    "setup_quality": base_score,
+                    "signal_quality": signal_quality,
+                    "market_regime": market_regime,
                 }
                 safe_emit('nifty_orderflow_signal', current_signal)
                 return
@@ -1468,11 +1611,19 @@ def run_nifty_orderflow_scan():
             elif bias == "PUT" and key_levels.get("PDL") and entry_atr > 0:
                 distance_to_level_atr = round((spot_ltp - key_levels["PDL"]) / entry_atr, 2)
 
-            if total_score < 52 or bias == "NEUTRAL":
-                print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < 52, Bias: {bias}")
+            rvol_value = feature_scores.get("rvol", {}).get("value", 0)
+            if total_score < 52 or bias == "NEUTRAL" or rvol_value < 0.5:
+                # Specific rejection reason for RVOL
+                if rvol_value < 0.5:
+                    reject_reason = f"RVOL {rvol_value:.2f} below 0.5 floor"
+                    print(f"🔴 REJECTED: {reject_reason}")
+                else:
+                    reject_reason = f"Entry Score {round(total_score, 1)}"
+                    print(f"🔴 REJECTED: {reject_reason}, Bias: {bias}")
+
                 current_signal = {
                 "decision": "NO TRADE",
-                "reason": f"Entry Score {round(total_score, 1)}",
+                "reason": reject_reason,
                 "last_scan": now.strftime("%H:%M:%S"),
                 "dte": dte,
                 "expiry_date": expiry_date.isoformat(),
@@ -1629,39 +1780,43 @@ def run_nifty_orderflow_scan():
                     return
 
                 signal_id = str(uuid.uuid4())
-                trade_entry_time = now
-                entry_option_ltp = option_ltp
-                active_trade = {
-                    "option_ltp": option_ltp,
-                    "highest_premium": option_ltp,
-                    "lowest_premium": option_ltp,
-                    "bias": bias,
-                    "trail_active": False,
-                    "symbol": option_symbol,
-                    "lots": 1,
-                    "strike": candidate_strike,
-                    "setup_quality": base_score,
-                    "signal_quality": signal_quality,
-                    "dte": dte,
-                    "dead_trade_minutes": NIFTY_DEAD_TRADE_MINUTES_ATM if dte <= 2 else NIFTY_DEAD_TRADE_MINUTES,
-                    "vix_value": round(vix_ltp, 2),
-                    "adx": round(adx_val, 2),
-                    "rsi": round(rsi_val, 2),
-                    "entry_spread_pct": round(spread_pct, 2),
-                    "underlying": "NIFTY",
-                    "underlying_ltp": spot_ltp,
-                    "signal_id": signal_id,
-                    "market_regime": market_regime,
-                    "sl_price": max(option_ltp * (1 - NIFTY_SL_PCT), 10.0),
-                    "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                    "trail_distance": max(8, min(25, int(entry_atr * 0.25))),
-                    "activation_threshold": max(NIFTY_TRAIL_ACTIVATION, max(8, min(25, int(entry_atr * 0.25)))),
-                    "entry_atr": round(entry_atr, 2),
-                    "distance_to_level_atr": distance_to_level_atr,
-                    "last_quote_time": now,
-                    "feature_snapshot": convert_numpy({k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()})
-                }
-                save_state()
+                with state_lock:
+                    trade_entry_time = now
+                    entry_option_ltp = option_ltp
+                    active_trade = {
+                        "option_ltp": option_ltp,
+                        "highest_premium": option_ltp,
+                        "lowest_premium": option_ltp,
+                        "bias": bias,
+                        "trail_active": False,
+                        "symbol": option_symbol,
+                        "lots": 1,
+                        "strike": candidate_strike,
+                        "setup_quality": base_score,
+                        "signal_quality": signal_quality,
+                        "dte": dte,
+                        "dead_trade_minutes": NIFTY_DEAD_TRADE_MINUTES_ATM if dte <= 2 else NIFTY_DEAD_TRADE_MINUTES,
+                        "vix_value": round(vix_ltp, 2),
+                        "adx": round(adx_val, 2),
+                        "rsi": round(rsi_val, 2),
+                        "entry_spread_pct": round(spread_pct, 2),
+                        "underlying": "NIFTY",
+                        "underlying_ltp": spot_ltp,
+                        "signal_id": signal_id,
+                        "market_regime": market_regime,
+                        "sl_price": max(option_ltp * (1 - NIFTY_SL_PCT), 10.0),
+                        "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
+                        "trail_distance": max(8, min(25, int(entry_atr * 0.25))),
+                        "activation_threshold": max(NIFTY_TRAIL_ACTIVATION, max(8, min(25, int(entry_atr * 0.25)))),
+                        "entry_atr": round(entry_atr, 2),
+                        "distance_to_level_atr": distance_to_level_atr,
+                        "last_quote_time": now,
+                        "feature_snapshot": convert_numpy(
+                            {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()})
+                    }
+                    save_state()
+                    entry_snapshot = active_trade  # local ref — safe even if another thread
+                    # clears active_trade right after lock release
 
                 log_json("TRADE_OPENED", {
                     "signal_id": signal_id,
@@ -1677,16 +1832,16 @@ def run_nifty_orderflow_scan():
                     "score_reasons": comp.get("reasons"),
                     "signal_quality": signal_quality,
                     "market_regime": market_regime,
-                    "feature_scores": active_trade['feature_scores'],
-                    "feature_snapshot": active_trade['feature_snapshot'],
+                    "feature_scores": entry_snapshot['feature_scores'],
+                    "feature_snapshot": entry_snapshot['feature_snapshot'],
                     "dte": dte,
-                    "dead_trade_minutes": active_trade.get('dead_trade_minutes'),
+                    "dead_trade_minutes": entry_snapshot.get('dead_trade_minutes'),
                     "vix": vix_ltp,
-                    "adx": active_trade.get('adx', 0),
-                    "rsi": active_trade.get('rsi', 0),
-                    "entry_spread_pct": active_trade.get('entry_spread_pct', 0),
-                    "entry_atr": active_trade.get('entry_atr', 0),
-                    "distance_to_level_atr": active_trade.get('distance_to_level_atr'),
+                    "adx": entry_snapshot.get('adx', 0),
+                    "rsi": entry_snapshot.get('rsi', 0),
+                    "entry_spread_pct": entry_snapshot.get('entry_spread_pct', 0),
+                    "entry_atr": entry_snapshot.get('entry_atr', 0),
+                    "distance_to_level_atr": entry_snapshot.get('distance_to_level_atr'),
                     "is_sim": True
                 })
                 logging.info(f"🔁 [SIM] ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
@@ -1778,15 +1933,28 @@ def index():
 
 @socketio.on('request_signal')
 def handle_request():
-    with state_lock:
+    if state_lock.acquire(timeout=0.5):
+        try:
+            sig = current_signal.copy()
+        finally:
+            state_lock.release()
+    else:
+        # Scan is mid-cycle (likely waiting on a Kite quote) — serve the
+        # last known signal instead of hanging the client.
         sig = current_signal.copy()
     safe_emit('nifty_orderflow_signal', sig)
 
 @socketio.on('connect')
 def handle_connect():
     print("✅ Client connected to Socket.IO")
-    with state_lock:
+    if state_lock.acquire(timeout=0.5):
+        try:
+            sig = current_signal.copy()
+        finally:
+            state_lock.release()
+    else:
         sig = current_signal.copy()
+
     emit('nifty_orderflow_signal', sig)
 
 @socketio.on('disconnect')
