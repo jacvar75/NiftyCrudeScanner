@@ -1,4 +1,4 @@
-# === NIFTY ORDER-FLOW BUYER ENGINE v2.11 (SHADOW MODE) ===
+# === NIFTY1 ORDER-FLOW BUYER ENGINE v2.11 (SHADOW MODE) ===
 # v2.11:
 #   - Full dashboard fields added (dte, vix, spot, scenario, adx, momentum, etc.)
 #   - Emits signal on every scan, even NO TRADE, to keep frontend updated
