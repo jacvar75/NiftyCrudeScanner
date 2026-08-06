@@ -533,11 +533,11 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
     if vwap is not None and vwap > 0:
         price = candles['close'].iloc[-1]
         if price > vwap:
-            score += 10
+            score += 20
             bias = "CALL" if bias == "NEUTRAL" else bias
             reasons.append("Price above VWAP")
         else:
-            score += 20
+            score += 10
             bias = "PUT" if bias == "NEUTRAL" else bias
             reasons.append("Price below VWAP")
 
@@ -598,10 +598,10 @@ def composite_score(candles, price_chg, oi_chg, key_levels, volume_candles=None)
         if poc is not None:
             price = candles['close'].iloc[-1]
             if price > poc * 0.995 and price < poc * 1.005:
-                score += 5
+                score += 15
                 reasons.append("Price near POC")
             else:
-                score += 15
+                score += 5
                 reasons.append("Price away from POC")
 
     if len(candles) >= 5:
