@@ -1,0 +1,2 @@
+timestamp,total_score,base_score,bonus,interaction_bonus,bias,spot_ltp,market_regime,dte,reason
+2026-08-06 11:20:56,48,40,0,8,CALL,24666.6,LOW_VOLATILITY,5,Rejected
