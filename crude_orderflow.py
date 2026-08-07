@@ -909,7 +909,22 @@ def run_crude_orderflow_scan():
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
-                
+
+                # --- NEAR-MISS REVERSAL EXIT: catches trades that got close to trail activation, then reversed ---
+                if not active_trade.get('trail_active', False):
+                    activation_threshold_preview = active_trade.get('activation_threshold', CRUDE_TRAIL_ACTIVATION)
+                    mfe_now = highest_premium - entry_option_ltp
+                    if mfe_now >= NEAR_MISS_MFE_PCT * activation_threshold_preview:
+                        giveback = mfe_now - (current_premium - entry_option_ltp)
+                        if giveback >= NEAR_MISS_GIVEBACK_PCT * mfe_now:
+                            exit_pnl = force_close_trade(
+                                f"NEAR-MISS REVERSAL (MFE {mfe_now:.0f}pt, gave back {giveback:.0f}pt)",
+                                "NEAR-MISS REVERSAL", underlying_ltp, is_sim=True)
+                            current_signal = {"decision": "EXIT — NEAR-MISS REVERSAL",
+                                              "reason": f"Gave back peak gain | PnL: ₹{exit_pnl:.0f}"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
