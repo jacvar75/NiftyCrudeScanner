@@ -56,6 +56,9 @@ CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 120       # minutes, DTE > 2 — force exit if
 CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
                                             # Revisit once you have real DTE<=2 samples.
+
+CRUDE_HARD_LOSS_CAP_PTS = 90
+
 LOG_DIR = "logs"
 # --- NEW RULE CONSTANTS ---
 BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this ADX
@@ -894,6 +897,19 @@ def run_crude_orderflow_scan():
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
                         safe_emit('crude_orderflow_signal', current_signal)
                         return
+
+                # --- HARD CIRCUIT BREAKER: independent of calculated sl_price, catches gap/slippage ---
+                unrealized_loss_pts = entry_option_ltp - current_premium
+                if unrealized_loss_pts >= CRUDE_HARD_LOSS_CAP_PTS:
+                    exit_pnl = force_close_trade(
+                        f"HARD CIRCUIT BREAKER (-{unrealized_loss_pts:.0f}pts)",
+                        "CIRCUIT BREAKER", underlying_ltp, is_sim=True)
+                    current_signal = {"decision": "EXIT — CIRCUIT BREAKER",
+                                      "reason": f"Hard loss cap hit | PnL: ₹{exit_pnl:.0f}"}
+                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
+                
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
