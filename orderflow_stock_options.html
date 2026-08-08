@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Stock Options Ranker — Shadow</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080d1d;--card:#10182a;--border:rgba(255,255,255,.08);--text:#edf3fa;--muted:#8c9ab0;--cyan:#22d3ee;--green:#35e69a;--red:#ff5c70;--yellow:#ffc857;--mono:'JetBrains Mono',monospace;--sans:'Poppins',sans-serif}
+body{font-family:var(--sans);background:radial-gradient(circle at 20% 0%,#14213e 0,#080d1d 42%);color:var(--text);min-height:100vh}
+.app{max-width:1650px;margin:auto;padding:18px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:20px 24px;background:rgba(16,24,42,.9);border:1px solid var(--border);border-radius:18px;margin-bottom:16px;position:sticky;top:10px;z-index:10;backdrop-filter:blur(15px)}
+.brand h1{font:700 16px var(--mono);color:var(--cyan)}.brand p{font-size:11px;color:var(--muted);margin-top:5px}
+.badges{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}.badge{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#0c1425;font:600 11px var(--mono);color:var(--muted)}.badge.shadow{color:var(--yellow);border-color:rgba(255,200,87,.35)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--muted);margin-right:7px}.dot.on{background:var(--green);box-shadow:0 0 10px rgba(53,230,154,.7)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-bottom:14px}.card{grid-column:span 3;background:rgba(16,24,42,.88);border:1px solid var(--border);border-radius:16px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.18)}.wide{grid-column:span 6}.full{grid-column:1/-1}
+.card h2{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);margin-bottom:14px}.big{font:700 22px var(--mono)}.sub{font:11px var(--mono);color:var(--muted);margin-top:7px}
+.regime{font:800 17px var(--mono);color:var(--cyan)}.status{font:800 18px var(--mono);margin-bottom:8px}.reason{font-size:12px;color:var(--muted);line-height:1.5}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{padding:10px;background:#0b1323;border-radius:10px;border:1px solid var(--border)}.metric label{display:block;font-size:9px;color:var(--muted);text-transform:uppercase}.metric b{display:block;font:700 13px var(--mono);margin-top:5px}
+table{width:100%;border-collapse:collapse;font:11px var(--mono)}th{font-size:9px;text-transform:uppercase;color:var(--muted);text-align:left;padding:9px;border-bottom:1px solid var(--border);white-space:nowrap}td{padding:10px 9px;border-bottom:1px solid rgba(255,255,255,.045);white-space:nowrap}tr:hover{background:rgba(34,211,238,.035)}
+.rank{font-weight:800;color:var(--cyan)}.score{font-weight:800}.call{color:var(--green);font-weight:800}.put{color:var(--red);font-weight:800}.green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}
+.pill{display:inline-block;padding:3px 7px;border-radius:7px;background:#0b1323;border:1px solid var(--border)}
+.selected{background:rgba(53,230,154,.08);border-left:3px solid var(--green)}
+.empty{padding:25px;text-align:center;color:var(--muted);font-size:12px}.active{border-color:rgba(53,230,154,.35);box-shadow:0 0 30px rgba(53,230,154,.07)}
+.tradegrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.tradebox{background:#0b1323;border:1px solid var(--border);border-radius:10px;padding:11px}.tradebox label{font-size:9px;color:var(--muted);display:block}.tradebox b{font:700 13px var(--mono);display:block;margin-top:5px}
+.progress{height:5px;background:#0a1120;border-radius:10px;overflow:hidden;margin-top:12px}.bar{height:100%;background:var(--cyan);width:0;transition:.3s}
+@media(max-width:1100px){.card{grid-column:span 6}.wide{grid-column:span 12}.metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.app{padding:9px}.header{position:static}.card{grid-column:1/-1}.metrics,.tradegrid{grid-template-columns:repeat(2,1fr)}table{font-size:10px}.scroll{overflow-x:auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="header">
+  <div class="brand"><h1>STOCK OPTIONS RANKER</h1><p>F&O universe → setup ranking → option liquidity → fixed 1:2 R:R</p></div>
+  <div class="badges"><div class="badge shadow">● SHADOW MODE — NO ORDERS</div><div class="badge"><span id="connDot" class="dot"></span><span id="conn">CONNECTING</span></div><div class="badge">v1.0</div></div>
+</header>
+
+<div class="grid">
+  <section class="card"><h2>Decision</h2><div id="decision" class="status">INITIALIZING</div><div id="reason" class="reason">Waiting for engine...</div></section>
+  <section class="card"><h2>Market Regime</h2><div id="regime" class="regime">UNKNOWN</div><div class="sub">Market score: <span id="marketScore">0</span>/10</div></section>
+  <section class="card"><h2>Nifty / VIX</h2><div class="metrics"><div class="metric"><label>Nifty</label><b id="nifty">—</b></div><div class="metric"><label>VWAP</label><b id="nvwap">—</b></div><div class="metric"><label>VIX</label><b id="vix">—</b></div><div class="metric"><label>ADX</label><b id="nadx">—</b></div></div></section>
+  <section class="card"><h2>Session</h2><div class="metrics"><div class="metric"><label>Universe</label><b id="universe">0</b></div><div class="metric"><label>Filtered</label><b id="filtered">0</b></div><div class="metric"><label>Candidates</label><b id="candidates">0</b></div><div class="metric"><label>Trades</label><b id="trades">0/2</b></div></div></section>
+</div>
+
+<div class="grid">
+  <section id="activeCard" class="card wide">
+    <h2>Active Shadow Trade</h2>
+    <div id="activeEmpty" class="empty">No active trade</div>
+    <div id="activeTrade" style="display:none">
+      <div class="tradegrid"><div class="tradebox"><label>Stock</label><b id="atStock">—</b></div><div class="tradebox"><label>Option</label><b id="atOption">—</b></div><div class="tradebox"><label>Entry Premium</label><b id="atEntry">—</b></div><div class="tradebox"><label>Current</label><b id="atCurrent">—</b></div><div class="tradebox"><label>SL</label><b id="atSL">—</b></div><div class="tradebox"><label>Target</label><b id="atTarget">—</b></div></div>
+      <div class="progress"><div id="pnlBar" class="bar"></div></div><div class="sub" id="tradeMeta">—</div>
+    </div>
+  </section>
+  <section class="card wide"><h2>Risk / Exit Model</h2><div class="metrics"><div class="metric"><label>Risk / Trade</label><b>₹2,000</b></div><div class="metric"><label>Target</label><b>1:2 FIXED</b></div><div class="metric"><label>Max Trades</label><b>2</b></div><div class="metric"><label>Hard Exit</label><b>15:15</b></div></div><div class="sub" style="margin-top:12px">SL is structural on the underlying. Shadow P&amp;L is marked from the option quote.</div></section>
+</div>
+
+<section class="card full"><h2>Top Ranked Setups</h2><div class="scroll"><table><thead><tr><th>#</th><th>Stock</th><th>Side</th><th>Score</th><th>Price</th><th>RVOL</th><th>RS vs Nifty</th><th>SL</th><th>2R Target</th><th>Risk</th><th>Option</th><th>Premium</th><th>Spread</th><th>OI</th><th>DTE</th><th>1L Risk</th></tr></thead><tbody id="candidateBody"><tr><td colspan="16" class="empty">Waiting for scan...</td></tr></tbody></table></div></section>
+
+<section class="card full"><h2>Why No Trade / Rejections</h2><div class="scroll"><table><thead><tr><th>Stock</th><th>Stage</th><th>Reason</th></tr></thead><tbody id="rejectBody"><tr><td colspan="3" class="empty">Waiting...</td></tr></tbody></table></div></section>
+
+<div class="grid">
+<section class="card wide"><h2>Latest Scan</h2><div class="sub">Last update: <span id="lastScan">—</span></div><div class="sub">Daily P&amp;L: <span id="dailyPnl">₹0</span></div></section>
+<section class="card wide"><h2>System Rules</h2><div class="reason">F&amp;O stock only · 20D turnover ≥ ₹100cr · ATR 1.2–6% · RVOL ≥ 1.0 · option OI ≥ 25k · option volume ≥ 5k · spread ≤ 2% · DTE 2–10 · ATM/slightly ITM preference · max 2 trades · one trade/stock/day · no live order API · 15:15 hard exit.</div></section>
+</div>
+</div>
+
+<script>
+const socket=io();const $=id=>document.getElementById(id);
+const fmt=(x,d=2)=>(x===null||x===undefined||x===''||isNaN(Number(x)))?'—':Number(x).toFixed(d);
+const money=x=>(x===null||x===undefined||isNaN(Number(x)))?'—':'₹'+Number(x).toFixed(0);
+
+socket.on('connect',()=>{$('conn').textContent='CONNECTED';$('connDot').classList.add('on')});
+socket.on('disconnect',()=>{$('conn').textContent='DISCONNECTED';$('connDot').classList.remove('on')});
+
+function renderActive(t){
+ if(!t){$('activeEmpty').style.display='block';$('activeTrade').style.display='none';$('activeCard').classList.remove('active');return}
+ $('activeEmpty').style.display='none';$('activeTrade').style.display='block';$('activeCard').classList.add('active');
+ $('atStock').textContent=t.symbol+' '+t.bias;$('atOption').textContent=t.option_symbol||'—';$('atEntry').textContent=fmt(t.entry_premium);$('atCurrent').textContent=fmt(t.current_option);$('atSL').textContent=fmt(t.underlying_sl);$('atTarget').textContent=fmt(t.underlying_target);
+ $('tradeMeta').textContent=`Underlying ${fmt(t.current_underlying)} | Risk ${money(t.estimated_rupee_risk)} | Score ${fmt(t.score,1)} | ${t.dte} DTE | ${t.exit_reason||'ACTIVE'}`;
+ const entry=Number(t.entry_premium||0),cur=Number(t.current_option||entry);let pct=entry?Math.max(0,Math.min(100,((cur-entry)/Math.max(entry*.2,.01))*100)):0;$('pnlBar').style.width=pct+'%';
+}
+function renderCandidates(rows){
+ const body=$('candidateBody');if(!rows||!rows.length){body.innerHTML='<tr><td colspan="16" class="empty">No option-qualified setups right now</td></tr>';return}
+ body.innerHTML=rows.map((x,i)=>{const side=x.bias==='CALL'?'call':'put';return `<tr class="${i===0?'selected':''}">
+ <td class="rank">${i+1}</td><td><b>${x.symbol}</b></td><td class="${side}">${x.bias}</td><td class="score">${fmt(x.score,1)}</td><td>${fmt(x.price)}</td><td>${fmt(x.rvol,2)}</td><td class="${Number(x.relative_strength)>=0?'green':'red'}">${fmt(x.relative_strength,2)}%</td><td>${fmt(x.sl)}</td><td>${fmt(x.target)}</td><td>${fmt(x.risk_points)}</td><td>${x.option||'—'}</td><td>${fmt(x.option_entry)}</td><td>${fmt(x.spread_pct)}%</td><td>${x.oi?Number(x.oi).toLocaleString():'—'}</td><td>${x.dte??'—'}</td><td>${money(x.estimated_rupee_risk)}</td></tr>`}).join('');
+}
+function renderRejects(rows){
+ const body=$('rejectBody');if(!rows||!rows.length){body.innerHTML='<tr><td colspan="3" class="empty">No recent rejections</td></tr>';return}
+ body.innerHTML=rows.slice(-30).reverse().map(x=>`<tr><td><b>${x.symbol||'—'}</b></td><td><span class="pill">${x.stage||'—'}</span></td><td>${x.reason||'—'}</td></tr>`).join('');
+}
+socket.on('stock_options_signal',s=>{
+ $('decision').textContent=s.decision||'NO TRADE';$('reason').textContent=s.reason||'—';
+ const d=s.decision||'';$('decision').className='status '+(d.includes('ENTRY')||d.includes('ACTIVE')?'green':d.includes('NO TRADE')?'yellow':'cyan');
+ $('regime').textContent=s.market_regime||'UNKNOWN';$('marketScore').textContent=s.market_score??0;
+ const n=s.nifty||{},v=s.vix||{};$('nifty').textContent=fmt(n.ltp,2);$('nvwap').textContent=fmt(n.vwap,2);$('vix').textContent=fmt(v.ltp,2);$('nadx').textContent=fmt(n.adx,1);
+ $('universe').textContent=s.universe_count??0;$('filtered').textContent=s.filtered_count??0;$('candidates').textContent=s.candidate_count??0;$('trades').textContent=(s.daily_trades??0)+'/2';$('dailyPnl').textContent=money(s.daily_pnl??0);$('lastScan').textContent=s.last_scan||'—';
+ renderCandidates(s.top_candidates||[]);renderRejects(s.rejections||[]);renderActive(s.active_trade);
+});
+</script>
+</body>
+</html>
