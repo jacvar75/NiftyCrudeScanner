@@ -49,6 +49,7 @@ MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
+CRUDE_BREAKEVEN_MFE_PTS = 18
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 15                      # tightest the trail can ratchet down to
 CRUDE_SL_PCT = 0.10                         # SL = 10% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
@@ -867,16 +868,17 @@ def run_crude_orderflow_scan():
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
 
-                # --- BREAKEVEN LOCK: once MFE clears CRUDE_BREAKEVEN_PCT of entry premium, SL -> entry ---
+                # --- BREAKEVEN LOCK: once MFE reaches +18 premium points, SL -> entry ---
                 if not active_trade.get('breakeven_locked', False):
-                    breakeven_trigger = entry_option_ltp * CRUDE_BREAKEVEN_PCT
-                    if highest_premium - entry_option_ltp >= breakeven_trigger:
+                    mfe_from_entry = highest_premium - entry_option_ltp
+
+                    if mfe_from_entry >= CRUDE_BREAKEVEN_MFE_PTS:
                         active_trade['sl_price'] = max(
                             active_trade.get('sl_price', entry_option_ltp * (1 - CRUDE_SL_PCT)),
-                                                       entry_option_ltp)
+                            entry_option_ltp)
                         active_trade['breakeven_locked'] = True
                         logging.info(
-                            f"🔒 [SIM] Breakeven lock engaged | entry {entry_option_ltp} | peak {highest_premium}")
+                            f"🔒 [SIM] Breakeven lock engaged | entry {entry_option_ltp} | peak {highest_premium} | MFE {mfe_from_entry:.1f} pts")
 
                 underlying_ltp = active_trade.get('underlying_ltp', 0)
                 fut_sym = active_trade.get('fut_sym')
