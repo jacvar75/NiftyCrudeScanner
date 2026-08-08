@@ -68,7 +68,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.7   # giveback must exceed 70% of MFE
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.10"
+STRATEGY_VERSION = "v2.11"
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
