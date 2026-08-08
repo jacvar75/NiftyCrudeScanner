@@ -526,8 +526,9 @@ def refresh_universe(force=False):
         return
 
     try:
-        if not stock_universe or force:
-            build_fno_universe()
+        # Rebuild from the complete F&O universe on every scheduled
+        # universe refresh. Do not progressively shrink the universe.
+        build_fno_universe()
 
         passed = {}
         rejected = []
@@ -852,10 +853,17 @@ def detect_setup(symbol, meta, market):
     if rvol < MIN_RVOL:
         return None, f"RVOL {rvol:.2f} below {MIN_RVOL}"
 
-    if bias == "CALL" and prev_high and target >= prev_high > price:
-        return None, f"2R target blocked by PDH {prev_high:.2f}"
-    if bias == "PUT" and prev_low and target <= prev_low < price:
-        return None, f"2R target blocked by PDL {prev_low:.2f}"
+    if bias == "CALL":
+        if prev_high is None:
+            return None, "PDH unavailable — target feasibility cannot be verified"
+        if target >= prev_high > price:
+            return None, f"2R target blocked by PDH {prev_high:.2f}"
+
+    if bias == "PUT":
+        if prev_low is None:
+            return None, "PDL unavailable — target feasibility cannot be verified"
+        if target <= prev_low < price:
+            return None, f"2R target blocked by PDL {prev_low:.2f}"
 
     return {
         "symbol": symbol,
@@ -1231,6 +1239,13 @@ def candidate_log_row(x, selected=False):
         "bias": x["bias"],
         "score": x["score"],
         "selected": selected,
+        # Individual score components — preserved for post-trade analysis.
+        "score_trend_structure": x.get("components", {}).get("trend_structure", 0),
+        "score_breakout_quality": x.get("components", {}).get("breakout_quality", 0),
+        "score_rvol": x.get("components", {}).get("rvol", 0),
+        "score_relative_strength": x.get("components", {}).get("relative_strength", 0),
+        "score_momentum": x.get("components", {}).get("momentum", 0),
+        "score_market_alignment": x.get("components", {}).get("market_alignment", 0),
         "price": x["price"],
         "trigger": x["trigger"],
         "sl_underlying": x["sl_underlying"],
@@ -1285,9 +1300,25 @@ def choose_trade(candidates):
     q = get_quote([f"NSE:{selected['symbol']}", f"NFO:{option['tradingsymbol']}"])
     uq = q.get(f"NSE:{selected['symbol']}", {})
     oq = q.get(f"NFO:{option['tradingsymbol']}", {})
+
     underlying = float(uq.get("last_price", selected["price"]) or selected["price"])
 
+    # Final trigger-direction validation.
+    # Never enter a setup that has already lost its breakout/continuation trigger.
+    if selected["bias"] == "CALL" and underlying <= selected["trigger"]:
+        return None, (
+            f"CALL trigger lost: underlying {underlying:.2f} "
+            f"<= trigger {selected['trigger']:.2f}"
+        )
+
+    if selected["bias"] == "PUT" and underlying >= selected["trigger"]:
+        return None, (
+            f"PUT trigger lost: underlying {underlying:.2f} "
+            f">= trigger {selected['trigger']:.2f}"
+        )
+
     depth = oq.get("depth", {}) or {}
+
     ask = float((depth.get("sell") or [{}])[0].get("price", 0) or 0)
     bid = float((depth.get("buy") or [{}])[0].get("price", 0) or 0)
     if ask <= 0 or bid <= 0:
@@ -1329,6 +1360,10 @@ def choose_trade(candidates):
         "risk_points_underlying": selected["risk_points_underlying"],
         "target_r_multiple": TARGET_R_MULTIPLE,
         "estimated_rupee_risk": estimated_risk,
+        "mfe_underlying": underlying,
+        "mae_underlying": underlying,
+        "mfe_option": entry_premium,
+        "mae_option": entry_premium,
         "score": selected["score"],
         "rvol": selected["rvol"],
         "adx": selected["adx"],
@@ -1384,6 +1419,17 @@ def monitor_active_trade():
     t["current_underlying"] = underlying
     t["mfe_option"] = max(t.get("mfe_option", t["entry_premium"]), option_ltp)
     t["mae_option"] = min(t.get("mae_option", t["entry_premium"]), option_ltp)
+
+    # Track underlying excursion independently from option excursion.
+    t["mfe_underlying"] = max(
+        t.get("mfe_underlying", t["entry_underlying"]),
+        underlying
+    )
+
+    t["mae_underlying"] = min(
+        t.get("mae_underlying", t["entry_underlying"]),
+        underlying
+    )
 
     exit_reason = None
 

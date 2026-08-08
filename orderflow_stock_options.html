@@ -33,7 +33,7 @@ table{width:100%;border-collapse:collapse;font:11px var(--mono)}th{font-size:9px
 <div class="app">
 <header class="header">
   <div class="brand"><h1>STOCK OPTIONS RANKER</h1><p>F&O universe → setup ranking → option liquidity → fixed 1:2 R:R</p></div>
-  <div class="badges"><div class="badge shadow">● SHADOW MODE — NO ORDERS</div><div class="badge"><span id="connDot" class="dot"></span><span id="conn">CONNECTING</span></div><div class="badge">v1.0</div></div>
+  <div class="badges"><div class="badge shadow">● SHADOW MODE — NO ORDERS</div><div class="badge"><span id="connDot" class="dot"></span><span id="conn">CONNECTING</span></div><div class="badge">v1.1 SHADOW</div></div>
 </header>
 
 <div class="grid">
@@ -55,7 +55,7 @@ table{width:100%;border-collapse:collapse;font:11px var(--mono)}th{font-size:9px
   <section class="card wide"><h2>Risk / Exit Model</h2><div class="metrics"><div class="metric"><label>Risk / Trade</label><b>₹2,000</b></div><div class="metric"><label>Target</label><b>1:2 FIXED</b></div><div class="metric"><label>Max Trades</label><b>2</b></div><div class="metric"><label>Hard Exit</label><b>15:15</b></div></div><div class="sub" style="margin-top:12px">SL is structural on the underlying. Shadow P&amp;L is marked from the option quote.</div></section>
 </div>
 
-<section class="card full"><h2>Top Ranked Setups</h2><div class="scroll"><table><thead><tr><th>#</th><th>Stock</th><th>Side</th><th>Score</th><th>Price</th><th>RVOL</th><th>RS vs Nifty</th><th>SL</th><th>2R Target</th><th>Risk</th><th>Option</th><th>Premium</th><th>Spread</th><th>OI</th><th>DTE</th><th>1L Risk</th></tr></thead><tbody id="candidateBody"><tr><td colspan="16" class="empty">Waiting for scan...</td></tr></tbody></table></div></section>
+<section class="card full"><h2>Top Ranked Setups</h2><div class="scroll"><table><thead><tr><th>#</th><th>Stock</th><th>Side</th><th>Score</th><th>Price</th><th>RVOL</th><th>RS vs Nifty</th><th>SL</th><th>2R Target</th><th>Risk</th><th>Option</th><th>Premium</th><th>Spread</th><th>OI</th><th>DTE</th><th>Est. 1L Risk</th></tr></thead><tbody id="candidateBody"><tr><td colspan="16" class="empty">Waiting for scan...</td></tr></tbody></table></div></section>
 
 <section class="card full"><h2>Why No Trade / Rejections</h2><div class="scroll"><table><thead><tr><th>Stock</th><th>Stage</th><th>Reason</th></tr></thead><tbody id="rejectBody"><tr><td colspan="3" class="empty">Waiting...</td></tr></tbody></table></div></section>
 
@@ -77,7 +77,7 @@ function renderActive(t){
  if(!t){$('activeEmpty').style.display='block';$('activeTrade').style.display='none';$('activeCard').classList.remove('active');return}
  $('activeEmpty').style.display='none';$('activeTrade').style.display='block';$('activeCard').classList.add('active');
  $('atStock').textContent=t.symbol+' '+t.bias;$('atOption').textContent=t.option_symbol||'—';$('atEntry').textContent=fmt(t.entry_premium);$('atCurrent').textContent=fmt(t.current_option);$('atSL').textContent=fmt(t.underlying_sl);$('atTarget').textContent=fmt(t.underlying_target);
- $('tradeMeta').textContent=`Underlying ${fmt(t.current_underlying)} | Risk ${money(t.estimated_rupee_risk)} | Score ${fmt(t.score,1)} | ${t.dte} DTE | ${t.exit_reason||'ACTIVE'}`;
+ $('tradeMeta').textContent=`Underlying ${fmt(t.current_underlying)} | Est. Risk ${money(t.estimated_rupee_risk)} | Score ${fmt(t.score,1)} | ${t.dte} DTE | ${t.exit_reason||'ACTIVE'}`;
  const entry=Number(t.entry_premium||0),cur=Number(t.current_option||entry);let pct=entry?Math.max(0,Math.min(100,((cur-entry)/Math.max(entry*.2,.01))*100)):0;$('pnlBar').style.width=pct+'%';
 }
 function renderCandidates(rows){
