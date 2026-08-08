@@ -627,9 +627,12 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     mfe_pts = (highest - entry) * lots * CRUDE_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * CRUDE_LOT_SIZE)
 
-    sl_price = trade_snap.get('sl_price', entry * (1 - CRUDE_SL_PCT))
-    risk_per_lot = abs(entry - sl_price) * CRUDE_LOT_SIZE
-    r_multiple = exit_pnl / risk_per_lot if risk_per_lot != 0 else 0
+    # R-multiple measured against risk taken AT ENTRY (fixed), not the live/trailed sl_price —
+    # using the live sl_price understated R once breakeven or trail moved it, silently zeroing
+    # out well over 10 historical trades where risk_per_lot collapsed to 0.
+    original_risk_per_lot = entry * CRUDE_SL_PCT * CRUDE_LOT_SIZE
+    r_multiple = exit_pnl / original_risk_per_lot if original_risk_per_lot != 0 else 0
+    
 
     prefix = "[SIM] " if is_sim else ""
     logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl_snap:.0f} | R: {r_multiple:.2f}")
