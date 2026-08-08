@@ -49,6 +49,7 @@ MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
+CRUDE_BREAKEVEN_MFE_PTS = 18
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 15                      # tightest the trail can ratchet down to
 CRUDE_SL_PCT = 0.10                         # SL = 10% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
@@ -56,6 +57,9 @@ CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 120       # minutes, DTE > 2 — force exit if
 CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
                                             # Revisit once you have real DTE<=2 samples.
+
+CRUDE_HARD_LOSS_CAP_PTS = 90
+
 LOG_DIR = "logs"
 # --- NEW RULE CONSTANTS ---
 BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this ADX
@@ -64,7 +68,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.7   # giveback must exceed 70% of MFE
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.10"
+STRATEGY_VERSION = "v2.11"
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -96,7 +100,7 @@ entry_option_ltp = None
 active_trade = None
 last_exit_time = None
 daily_pnl = 0
-max_daily_loss = -4500
+max_daily_loss = -3000
 daily_reset_date = now_ist().date()
 
 _candle_cache = {}
@@ -624,9 +628,12 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     mfe_pts = (highest - entry) * lots * CRUDE_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * CRUDE_LOT_SIZE)
 
-    sl_price = trade_snap.get('sl_price', entry * (1 - CRUDE_SL_PCT))
-    risk_per_lot = abs(entry - sl_price) * CRUDE_LOT_SIZE
-    r_multiple = exit_pnl / risk_per_lot if risk_per_lot != 0 else 0
+    # R-multiple measured against risk taken AT ENTRY (fixed), not the live/trailed sl_price —
+    # using the live sl_price understated R once breakeven or trail moved it, silently zeroing
+    # out well over 10 historical trades where risk_per_lot collapsed to 0.
+    original_risk_per_lot = entry * CRUDE_SL_PCT * CRUDE_LOT_SIZE
+    r_multiple = exit_pnl / original_risk_per_lot if original_risk_per_lot != 0 else 0
+
 
     prefix = "[SIM] " if is_sim else ""
     logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl_snap:.0f} | R: {r_multiple:.2f}")
@@ -861,16 +868,17 @@ def run_crude_orderflow_scan():
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
 
-                # --- BREAKEVEN LOCK: once MFE clears CRUDE_BREAKEVEN_PCT of entry premium, SL -> entry ---
+                # --- BREAKEVEN LOCK: once MFE reaches +18 premium points, SL -> entry ---
                 if not active_trade.get('breakeven_locked', False):
-                    breakeven_trigger = entry_option_ltp * CRUDE_BREAKEVEN_PCT
-                    if highest_premium - entry_option_ltp >= breakeven_trigger:
+                    mfe_from_entry = highest_premium - entry_option_ltp
+
+                    if mfe_from_entry >= CRUDE_BREAKEVEN_MFE_PTS:
                         active_trade['sl_price'] = max(
                             active_trade.get('sl_price', entry_option_ltp * (1 - CRUDE_SL_PCT)),
-                                                       entry_option_ltp)
+                            entry_option_ltp)
                         active_trade['breakeven_locked'] = True
                         logging.info(
-                            f"🔒 [SIM] Breakeven lock engaged | entry {entry_option_ltp} | peak {highest_premium}")
+                            f"🔒 [SIM] Breakeven lock engaged | entry {entry_option_ltp} | peak {highest_premium} | MFE {mfe_from_entry:.1f} pts")
 
                 underlying_ltp = active_trade.get('underlying_ltp', 0)
                 fut_sym = active_trade.get('fut_sym')
@@ -894,6 +902,34 @@ def run_crude_orderflow_scan():
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
                         safe_emit('crude_orderflow_signal', current_signal)
                         return
+
+                # --- HARD CIRCUIT BREAKER: independent of calculated sl_price, catches gap/slippage ---
+                unrealized_loss_pts = entry_option_ltp - current_premium
+                if unrealized_loss_pts >= CRUDE_HARD_LOSS_CAP_PTS:
+                    exit_pnl = force_close_trade(
+                        f"HARD CIRCUIT BREAKER (-{unrealized_loss_pts:.0f}pts)",
+                        "CIRCUIT BREAKER", underlying_ltp, is_sim=True)
+                    current_signal = {"decision": "EXIT — CIRCUIT BREAKER",
+                                      "reason": f"Hard loss cap hit | PnL: ₹{exit_pnl:.0f}"}
+                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
+
+                # --- NEAR-MISS REVERSAL EXIT: catches trades that got close to trail activation, then reversed ---
+                if not active_trade.get('trail_active', False):
+                    activation_threshold_preview = active_trade.get('activation_threshold', CRUDE_TRAIL_ACTIVATION)
+                    mfe_now = highest_premium - entry_option_ltp
+                    if mfe_now >= NEAR_MISS_MFE_PCT * activation_threshold_preview:
+                        giveback = mfe_now - (current_premium - entry_option_ltp)
+                        if giveback >= NEAR_MISS_GIVEBACK_PCT * mfe_now:
+                            exit_pnl = force_close_trade(
+                                f"NEAR-MISS REVERSAL (MFE {mfe_now:.0f}pt, gave back {giveback:.0f}pt)",
+                                "NEAR-MISS REVERSAL", underlying_ltp, is_sim=True)
+                            current_signal = {"decision": "EXIT — NEAR-MISS REVERSAL",
+                                              "reason": f"Gave back peak gain | PnL: ₹{exit_pnl:.0f}"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
@@ -1061,6 +1097,7 @@ def run_crude_orderflow_scan():
 
             candles_15m = get_candles(fut_token, "15minute", 5)
             candles_day = get_candles(fut_token, "day", 10)
+
 
             entry_atr = 0
             if not candles_15m.empty and len(candles_15m) >= 14:

@@ -598,6 +598,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         trade_entry_time = entry_option_ltp = active_trade = None
 
     exit_ltp = trade_snap.get('option_ltp', entry_snap)
+    exit_fill_source = "stale_state_fallback"  # default if symbol missing or everything below fails
     if trade_snap.get('symbol'):
         try:
             q = kite_call_with_timeout(kite.quote, [f"MCX:{trade_snap['symbol']}"])
@@ -607,14 +608,26 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
             fresh_bid = depth.get('buy', [{}])[0].get('price', 0)
             if fresh_bid > 0:
                 exit_ltp = fresh_bid  # simulate a realistic sell fill at the bid
+                exit_fill_source = "live_bid"
             else:
                 fresh = q.get(f"MCX:{trade_snap['symbol']}", {}).get('last_price')
                 if fresh and fresh > 0:
                     exit_ltp = fresh
+                    exit_fill_source = "live_ltp_fallback"
                     logging.warning(f"⚠️ No bid price for {trade_snap.get('symbol')}, falling back to LTP")
         except Exception as e:
+            exit_fill_source = "exception_stale_price"
             logging.warning(
                 f"⚠️ Fresh exit-price fetch failed for {trade_snap.get('symbol')} — using last known price {exit_ltp} for PnL calc: {e}")
+
+    # --- LOGGING ONLY: diagnose the gap between last known quote and this exit decision ---
+    last_quote_snap = trade_snap.get('last_quote_time')
+    seconds_since_last_quote = None
+    if last_quote_snap:
+        try:
+            seconds_since_last_quote = round((now_ist() - last_quote_snap).total_seconds(), 1)
+        except Exception:
+            seconds_since_last_quote = None
 
     lots = trade_snap.get('lots', 1)
     entry = entry_snap
@@ -660,6 +673,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "market_regime": trade_snap.get('market_regime', ''),
         "signal_quality": trade_snap.get('signal_quality', 0),
         "breakeven_locked": trade_snap.get('breakeven_locked', False),
+        "exit_fill_source": exit_fill_source,
+        "seconds_since_last_quote": seconds_since_last_quote,
         "trail_activated": trade_snap.get('trail_active', False),
         "minutes_to_trail_activation": trade_snap.get('minutes_to_trail_activation'),
         "entry_spread_pct": trade_snap.get('entry_spread_pct', 0),
@@ -1420,6 +1435,23 @@ def run_crude_orderflow_scan():
                         "last_quote_time": now,
                         "feature_snapshot": convert_numpy(
                             {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()}),
+                        # --- LOGGING ONLY: raw candle data used for this entry decision, for offline re-testing ---
+                        "entry_candle_raw": {
+                            "signal_candle": {
+                                "open": float(candles_15m['open'].iloc[-1]) if not candles_15m.empty else None,
+                                "high": float(candles_15m['high'].iloc[-1]) if not candles_15m.empty else None,
+                                "low": float(candles_15m['low'].iloc[-1]) if not candles_15m.empty else None,
+                                "close": float(candles_15m['close'].iloc[-1]) if not candles_15m.empty else None,
+                                "volume": float(candles_15m['volume'].iloc[-1]) if not candles_15m.empty else None,
+                                "oi": float(candles_15m['oi'].iloc[-1]) if (
+                                            'oi' in candles_15m.columns and not candles_15m.empty) else None,
+                            },
+                            "prior_candle": {
+                                "close": float(candles_15m['close'].iloc[-2]) if len(candles_15m) >= 2 else None,
+                                "oi": float(candles_15m['oi'].iloc[-2]) if (
+                                            'oi' in candles_15m.columns and len(candles_15m) >= 2) else None,
+                            }
+                        },
                     }
                     save_state()
                     entry_snapshot = active_trade  # local ref — safe even if another thread
@@ -1441,6 +1473,7 @@ def run_crude_orderflow_scan():
                     "market_regime": market_regime,
                     "feature_scores": entry_snapshot['feature_scores'],
                     "feature_snapshot": entry_snapshot['feature_snapshot'],
+                    "entry_candle_raw": entry_snapshot.get('entry_candle_raw'),
                     "dte": dte,
                     "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
                     "adx": entry_snapshot.get('adx', 0),
