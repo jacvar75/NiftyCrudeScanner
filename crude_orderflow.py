@@ -641,6 +641,18 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     mfe_pts = (highest - entry) * lots * CRUDE_LOT_SIZE
     mae_pts = max(0, (entry - lowest) * lots * CRUDE_LOT_SIZE)
 
+    # --- LOGGING ONLY: exit-state snapshot for classifying HOW a loser/winner developed ---
+    trail_dist_snap = trade_snap.get('trail_distance')
+    trail_active_snap = trade_snap.get('trail_active', False)
+    exit_state = {
+        "sl_price_at_exit": trade_snap.get('sl_price'),
+        "trail_active_at_exit": trail_active_snap,
+        "trail_stop_at_exit": round(highest - trail_dist_snap, 2) if (trail_active_snap and trail_dist_snap) else None,
+        "highest_premium_at_exit": round(highest, 2),
+        "activation_threshold": trade_snap.get('activation_threshold'),
+        "trail_distance": trail_dist_snap,
+    }
+
     # R-multiple measured against risk taken AT ENTRY (fixed), not the live/trailed sl_price —
     # using the live sl_price understated R once breakeven or trail moved it, silently zeroing
     # out well over 10 historical trades where risk_per_lot collapsed to 0.
@@ -673,6 +685,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "market_regime": trade_snap.get('market_regime', ''),
         "signal_quality": trade_snap.get('signal_quality', 0),
         "breakeven_locked": trade_snap.get('breakeven_locked', False),
+        "exit_state": exit_state,
         "exit_fill_source": exit_fill_source,
         "seconds_since_last_quote": seconds_since_last_quote,
         "trail_activated": trade_snap.get('trail_active', False),
