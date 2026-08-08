@@ -1113,6 +1113,25 @@ def run_crude_orderflow_scan():
             candles_15m = get_candles(fut_token, "15minute", 5)
             candles_day = get_candles(fut_token, "day", 10)
 
+            # --- LOGGING ONLY: identify the exact 15-minute candle used for the signal ---
+            signal_candle_time = None
+            signal_candle_age_seconds = None
+            signal_candle_is_closed = None
+            if not candles_15m.empty and 'date' in candles_15m.columns:
+                try:
+                    signal_candle_raw = candles_15m['date'].iloc[-1]
+                    signal_candle_ts = pd.to_datetime(signal_candle_raw)
+                    if signal_candle_ts.tzinfo is None:
+                        signal_candle_ts = signal_candle_ts.tz_localize("Asia/Kolkata")
+                    else:
+                        signal_candle_ts = signal_candle_ts.tz_convert("Asia/Kolkata")
+                    signal_candle_time = signal_candle_ts.isoformat()
+                    signal_candle_ts_naive = signal_candle_ts.tz_localize(None)
+                    signal_candle_age_seconds = max(0, int((now - signal_candle_ts_naive.to_pydatetime()).total_seconds()))
+                    signal_candle_is_closed = signal_candle_age_seconds >= 900
+                except Exception as e:
+                    logging.warning(f"⚠️ Signal candle timestamp logging failed: {e}")
+
             entry_atr = 0
             if not candles_15m.empty and len(candles_15m) >= 14:
                 tr = pd.concat([
@@ -1159,10 +1178,6 @@ def run_crude_orderflow_scan():
             interaction_bonus = compute_interaction_bonus(feature_scores)
             total_score = base_score + bonus + interaction_bonus
 
-            # print(
-                # f"SCORE BREAKDOWN | base={base_score} bonus={bonus} interaction={interaction_bonus} total={total_score} bias={bias}")
-            # print(f"FEATURES: {feature_scores}")
-            # print(f"REASONS: {comp['reasons']}")
 
             # ADX computation for dashboard
             adx_val = 0
@@ -1474,6 +1489,8 @@ def run_crude_orderflow_scan():
                     "feature_scores": entry_snapshot['feature_scores'],
                     "feature_snapshot": entry_snapshot['feature_snapshot'],
                     "entry_candle_raw": entry_snapshot.get('entry_candle_raw'),
+                    "signal_candle_time": entry_snapshot.get('signal_candle_time'),
+                    "signal_candle_age_seconds": entry_snapshot.get('signal_candle_age_seconds'),
                     "dte": dte,
                     "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
                     "adx": entry_snapshot.get('adx', 0),
