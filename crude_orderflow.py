@@ -99,7 +99,7 @@ entry_option_ltp = None
 active_trade = None
 last_exit_time = None
 daily_pnl = 0
-max_daily_loss = -4500
+max_daily_loss = -3000
 daily_reset_date = now_ist().date()
 
 _candle_cache = {}
@@ -632,7 +632,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     # out well over 10 historical trades where risk_per_lot collapsed to 0.
     original_risk_per_lot = entry * CRUDE_SL_PCT * CRUDE_LOT_SIZE
     r_multiple = exit_pnl / original_risk_per_lot if original_risk_per_lot != 0 else 0
-    
+
 
     prefix = "[SIM] " if is_sim else ""
     logging.info(f"{prefix}{log_prefix} — {reason_tag} — PnL: ₹{exit_pnl:.0f} | Daily: ₹{daily_pnl_snap:.0f} | R: {r_multiple:.2f}")
