@@ -1467,6 +1467,8 @@ def run_crude_orderflow_scan():
                                             'oi' in candles_15m.columns and len(candles_15m) >= 2) else None,
                             }
                         },
+                        "signal_candle_time": signal_candle_time,
+                        "signal_candle_age_seconds": signal_candle_age_seconds,
                     }
                     save_state()
                     entry_snapshot = active_trade  # local ref — safe even if another thread
