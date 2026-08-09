@@ -298,7 +298,12 @@ def load_state():
             daily_trades = int(data.get("daily_trades", 0))
             daily_pnl = float(data.get("daily_pnl", 0))
             traded_stocks_today = set(data.get("traded_stocks_today", []))
-            # Do not automatically resurrect a shadow trade after a restart.
+            # Do not automatically resurrect a shadow trade after a restart,
+            # but record that it happened so the dangling ENTRY row can be
+            # identified and excluded from P&L/edge analysis.
+            orphaned = data.get("active_trade")
+            if orphaned:
+                log_event("shadow_trade_orphaned_on_restart", **orphaned)
             active_trade = None
         else:
             reset_day_if_needed()
@@ -540,6 +545,7 @@ def refresh_universe(force=False):
                 passed[symbol] = profile
             else:
                 rejected.append({"symbol": symbol, "reason": reason})
+            time.sleep(0.34)  # ~3 req/sec ceiling on Kite's historical-data endpoint
 
         quote_symbols = [f"NSE:{s}" for s in passed]
         quotes = get_quote(quote_symbols)
@@ -602,9 +608,9 @@ def get_market_context():
 
     nf = get_historical(256265, "5minute", 3)
 
-    if nf.empty:
+    if nf.empty or nf["date"].dt.date.max() != now_ist().date():
         return {
-            "regime": "UNKNOWN",
+            "regime": "STALE_DATA",
             "score": 0,
             "nifty": {"ltp": nifty},
             "vix": {"ltp": vix},
@@ -659,7 +665,7 @@ def get_stock_intraday(symbol, meta):
     if cached and time.time() - cached["time"] < 300:
         return cached["df"]
 
-    df5 = get_historical(meta["nse_token"], "5minute", 3)
+    df5 = get_historical(meta["nse_token"], "5minute", 10)
     if df5.empty or len(df5) < 25:
         return None
 
@@ -1091,6 +1097,10 @@ def scan_candidates():
     current_state["nifty"] = market["nifty"]
     current_state["vix"] = market["vix"]
 
+    if market["regime"] in ("UNKNOWN", "STALE_DATA"):
+        current_state["reason"] = "Nifty 5m data is not from today — skipping scan"
+        return []
+
     underlying_setups = []
     rejections = []
 
@@ -1370,8 +1380,9 @@ def choose_trade(candidates):
         "rsi": selected["rsi"],
         "relative_strength": selected["relative_strength"],
         "market_regime": selected["market_regime"],
-        "highest_option": entry_premium,
-        "lowest_option": entry_premium,
+        "option_oi": option["oi"],
+        "option_volume": option["volume"],
+        "vix_at_entry": current_state.get("vix", {}).get("ltp"),
         "status": "ACTIVE_SHADOW",
         "exit_reason": None,
     }
