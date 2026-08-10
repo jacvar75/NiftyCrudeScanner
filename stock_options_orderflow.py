@@ -160,16 +160,34 @@ def now_ist():
 def json_safe(obj):
     if isinstance(obj, (np.integer,)):
         return int(obj)
+
     if isinstance(obj, (np.floating,)):
         return float(obj)
+
     if isinstance(obj, (np.bool_,)):
         return bool(obj)
+
     if isinstance(obj, (pd.Timestamp, dt.datetime, dt.date)):
         return obj.isoformat()
+
     if isinstance(obj, np.ndarray):
         return obj.tolist()
-    if pd.isna(obj):
+
+    if isinstance(obj, (list, tuple)):
+        return [json_safe(v) for v in obj]
+
+    if isinstance(obj, dict):
+        return {k: json_safe(v) for k, v in obj.items()}
+
+    if obj is None:
         return None
+
+    try:
+        if pd.isna(obj):
+            return None
+    except (TypeError, ValueError):
+        pass
+
     return obj
 
 
@@ -1617,7 +1635,7 @@ def health():
 
 
 @socketio.on("connect")
-def on_connect():
+def on_connect(auth=None):
     emit_state(force=True)
 
 
