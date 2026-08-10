@@ -563,7 +563,7 @@ def refresh_universe(force=False):
                 passed[symbol] = profile
             else:
                 rejected.append({"symbol": symbol, "reason": reason})
-            time.sleep(0.34)  # ~3 req/sec ceiling on Kite's historical-data endpoint
+            time.sleep(0.45)  # ~3 req/sec ceiling on Kite's historical-data endpoint
 
         quote_symbols = [f"NSE:{s}" for s in passed]
         quotes = get_quote(quote_symbols)
