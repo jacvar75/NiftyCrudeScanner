@@ -1,0 +1,31 @@
+2026-08-10 10:29:34,503 - INFO - F&O stock universe built: 208
+2026-08-10 10:29:34,503 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
+2026-08-10 10:29:34,540 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8065
+ * Running on http://192.168.1.202:8065
+2026-08-10 10:29:34,540 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-10 10:29:35,101 - INFO - F&O stock universe built: 208
+2026-08-10 10:29:41,734 - INFO - 127.0.0.1 - - [10/Aug/2026 10:29:41] "[36mGET / HTTP/1.1[0m" 304 -
+2026-08-10 10:29:41,759 - INFO - 127.0.0.1 - - [10/Aug/2026 10:29:41] "GET /socket.io/?EIO=4&transport=polling&t=P_g2dKx HTTP/1.1" 200 -
+2026-08-10 10:29:41,950 - INFO - 127.0.0.1 - - [10/Aug/2026 10:29:41] "POST /socket.io/?EIO=4&transport=polling&t=P_g2dM3&sid=s13sNIPpqu-KtGneAAAA HTTP/1.1" 200 -
+2026-08-10 10:29:42,143 - INFO - 127.0.0.1 - - [10/Aug/2026 10:29:42] "GET /socket.io/?EIO=4&transport=polling&t=P_g2dM5&sid=s13sNIPpqu-KtGneAAAA HTTP/1.1" 200 -
+2026-08-10 10:46:09,272 - INFO - F&O stock universe built: 208
+2026-08-10 11:02:40,632 - INFO - F&O stock universe built: 208
+2026-08-10 11:09:06,608 - WARNING - Kite call failed: historical_data | Too many requests
+2026-08-10 11:14:13,103 - WARNING - Kite call failed: historical_data | Too many requests
+2026-08-10 11:14:17,469 - WARNING - Kite call failed: historical_data | Too many requests
+2026-08-10 11:19:20,147 - INFO - F&O stock universe built: 208
+2026-08-10 11:35:49,631 - INFO - F&O stock universe built: 208
+2026-08-10 11:52:19,554 - INFO - F&O stock universe built: 208
+2026-08-10 12:08:50,304 - INFO - F&O stock universe built: 208
+2026-08-10 12:25:20,011 - INFO - F&O stock universe built: 208
+2026-08-10 12:41:49,788 - INFO - F&O stock universe built: 208
+2026-08-10 12:58:20,658 - INFO - F&O stock universe built: 208
+2026-08-10 13:14:52,238 - INFO - F&O stock universe built: 208
+2026-08-10 13:31:24,647 - INFO - F&O stock universe built: 208
+2026-08-10 13:47:56,475 - INFO - F&O stock universe built: 208
+2026-08-10 14:04:28,967 - INFO - F&O stock universe built: 208
+2026-08-10 14:21:00,866 - INFO - F&O stock universe built: 208
+2026-08-10 14:37:33,725 - INFO - F&O stock universe built: 208
+2026-08-10 16:19:39,804 - INFO - 127.0.0.1 - - [10/Aug/2026 16:19:39] "GET /socket.io/?EIO=4&transport=websocket&sid=s13sNIPpqu-KtGneAAAA HTTP/1.1" 200 -
