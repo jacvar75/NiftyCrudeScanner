@@ -1136,49 +1136,140 @@ def select_option(setup):
         setup["bias"],
         setup["price"],
     )
+
+    # -----------------------------------------------------------------------
+    # DIAGNOSTIC LOGGING ONLY
+    #
+    # IMPORTANT:
+    # This section does NOT change option selection, thresholds, scoring,
+    # expiry, DTE, strike selection, or trading behaviour.
+    # It only records WHY option candidates are rejected.
+    # -----------------------------------------------------------------------
     if not rows:
+        log_event(
+            "option_filter_audit",
+            symbol=setup["symbol"],
+            bias=setup["bias"],
+            underlying_score=setup["score"],
+            underlying_price=setup["price"],
+            option_candidates=0,
+            quality_quotes=0,
+            valid_options=0,
+            rejected_by_oi=0,
+            rejected_by_volume=0,
+            rejected_by_spread=0,
+            rejected_by_premium=0,
+            rejected_by_risk=0,
+            rejected_by_quote=0,
+            best_rejected_option=None,
+            result="NO_ELIGIBLE_OPTION_CONTRACTS",
+        )
         return None, "no eligible option contracts"
 
     qualities = fetch_option_quality(rows)
+
     valid = []
     reasons = []
 
+    # Diagnostic counters ONLY.
+    rejected_by_oi = 0
+    rejected_by_volume = 0
+    rejected_by_spread = 0
+    rejected_by_premium = 0
+    rejected_by_risk = 0
+    rejected_by_quote = len(rows) - len(qualities)
+
+    # Keep every rejected option with its actual market data so we can
+    # identify the closest/best rejected contract later.
+    rejected_options = []
+
     for q in qualities:
         if q["oi"] < MIN_OPTION_OI:
-            reasons.append(f"{q['tradingsymbol']}: OI {q['oi']} < {MIN_OPTION_OI}")
+            rejected_by_oi += 1
+            reasons.append(
+                f"{q['tradingsymbol']}: OI {q['oi']} < {MIN_OPTION_OI}"
+            )
+            rejected_options.append({
+                **q,
+                "rejection_reason": "OI",
+            })
             continue
+
         if q["volume"] < MIN_OPTION_VOLUME:
-            reasons.append(f"{q['tradingsymbol']}: volume {q['volume']} < {MIN_OPTION_VOLUME}")
+            rejected_by_volume += 1
+            reasons.append(
+                f"{q['tradingsymbol']}: volume {q['volume']} < {MIN_OPTION_VOLUME}"
+            )
+            rejected_options.append({
+                **q,
+                "rejection_reason": "VOLUME",
+            })
             continue
+
         if q["spread_pct"] > MAX_OPTION_SPREAD_PCT:
-            reasons.append(f"{q['tradingsymbol']}: spread {q['spread_pct']:.2f}%")
+            rejected_by_spread += 1
+            reasons.append(
+                f"{q['tradingsymbol']}: spread {q['spread_pct']:.2f}%"
+            )
+            rejected_options.append({
+                **q,
+                "rejection_reason": "SPREAD",
+            })
             continue
+
         if not q["premium_ok"]:
-            reasons.append(f"{q['tradingsymbol']}: premium {q['entry_premium']:.1f} outside range")
+            rejected_by_premium += 1
+            reasons.append(
+                f"{q['tradingsymbol']}: premium "
+                f"{q['entry_premium']:.1f} outside range"
+            )
+            rejected_options.append({
+                **q,
+                "rejection_reason": "PREMIUM",
+            })
             continue
 
         estimated_option_risk_points = (
-            setup["risk_points_underlying"] * q["delta"] * DELTA_RISK_BUFFER
+            setup["risk_points_underlying"]
+            * q["delta"]
+            * DELTA_RISK_BUFFER
         )
-        estimated_rupee_risk = estimated_option_risk_points * setup["lot_size"]
+
+        estimated_rupee_risk = (
+            estimated_option_risk_points
+            * setup["lot_size"]
+        )
 
         if estimated_rupee_risk > MAX_RISK_PER_TRADE:
+            rejected_by_risk += 1
             reasons.append(
-                f"{q['tradingsymbol']}: one-lot risk ₹{estimated_rupee_risk:.0f}"
+                f"{q['tradingsymbol']}: "
+                f"one-lot risk ₹{estimated_rupee_risk:.0f}"
             )
+            rejected_options.append({
+                **q,
+                "rejection_reason": "RISK",
+                "estimated_option_risk_points": estimated_option_risk_points,
+                "estimated_rupee_risk": estimated_rupee_risk,
+            })
             continue
 
         liquidity_score = 0
-        liquidity_score += 4 if q["spread_pct"] <= PREFERRED_OPTION_SPREAD_PCT else 2
+        liquidity_score += (
+            4 if q["spread_pct"] <= PREFERRED_OPTION_SPREAD_PCT else 2
+        )
         liquidity_score += 3 if q["oi"] >= 50_000 else 1
         liquidity_score += 3 if q["volume"] >= 10_000 else 1
 
         strike_score = 0
         distance = abs(float(q["strike"]) - setup["price"])
+
         if distance <= 0.5 * setup["atr"]:
             strike_score += 5
+
         if setup["bias"] == "CALL" and q["strike"] <= setup["price"]:
             strike_score += 3
+
         if setup["bias"] == "PUT" and q["strike"] >= setup["price"]:
             strike_score += 3
 
@@ -1187,13 +1278,86 @@ def select_option(setup):
         q["option_score"] = liquidity_score + strike_score
         valid.append(q)
 
+    # -----------------------------------------------------------------------
+    # Find the "best rejected option" for forensic analysis.
+    #
+    # This ranking is ONLY for logging. It has absolutely no effect on
+    # which option is selected.
+    # -----------------------------------------------------------------------
+    best_rejected = None
+
+    if rejected_options:
+        best_rejected = sorted(
+            rejected_options,
+            key=lambda q: (
+                q.get("oi", 0),
+                q.get("volume", 0),
+                -q.get("spread_pct", 999),
+            ),
+            reverse=True,
+        )[0]
+
+    # -----------------------------------------------------------------------
+    # DETAILED OPTION FILTER AUDIT
+    # -----------------------------------------------------------------------
+    log_event(
+        "option_filter_audit",
+        symbol=setup["symbol"],
+        bias=setup["bias"],
+        underlying_score=setup["score"],
+        underlying_price=setup["price"],
+        underlying_rvol=setup.get("rvol"),
+        market_regime=setup.get("market_regime"),
+
+        option_candidates=len(rows),
+        quality_quotes=len(qualities),
+        valid_options=len(valid),
+
+        rejected_by_oi=rejected_by_oi,
+        rejected_by_volume=rejected_by_volume,
+        rejected_by_spread=rejected_by_spread,
+        rejected_by_premium=rejected_by_premium,
+        rejected_by_risk=rejected_by_risk,
+        rejected_by_quote=rejected_by_quote,
+
+        best_rejected_option=(
+            {
+                "tradingsymbol": best_rejected.get("tradingsymbol"),
+                "strike": best_rejected.get("strike"),
+                "expiry": best_rejected.get("expiry"),
+                "dte": best_rejected.get("dte"),
+                "oi": best_rejected.get("oi"),
+                "volume": best_rejected.get("volume"),
+                "bid": best_rejected.get("bid"),
+                "ask": best_rejected.get("ask"),
+                "ltp": best_rejected.get("ltp"),
+                "spread_pct": best_rejected.get("spread_pct"),
+                "entry_premium": best_rejected.get("entry_premium"),
+                "rejection_reason": best_rejected.get("rejection_reason"),
+            }
+            if best_rejected
+            else None
+        ),
+
+        result="PASS" if valid else "REJECTED",
+    )
+
     if not valid:
-        return None, "; ".join(reasons[:5]) or "no option passed liquidity/risk filters"
+        return (
+            None,
+            "; ".join(reasons[:5])
+            or "no option passed liquidity/risk filters"
+        )
 
     valid.sort(
-        key=lambda x: (x["option_score"], -x["spread_pct"], x["oi"]),
+        key=lambda x: (
+            x["option_score"],
+            -x["spread_pct"],
+            x["oi"],
+        ),
         reverse=True,
     )
+
     return valid[0], "PASS"
 
 
