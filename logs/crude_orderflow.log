@@ -18678,3 +18678,11 @@
 2026-08-11 16:51:37,897 - INFO - 127.0.0.1 - - [11/Aug/2026 16:51:37] "GET /socket.io/?EIO=4&transport=websocket&sid=xBh95wQmoFMzRlIVAAAG HTTP/1.1" 200 -
 2026-08-11 16:52:12,587 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
 2026-08-11 16:53:12,588 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 16:54:12,589 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 16:55:12,590 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 16:56:12,591 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 16:57:12,592 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 16:58:12,593 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 16:59:12,594 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 17:00:12,595 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
+2026-08-11 17:01:12,596 - INFO - EMIT crude_orderflow_signal: NO TRADE | Daily loss cap reached
