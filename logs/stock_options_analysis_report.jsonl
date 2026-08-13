@@ -1,0 +1,880 @@
+{
+  "report_version": "1.0",
+  "generated_at": "2026-08-13T15:01:57",
+  "source_files": {
+    "candidate_log": "logs\\stock_candidate_log.csv",
+    "candidate_rejections": "logs\\stock_candidate_rejections.csv",
+    "orderflow_jsonl": "logs\\stock_options_orderflow.jsonl",
+    "orderflow_log": "logs\\stock_options_orderflow.log",
+    "shadow_trades": "logs\\stock_shadow_trades.csv",
+    "universe_filter": "logs\\stock_universe_filter.csv"
+  },
+  "data_quality": {
+    "candidate_log": {
+      "exists": true,
+      "rows": 97
+    },
+    "candidate_rejections": {
+      "exists": true,
+      "rows": 31506
+    },
+    "orderflow_jsonl": {
+      "exists": true,
+      "rows": 854
+    },
+    "orderflow_log": {
+      "exists": true,
+      "rows": 1
+    },
+    "shadow_trades": {
+      "exists": true,
+      "rows": 6
+    },
+    "universe_filter": {
+      "exists": true,
+      "rows": 58
+    }
+  },
+  "executive_summary": {
+    "candidate_rows": 97,
+    "rejection_rows": 31506,
+    "option_rejection_rows": 133,
+    "scores_65_plus": 36,
+    "scores_68_plus": 14,
+    "scores_72_plus": 5,
+    "scores_78_plus": 0,
+    "closed_shadow_trades": 3,
+    "wins": 2,
+    "losses": 1,
+    "win_rate_pct": 66.67,
+    "total_shadow_pnl_rupees": 1143.75,
+    "max_drawdown_rupees": 1170.0,
+    "largest_rejection_reason": "no fresh breakout/continuation trigger",
+    "largest_rejection_reason_count": 28451
+  },
+  "score_analysis": {
+    "observed_scores": 97,
+    "min": 48.4,
+    "max": 77.4,
+    "mean": 61.27,
+    "bands": {
+      "<50": {
+        "count": 1,
+        "pct": 1.03
+      },
+      "50-59.99": {
+        "count": 46,
+        "pct": 47.42
+      },
+      "60-64.99": {
+        "count": 14,
+        "pct": 14.43
+      },
+      "65-67.99": {
+        "count": 22,
+        "pct": 22.68
+      },
+      "68-71.99": {
+        "count": 9,
+        "pct": 9.28
+      },
+      "72-77.99": {
+        "count": 5,
+        "pct": 5.15
+      },
+      "78+": {
+        "count": 0,
+        "pct": 0.0
+      }
+    },
+    "highest_by_stock": [
+      {
+        "symbol": "BHARTIARTL",
+        "highest_score": 77.4,
+        "observations": 8
+      },
+      {
+        "symbol": "RELIANCE",
+        "highest_score": 72.4,
+        "observations": 2
+      },
+      {
+        "symbol": "TECHM",
+        "highest_score": 68.4,
+        "observations": 10
+      },
+      {
+        "symbol": "MCX",
+        "highest_score": 68.4,
+        "observations": 5
+      },
+      {
+        "symbol": "HAL",
+        "highest_score": 68.4,
+        "observations": 2
+      },
+      {
+        "symbol": "OFSS",
+        "highest_score": 67.8,
+        "observations": 9
+      },
+      {
+        "symbol": "BAJAJ-AUTO",
+        "highest_score": 67.4,
+        "observations": 5
+      },
+      {
+        "symbol": "ICICIBANK",
+        "highest_score": 65.4,
+        "observations": 5
+      },
+      {
+        "symbol": "INDIGO",
+        "highest_score": 65.4,
+        "observations": 5
+      },
+      {
+        "symbol": "DIXON",
+        "highest_score": 61.0,
+        "observations": 5
+      },
+      {
+        "symbol": "AXISBANK",
+        "highest_score": 59.4,
+        "observations": 5
+      },
+      {
+        "symbol": "GVT&D",
+        "highest_score": 59.4,
+        "observations": 5
+      },
+      {
+        "symbol": "TCS",
+        "highest_score": 58.4,
+        "observations": 5
+      },
+      {
+        "symbol": "LT",
+        "highest_score": 57.4,
+        "observations": 10
+      },
+      {
+        "symbol": "BSE",
+        "highest_score": 54.4,
+        "observations": 5
+      },
+      {
+        "symbol": "DIVISLAB",
+        "highest_score": 54.0,
+        "observations": 5
+      },
+      {
+        "symbol": "HINDALCO",
+        "highest_score": 53.4,
+        "observations": 5
+      },
+      {
+        "symbol": "TITAN",
+        "highest_score": 48.4,
+        "observations": 1
+      }
+    ]
+  },
+  "rejections": {
+    "by_stage": [
+      {
+        "value": "setup",
+        "count": 31231
+      },
+      {
+        "value": "trade_limit",
+        "count": 142
+      },
+      {
+        "value": "option",
+        "count": 133
+      }
+    ],
+    "by_reason": [
+      {
+        "value": "no fresh breakout/continuation trigger",
+        "count": 28451
+      },
+      {
+        "value": "already traded today",
+        "count": 142
+      },
+      {
+        "value": "no eligible option contracts",
+        "count": 70
+      },
+      {
+        "value": "entry extended 0.34 ATR",
+        "count": 57
+      },
+      {
+        "value": "SL too wide (1.85 ATR)",
+        "count": 42
+      },
+      {
+        "value": "SL too wide (1.80 ATR)",
+        "count": 39
+      },
+      {
+        "value": "entry extended 0.49 ATR",
+        "count": 35
+      },
+      {
+        "value": "entry extended 0.43 ATR",
+        "count": 35
+      },
+      {
+        "value": "entry extended 0.32 ATR",
+        "count": 31
+      },
+      {
+        "value": "RVOL 0.18 below 1.0",
+        "count": 30
+      },
+      {
+        "value": "RVOL 0.29 below 1.0",
+        "count": 30
+      },
+      {
+        "value": "SL too wide (1.77 ATR)",
+        "count": 30
+      },
+      {
+        "value": "SL too wide (1.84 ATR)",
+        "count": 30
+      },
+      {
+        "value": "RVOL 0.17 below 1.0",
+        "count": 30
+      },
+      {
+        "value": "RVOL 0.10 below 1.0",
+        "count": 29
+      },
+      {
+        "value": "SL too wide (1.79 ATR)",
+        "count": 28
+      },
+      {
+        "value": "entry extended 0.38 ATR",
+        "count": 27
+      },
+      {
+        "value": "SL too wide (1.69 ATR)",
+        "count": 27
+      },
+      {
+        "value": "SL too wide (1.78 ATR)",
+        "count": 25
+      },
+      {
+        "value": "RVOL 0.07 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "entry extended 0.40 ATR",
+        "count": 25
+      },
+      {
+        "value": "RVOL 0.32 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "RVOL 0.34 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "SL too wide (1.86 ATR)",
+        "count": 25
+      },
+      {
+        "value": "SL too wide (1.65 ATR)",
+        "count": 25
+      },
+      {
+        "value": "RVOL 0.36 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "RVOL 0.23 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "RVOL 0.27 below 1.0",
+        "count": 24
+      },
+      {
+        "value": "RVOL 0.54 below 1.0",
+        "count": 22
+      },
+      {
+        "value": "SL too wide (1.82 ATR)",
+        "count": 21
+      },
+      {
+        "value": "SL too wide (1.58 ATR)",
+        "count": 20
+      },
+      {
+        "value": "SL too wide (1.61 ATR)",
+        "count": 20
+      },
+      {
+        "value": "SL too wide (1.56 ATR)",
+        "count": 20
+      },
+      {
+        "value": "RVOL 0.30 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "SL too wide (1.52 ATR)",
+        "count": 20
+      },
+      {
+        "value": "SL too wide (2.14 ATR)",
+        "count": 20
+      },
+      {
+        "value": "SL too wide (2.59 ATR)",
+        "count": 20
+      },
+      {
+        "value": "entry extended 0.31 ATR",
+        "count": 20
+      },
+      {
+        "value": "SL too wide (1.53 ATR)",
+        "count": 20
+      },
+      {
+        "value": "RVOL 0.22 below 1.0",
+        "count": 20
+      }
+    ],
+    "stage_and_reason": [
+      {
+        "value": "setup: no fresh breakout/continuation trigger",
+        "count": 28451
+      },
+      {
+        "value": "trade_limit: already traded today",
+        "count": 142
+      },
+      {
+        "value": "option: no eligible option contracts",
+        "count": 70
+      },
+      {
+        "value": "setup: entry extended 0.34 ATR",
+        "count": 57
+      },
+      {
+        "value": "setup: SL too wide (1.85 ATR)",
+        "count": 42
+      },
+      {
+        "value": "setup: SL too wide (1.80 ATR)",
+        "count": 39
+      },
+      {
+        "value": "setup: entry extended 0.49 ATR",
+        "count": 35
+      },
+      {
+        "value": "setup: entry extended 0.43 ATR",
+        "count": 35
+      },
+      {
+        "value": "setup: entry extended 0.32 ATR",
+        "count": 31
+      },
+      {
+        "value": "setup: RVOL 0.18 below 1.0",
+        "count": 30
+      },
+      {
+        "value": "setup: RVOL 0.29 below 1.0",
+        "count": 30
+      },
+      {
+        "value": "setup: SL too wide (1.77 ATR)",
+        "count": 30
+      },
+      {
+        "value": "setup: SL too wide (1.84 ATR)",
+        "count": 30
+      },
+      {
+        "value": "setup: RVOL 0.17 below 1.0",
+        "count": 30
+      },
+      {
+        "value": "setup: RVOL 0.10 below 1.0",
+        "count": 29
+      },
+      {
+        "value": "setup: SL too wide (1.79 ATR)",
+        "count": 28
+      },
+      {
+        "value": "setup: entry extended 0.38 ATR",
+        "count": 27
+      },
+      {
+        "value": "setup: SL too wide (1.69 ATR)",
+        "count": 27
+      },
+      {
+        "value": "setup: SL too wide (1.78 ATR)",
+        "count": 25
+      },
+      {
+        "value": "setup: RVOL 0.07 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "setup: entry extended 0.40 ATR",
+        "count": 25
+      },
+      {
+        "value": "setup: RVOL 0.32 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "setup: RVOL 0.34 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "setup: SL too wide (1.86 ATR)",
+        "count": 25
+      },
+      {
+        "value": "setup: SL too wide (1.65 ATR)",
+        "count": 25
+      },
+      {
+        "value": "setup: RVOL 0.36 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "setup: RVOL 0.23 below 1.0",
+        "count": 25
+      },
+      {
+        "value": "setup: RVOL 0.27 below 1.0",
+        "count": 24
+      },
+      {
+        "value": "setup: RVOL 0.54 below 1.0",
+        "count": 22
+      },
+      {
+        "value": "setup: SL too wide (1.82 ATR)",
+        "count": 21
+      },
+      {
+        "value": "setup: SL too wide (1.58 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.61 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.56 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.30 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.52 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (2.14 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (2.59 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: entry extended 0.31 ATR",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.53 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.22 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.64 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.98 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.58 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (2.27 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: entry extended 0.33 ATR",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.15 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.57 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.55 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.38 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: SL too wide (1.96 ATR)",
+        "count": 20
+      },
+      {
+        "value": "setup: RVOL 0.05 below 1.0",
+        "count": 20
+      },
+      {
+        "value": "setup: entry extended 0.47 ATR",
+        "count": 18
+      },
+      {
+        "value": "setup: RVOL 0.49 below 1.0",
+        "count": 17
+      },
+      {
+        "value": "setup: RVOL 0.62 below 1.0",
+        "count": 17
+      },
+      {
+        "value": "setup: entry extended 0.45 ATR",
+        "count": 17
+      },
+      {
+        "value": "setup: SL too wide (1.60 ATR)",
+        "count": 16
+      },
+      {
+        "value": "setup: RVOL 0.35 below 1.0",
+        "count": 15
+      },
+      {
+        "value": "setup: entry extended 0.58 ATR",
+        "count": 15
+      },
+      {
+        "value": "setup: RVOL 0.81 below 1.0",
+        "count": 15
+      },
+      {
+        "value": "setup: RVOL 0.42 below 1.0",
+        "count": 15
+      }
+    ]
+  },
+  "option_analysis": {
+    "option_rejections": 133,
+    "by_reason": [
+      {
+        "value": "no eligible option contracts",
+        "count": 70
+      },
+      {
+        "value": "MCX26AUG2900CE: one-lot risk ₹2305; MCX26AUG2950CE: one-lot risk ₹2305; MCX26AUG2850CE: one-lot risk ₹2305; MCX26AUG3000CE: one-lot risk ₹2305; MCX26AUG3050CE: one-lot risk ₹2305",
+        "count": 5
+      },
+      {
+        "value": "COFORGE26AUG1820CE: one-lot risk ₹2178; COFORGE26AUG1840CE: one-lot risk ₹2178; COFORGE26AUG1800CE: one-lot risk ₹2178; COFORGE26AUG1860CE: one-lot risk ₹2178; COFORGE26AUG1780CE: one-lot risk ₹2178",
+        "count": 5
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.33%; ITC26AUG285PE: premium 5.9 outside range; ITC26AUG280PE: premium 3.0 outside range; ITC26AUG287.5PE: premium 7.7 outside range; ITC26AUG277.5PE: spread 4.76%",
+        "count": 2
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.33%; ITC26AUG285PE: spread 2.58%; ITC26AUG280PE: spread 3.28%; ITC26AUG287.5PE: premium 7.7 outside range; ITC26AUG277.5PE: spread 4.76%",
+        "count": 2
+      },
+      {
+        "value": "BHEL26AUG405PE: spread 2.29%; BHEL26AUG400PE: premium 6.7 outside range; BHEL26AUG410PE: premium 11.4 outside range; BHEL26AUG395PE: spread 3.05%; BHEL26AUG415PE: premium 14.3 outside range",
+        "count": 2
+      },
+      {
+        "value": "JIOFIN26AUG255PE: spread 2.06%; JIOFIN26AUG257.5PE: premium 6.2 outside range; JIOFIN26AUG252.5PE: spread 2.63%; JIOFIN26AUG260PE: premium 7.5 outside range; JIOFIN26AUG250PE: spread 3.39%",
+        "count": 2
+      },
+      {
+        "value": "KALYANKJIL26AUG600CE: premium 29.0 outside range; KALYANKJIL26AUG605CE: premium 26.6 outside range; KALYANKJIL26AUG595CE: one-lot risk ₹2916; KALYANKJIL26AUG610CE: premium 24.4 outside range; KALYANKJIL26AUG615CE: premium 22.2 outside range",
+        "count": 1
+      },
+      {
+        "value": "KALYANKJIL26AUG600CE: premium 28.4 outside range; KALYANKJIL26AUG605CE: premium 26.2 outside range; KALYANKJIL26AUG595CE: one-lot risk ₹2916; KALYANKJIL26AUG610CE: premium 24.0 outside range; KALYANKJIL26AUG615CE: premium 21.9 outside range",
+        "count": 1
+      },
+      {
+        "value": "KALYANKJIL26AUG600CE: premium 29.5 outside range; KALYANKJIL26AUG605CE: premium 27.3 outside range; KALYANKJIL26AUG595CE: one-lot risk ₹2916; KALYANKJIL26AUG610CE: premium 24.9 outside range; KALYANKJIL26AUG615CE: premium 22.8 outside range",
+        "count": 1
+      },
+      {
+        "value": "KALYANKJIL26AUG600CE: premium 29.4 outside range; KALYANKJIL26AUG605CE: premium 27.2 outside range; KALYANKJIL26AUG595CE: one-lot risk ₹2916; KALYANKJIL26AUG610CE: premium 24.9 outside range; KALYANKJIL26AUG615CE: premium 22.7 outside range",
+        "count": 1
+      },
+      {
+        "value": "KALYANKJIL26AUG600CE: premium 29.4 outside range; KALYANKJIL26AUG605CE: premium 27.0 outside range; KALYANKJIL26AUG595CE: one-lot risk ₹2916; KALYANKJIL26AUG610CE: premium 24.9 outside range; KALYANKJIL26AUG615CE: premium 22.6 outside range",
+        "count": 1
+      },
+      {
+        "value": "BHEL26AUG410PE: premium 15.3 outside range; BHEL26AUG405PE: premium 12.4 outside range; BHEL26AUG415PE: premium 18.6 outside range; BHEL26AUG400PE: premium 9.8 outside range; BHEL26AUG395PE: premium 7.7 outside range",
+        "count": 1
+      },
+      {
+        "value": "BHEL26AUG410PE: premium 15.2 outside range; BHEL26AUG405PE: premium 12.3 outside range; BHEL26AUG415PE: premium 18.6 outside range; BHEL26AUG400PE: premium 9.7 outside range; BHEL26AUG395PE: premium 7.7 outside range",
+        "count": 1
+      },
+      {
+        "value": "BHEL26AUG410PE: premium 15.2 outside range; BHEL26AUG405PE: premium 12.3 outside range; BHEL26AUG415PE: premium 18.5 outside range; BHEL26AUG400PE: premium 9.7 outside range; BHEL26AUG395PE: premium 7.6 outside range",
+        "count": 1
+      },
+      {
+        "value": "BHEL26AUG410PE: premium 15.2 outside range; BHEL26AUG405PE: premium 12.3 outside range; BHEL26AUG415PE: premium 18.6 outside range; BHEL26AUG400PE: premium 9.7 outside range; BHEL26AUG395PE: premium 7.6 outside range",
+        "count": 1
+      },
+      {
+        "value": "BHEL26AUG410PE: premium 15.1 outside range; BHEL26AUG405PE: premium 12.2 outside range; BHEL26AUG415PE: premium 18.4 outside range; BHEL26AUG400PE: premium 9.6 outside range; BHEL26AUG395PE: spread 2.02%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.38%; ITC26AUG285PE: spread 2.67%; ITC26AUG280PE: premium 3.0 outside range; ITC26AUG287.5PE: spread 2.01%; ITC26AUG277.5PE: spread 4.88%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 3.64%; ITC26AUG285PE: premium 5.7 outside range; ITC26AUG280PE: spread 3.45%; ITC26AUG287.5PE: premium 7.5 outside range; ITC26AUG277.5PE: spread 5.00%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.41%; ITC26AUG285PE: premium 5.7 outside range; ITC26AUG280PE: spread 3.45%; ITC26AUG287.5PE: spread 2.03%; ITC26AUG277.5PE: spread 5.00%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.41%; ITC26AUG285PE: spread 2.67%; ITC26AUG280PE: spread 3.45%; ITC26AUG287.5PE: spread 2.02%; ITC26AUG277.5PE: spread 5.00%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.41%; ITC26AUG285PE: spread 2.67%; ITC26AUG280PE: premium 3.0 outside range; ITC26AUG287.5PE: premium 7.4 outside range; ITC26AUG277.5PE: spread 5.00%",
+        "count": 1
+      },
+      {
+        "value": "POWERINDIA26AUG36000PE: premium 1599.9 outside range; POWERINDIA26AUG35500PE: OI 22000 < 25000; POWERINDIA26AUG35000PE: premium 998.8 outside range; POWERINDIA26AUG34500PE: OI 20675 < 25000; POWERINDIA26AUG34000PE: premium 539.6 outside range",
+        "count": 1
+      },
+      {
+        "value": "POWERINDIA26AUG36000PE: premium 1600.0 outside range; POWERINDIA26AUG35500PE: OI 21950 < 25000; POWERINDIA26AUG35000PE: premium 999.0 outside range; POWERINDIA26AUG34500PE: OI 20650 < 25000; POWERINDIA26AUG34000PE: premium 543.6 outside range",
+        "count": 1
+      },
+      {
+        "value": "POWERINDIA26AUG36000PE: premium 1605.2 outside range; POWERINDIA26AUG35500PE: OI 21950 < 25000; POWERINDIA26AUG35000PE: premium 999.3 outside range; POWERINDIA26AUG34500PE: OI 20650 < 25000; POWERINDIA26AUG34000PE: premium 539.6 outside range",
+        "count": 1
+      },
+      {
+        "value": "POWERINDIA26AUG36000PE: spread 2.56%; POWERINDIA26AUG35500PE: OI 21950 < 25000; POWERINDIA26AUG35000PE: premium 998.0 outside range; POWERINDIA26AUG34500PE: OI 20675 < 25000; POWERINDIA26AUG34000PE: premium 549.0 outside range",
+        "count": 1
+      },
+      {
+        "value": "POWERINDIA26AUG36000PE: premium 1614.3 outside range; POWERINDIA26AUG35500PE: OI 21950 < 25000; POWERINDIA26AUG35000PE: premium 997.2 outside range; POWERINDIA26AUG34500PE: OI 20725 < 25000; POWERINDIA26AUG34000PE: premium 547.1 outside range",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.38%; ITC26AUG285PE: premium 5.7 outside range; ITC26AUG280PE: spread 3.45%; ITC26AUG287.5PE: premium 7.6 outside range; ITC26AUG277.5PE: spread 4.88%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.35%; ITC26AUG285PE: premium 5.8 outside range; ITC26AUG280PE: spread 3.33%; ITC26AUG287.5PE: premium 7.6 outside range; ITC26AUG277.5PE: spread 4.88%",
+        "count": 1
+      },
+      {
+        "value": "ITC26AUG282.5PE: spread 2.35%; ITC26AUG285PE: spread 2.60%; ITC26AUG280PE: spread 3.33%; ITC26AUG287.5PE: premium 7.7 outside range; ITC26AUG277.5PE: spread 4.88%",
+        "count": 1
+      }
+    ],
+    "detailed_audit_rows": 0,
+    "premium_below_30_examples": [],
+    "note": "Rejected-option observations are descriptive; no hypothetical P&L is invented."
+  },
+  "shadow_trades": {
+    "rows": 6,
+    "closed_trades": 3,
+    "wins": 2,
+    "losses": 1,
+    "breakeven": 0,
+    "win_rate_pct": 66.67,
+    "total_pnl_rupees": 1143.75,
+    "average_pnl_rupees": 381.25,
+    "gross_profit_rupees": 2313.75,
+    "gross_loss_rupees": 1170.0,
+    "profit_factor": 1.978,
+    "max_drawdown_rupees": 1170.0,
+    "exit_reasons": [
+      {
+        "value": "2R_TARGET",
+        "count": 2
+      },
+      {
+        "value": "UNDERLYING_SL",
+        "count": 1
+      }
+    ]
+  },
+  "universe": {
+    "rows": 58,
+    "status_counts": [
+      {
+        "value": "unknown",
+        "count": 58
+      }
+    ],
+    "rejection_reasons": []
+  },
+  "engine_events": {
+    "event_counts": [
+      {
+        "value": "candidate_scan",
+        "count": 790
+      },
+      {
+        "value": "universe_refresh",
+        "count": 58
+      },
+      {
+        "value": "shadow_entry",
+        "count": 3
+      },
+      {
+        "value": "shadow_exit",
+        "count": 3
+      }
+    ],
+    "candidate_scan_totals": {
+      "underlying_setups": 227.0,
+      "option_checked": 227.0,
+      "candidates": 94.0,
+      "rejections": 31506.0
+    },
+    "market_regimes": [
+      {
+        "value": "CHOPPY",
+        "count": 406
+      },
+      {
+        "value": "CHOPPY_LOW_VIX",
+        "count": 384
+      }
+    ]
+  },
+  "daily_summary": [
+    {
+      "date": "2026-08-10",
+      "candidate_rows": 0,
+      "scores_65_plus": 0,
+      "scores_68_plus": 0,
+      "scores_72_plus": 0,
+      "scores_78_plus": 0,
+      "highest_score": null,
+      "rejections": 9280,
+      "pnl_rupees": 0.0
+    },
+    {
+      "date": "2026-08-11",
+      "candidate_rows": 32,
+      "scores_65_plus": 22,
+      "scores_68_plus": 4,
+      "scores_72_plus": 2,
+      "scores_78_plus": 0,
+      "highest_score": 72.4,
+      "rejections": 8289,
+      "pnl_rupees": 675.0
+    },
+    {
+      "date": "2026-08-12",
+      "candidate_rows": 29,
+      "scores_65_plus": 9,
+      "scores_68_plus": 5,
+      "scores_72_plus": 0,
+      "scores_78_plus": 0,
+      "highest_score": 68.4,
+      "rejections": 9091,
+      "pnl_rupees": 0.0
+    },
+    {
+      "date": "2026-08-13",
+      "candidate_rows": 36,
+      "scores_65_plus": 5,
+      "scores_68_plus": 5,
+      "scores_72_plus": 3,
+      "scores_78_plus": 0,
+      "highest_score": 77.4,
+      "rejections": 4846,
+      "pnl_rupees": 468.75
+    }
+  ],
+  "threshold_sensitivity": {
+    "score": {
+      "65": {
+        "count": 36,
+        "pct": 37.11
+      },
+      "68": {
+        "count": 14,
+        "pct": 14.43
+      },
+      "70": {
+        "count": 5,
+        "pct": 5.15
+      },
+      "72": {
+        "count": 5,
+        "pct": 5.15
+      },
+      "75": {
+        "count": 3,
+        "pct": 3.09
+      },
+      "78": {
+        "count": 0,
+        "pct": 0.0
+      }
+    },
+    "premium": {
+      "reference_current": 30,
+      "alternative_to_test": 20,
+      "note": "Counts do not imply profitability; use them to identify candidates requiring further review."
+    }
+  }
+}

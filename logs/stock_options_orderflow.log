@@ -1,26 +1,27 @@
-2026-08-11 10:27:31,046 - INFO - F&O stock universe built: 208
-2026-08-11 10:27:31,080 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
-2026-08-11 10:27:31,145 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2026-08-13 10:24:46,676 - INFO - F&O stock universe built: 208
+2026-08-13 10:24:46,706 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
+2026-08-13 10:24:46,746 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:8065
- * Running on http://192.168.1.202:8065
-2026-08-11 10:27:31,145 - INFO - [33mPress CTRL+C to quit[0m
-2026-08-11 10:27:32,597 - INFO - F&O stock universe built: 208
-2026-08-11 10:28:04,355 - INFO - 127.0.0.1 - - [11/Aug/2026 10:28:04] "[36mGET / HTTP/1.1[0m" 304 -
-2026-08-11 10:28:04,393 - INFO - 127.0.0.1 - - [11/Aug/2026 10:28:04] "GET /socket.io/?EIO=4&transport=polling&t=P_lBrJc HTTP/1.1" 200 -
-2026-08-11 10:28:04,606 - INFO - 127.0.0.1 - - [11/Aug/2026 10:28:04] "POST /socket.io/?EIO=4&transport=polling&t=P_lBrKp&sid=uyGnaZvM2LwR79FTAAAA HTTP/1.1" 200 -
-2026-08-11 10:28:04,772 - INFO - 127.0.0.1 - - [11/Aug/2026 10:28:04] "GET /socket.io/?EIO=4&transport=polling&t=P_lBrKq&sid=uyGnaZvM2LwR79FTAAAA HTTP/1.1" 200 -
-2026-08-11 10:28:04,813 - INFO - 127.0.0.1 - - [11/Aug/2026 10:28:04] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
-2026-08-11 10:44:30,121 - INFO - F&O stock universe built: 208
-2026-08-11 11:01:24,988 - INFO - F&O stock universe built: 208
-2026-08-11 11:18:29,254 - INFO - F&O stock universe built: 208
-2026-08-11 11:35:26,761 - INFO - F&O stock universe built: 208
-2026-08-11 11:52:27,549 - INFO - F&O stock universe built: 208
-2026-08-11 12:09:26,120 - INFO - F&O stock universe built: 208
-2026-08-11 12:26:23,429 - INFO - F&O stock universe built: 208
-2026-08-11 12:43:22,067 - INFO - F&O stock universe built: 208
-2026-08-11 13:00:19,853 - INFO - F&O stock universe built: 208
-2026-08-11 13:27:43,216 - ERROR - Engine loop error
+ * Running on http://192.168.1.203:8065
+2026-08-13 10:24:46,746 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-13 10:24:47,457 - INFO - F&O stock universe built: 208
+2026-08-13 10:24:56,667 - INFO - 127.0.0.1 - - [13/Aug/2026 10:24:56] "GET / HTTP/1.1" 200 -
+2026-08-13 10:24:56,703 - INFO - 127.0.0.1 - - [13/Aug/2026 10:24:56] "GET /socket.io/?EIO=4&transport=polling&t=P_vUI-x HTTP/1.1" 200 -
+2026-08-13 10:24:56,900 - INFO - 127.0.0.1 - - [13/Aug/2026 10:24:56] "POST /socket.io/?EIO=4&transport=polling&t=P_vUJ0-&sid=an3_wSHAJ3GUiq-cAAAA HTTP/1.1" 200 -
+2026-08-13 10:24:57,150 - INFO - 127.0.0.1 - - [13/Aug/2026 10:24:57] "GET /socket.io/?EIO=4&transport=polling&t=P_vUJ18&sid=an3_wSHAJ3GUiq-cAAAA HTTP/1.1" 200 -
+2026-08-13 10:24:57,183 - INFO - 127.0.0.1 - - [13/Aug/2026 10:24:57] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-13 10:24:57,462 - INFO - 127.0.0.1 - - [13/Aug/2026 10:24:57] "GET /socket.io/?EIO=4&transport=polling&t=P_vUJ68&sid=an3_wSHAJ3GUiq-cAAAA HTTP/1.1" 200 -
+2026-08-13 10:41:47,822 - INFO - F&O stock universe built: 208
+2026-08-13 10:58:47,074 - INFO - F&O stock universe built: 208
+2026-08-13 11:15:44,600 - INFO - F&O stock universe built: 208
+2026-08-13 12:10:33,472 - INFO - 127.0.0.1 - - [13/Aug/2026 12:10:33] "GET / HTTP/1.1" 200 -
+2026-08-13 12:10:33,480 - INFO - 127.0.0.1 - - [13/Aug/2026 12:10:33] "GET /socket.io/?EIO=4&transport=websocket&sid=an3_wSHAJ3GUiq-cAAAA HTTP/1.1" 200 -
+2026-08-13 12:10:33,593 - INFO - 127.0.0.1 - - [13/Aug/2026 12:10:33] "GET /socket.io/?EIO=4&transport=polling&t=P_vsU4t HTTP/1.1" 200 -
+2026-08-13 12:10:33,731 - INFO - 127.0.0.1 - - [13/Aug/2026 12:10:33] "POST /socket.io/?EIO=4&transport=polling&t=P_vsU54&sid=Frjh-h099-Z_-DwQAAAC HTTP/1.1" 200 -
+2026-08-13 12:10:33,912 - INFO - 127.0.0.1 - - [13/Aug/2026 12:10:33] "GET /socket.io/?EIO=4&transport=polling&t=P_vsU55&sid=Frjh-h099-Z_-DwQAAAC HTTP/1.1" 200 -
+2026-08-13 12:10:34,032 - INFO - 127.0.0.1 - - [13/Aug/2026 12:10:34] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-13 12:10:56,681 - ERROR - Engine loop error
 Traceback (most recent call last):
   File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1604, in engine_loop
     engine_tick()
@@ -28,8 +29,24 @@ Traceback (most recent call last):
     f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
        ~~~~~~~~~~~~^^^^^^^^^^
 TypeError: 'NoneType' object is not subscriptable
-2026-08-11 13:28:43,872 - INFO - F&O stock universe built: 208
-2026-08-11 13:45:39,991 - INFO - F&O stock universe built: 208
-2026-08-11 14:02:36,037 - INFO - F&O stock universe built: 208
-2026-08-11 14:19:32,488 - INFO - F&O stock universe built: 208
-2026-08-11 14:36:30,357 - INFO - F&O stock universe built: 208
+2026-08-13 12:11:57,332 - INFO - F&O stock universe built: 208
+2026-08-13 12:28:55,530 - INFO - F&O stock universe built: 208
+2026-08-13 12:46:00,958 - INFO - F&O stock universe built: 208
+2026-08-13 13:02:59,241 - INFO - F&O stock universe built: 208
+2026-08-13 13:26:38,445 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:38] "GET / HTTP/1.1" 200 -
+2026-08-13 13:26:38,453 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:38] "GET /socket.io/?EIO=4&transport=websocket&sid=Frjh-h099-Z_-DwQAAAC HTTP/1.1" 200 -
+2026-08-13 13:26:38,571 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:38] "GET /socket.io/?EIO=4&transport=polling&t=P_w7uad HTTP/1.1" 200 -
+2026-08-13 13:26:38,697 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:38] "POST /socket.io/?EIO=4&transport=polling&t=P_w7uar&sid=FEjqCrDQ2SLX4mShAAAE HTTP/1.1" 200 -
+2026-08-13 13:26:38,896 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:38] "GET /socket.io/?EIO=4&transport=polling&t=P_w7uas&sid=FEjqCrDQ2SLX4mShAAAE HTTP/1.1" 200 -
+2026-08-13 13:26:38,942 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:38] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-13 13:26:39,205 - INFO - 127.0.0.1 - - [13/Aug/2026 13:26:39] "GET /socket.io/?EIO=4&transport=polling&t=P_w7ufp&sid=FEjqCrDQ2SLX4mShAAAE HTTP/1.1" 200 -
+2026-08-13 14:33:41,569 - ERROR - Engine loop error
+Traceback (most recent call last):
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1604, in engine_loop
+    current_state["daily_trades"] = daily_trades
+            ^^^^^^^^^^^^^
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1553, in engine_tick
+    emit_state()
+           ^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2026-08-13 14:34:42,306 - INFO - F&O stock universe built: 208
