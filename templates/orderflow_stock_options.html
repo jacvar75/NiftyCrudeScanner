@@ -26,6 +26,70 @@ table{width:100%;border-collapse:collapse;font:11px var(--mono)}th{font-size:9px
 .empty{padding:25px;text-align:center;color:var(--muted);font-size:12px}.active{border-color:rgba(53,230,154,.35);box-shadow:0 0 30px rgba(53,230,154,.07)}
 .tradegrid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.tradebox{background:#0b1323;border:1px solid var(--border);border-radius:10px;padding:11px}.tradebox label{font-size:9px;color:var(--muted);display:block}.tradebox b{font:700 13px var(--mono);display:block;margin-top:5px}
 .progress{height:5px;background:#0a1120;border-radius:10px;overflow:hidden;margin-top:12px}.bar{height:100%;background:var(--cyan);width:0;transition:.3s}
+.tradegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+.tradebox{
+  background:#0b1323;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px;
+}
+
+.tradebox label{
+  font-size:9px;
+  color:var(--muted);
+  display:block;
+}
+
+.tradebox b{
+  font:700 13px var(--mono);
+  display:block;
+  margin-top:5px;
+}
+
+.entry-premium{
+  border-color:rgba(34,211,238,.35);
+  box-shadow:0 0 14px rgba(34,211,238,.08);
+}
+
+.entry-premium b{
+  color:var(--cyan);
+  text-shadow:0 0 10px rgba(34,211,238,.35);
+}
+
+.pnl-box b{
+  transition:.25s;
+}
+
+.pnl-profit{
+  color:var(--green)!important;
+  text-shadow:0 0 12px rgba(53,230,154,.65);
+}
+
+.pnl-loss{
+  color:var(--red)!important;
+  text-shadow:0 0 12px rgba(255,92,112,.65);
+}
+
+.pnl-flat{
+  color:var(--yellow)!important;
+  text-shadow:0 0 10px rgba(255,200,87,.45);
+}
+
+.progress{
+  height:5px;
+  background:#0a1120;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:12px;
+}
+
+.bar{
+  height:100%;
+  background:var(--cyan);
+  width:0;
+  transition:.3s;
+}
 @media(max-width:1100px){.card{grid-column:span 6}.wide{grid-column:span 12}.metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.app{padding:9px}.header{position:static}.card{grid-column:1/-1}.metrics,.tradegrid{grid-template-columns:repeat(2,1fr)}table{font-size:10px}.scroll{overflow-x:auto}}
 </style>
 </head>
@@ -48,11 +112,55 @@ table{width:100%;border-collapse:collapse;font:11px var(--mono)}th{font-size:9px
     <h2>Active Shadow Trade</h2>
     <div id="activeEmpty" class="empty">No active trade</div>
     <div id="activeTrade" style="display:none">
-      <div class="tradegrid"><div class="tradebox"><label>Stock</label><b id="atStock">—</b></div><div class="tradebox"><label>Option</label><b id="atOption">—</b></div><div class="tradebox"><label>Entry Premium</label><b id="atEntry">—</b></div><div class="tradebox"><label>Current</label><b id="atCurrent">—</b></div><div class="tradebox"><label>SL</label><b id="atSL">—</b></div><div class="tradebox"><label>Target</label><b id="atTarget">—</b></div></div>
-      <div class="progress"><div id="pnlBar" class="bar"></div></div><div class="sub" id="tradeMeta">—</div>
+      <div class="tradegrid">
+
+        <div class="tradebox">
+          <label>Stock</label>
+          <b id="atStock">—</b>
+        </div>
+        <div class="tradebox">
+          <label>Option</label>
+          <b id="atOption">—</b>
+        </div>
+        <div class="tradebox entry-premium">
+          <label>Entry Premium</label>
+          <b id="atEntry">—</b>
+        </div>
+        <div class="tradebox">
+          <label>Current Premium</label>
+          <b id="atCurrent">—</b>
+        </div>
+
+        <div class="tradebox pnl-box">
+          <label>Option P&amp;L</label>
+          <b id="atPnl">—</b>
+        </div>
+
+        <div class="tradebox pnl-box">
+          <label>P&amp;L %</label>
+          <b id="atPnlPct">—</b>
+        </div>
+
+        <div class="tradebox">
+          <label>TP</label>
+          <b id="atTP">—</b>
+        </div>
+
+        <div class="tradebox">
+          <label>SL</label>
+          <b id="atSL">—</b>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div id="pnlBar" class="bar"></div>
+      </div>
+
+      <div class="sub" id="tradeMeta">—</div>
+
     </div>
   </section>
-  <section class="card wide"><h2>Risk / Exit Model</h2><div class="metrics"><div class="metric"><label>Risk / Trade</label><b>₹2,000</b></div><div class="metric"><label>Target</label><b>1:2 FIXED</b></div><div class="metric"><label>Max Trades</label><b>2</b></div><div class="metric"><label>Hard Exit</label><b>15:15</b></div></div><div class="sub" style="margin-top:12px">SL is structural on the underlying. Shadow P&amp;L is marked from the option quote.</div></section>
+  <section class="card wide"><h2>Risk / Exit Model</h2><div class="metrics"><div class="metric"><label>Risk / Trade</label><b>₹2,000</b></div><div class="metric"><label>Target</label><b>1:2 FIXED</b></div><div class="metric"><label>Max Trades</label><b>2</b></div><div class="metric"><label>Hard Exit</label><b>15:15</b></div></div><div class="sub" style="margin-top:12px">TP/SL are based on the option premium. Shadow P&amp;L is marked from the option quote.</div></section>
 </div>
 
 <section class="card full"><h2>Top Ranked Setups</h2><div class="scroll"><table><thead><tr><th>#</th><th>Stock</th><th>Side</th><th>Score</th><th>Price</th><th>RVOL</th><th>RS vs Nifty</th><th>SL</th><th>2R Target</th><th>Risk</th><th>Option</th><th>Premium</th><th>Spread</th><th>OI</th><th>DTE</th><th>Est. 1L Risk</th></tr></thead><tbody id="candidateBody"><tr><td colspan="16" class="empty">Waiting for scan...</td></tr></tbody></table></div></section>
@@ -74,12 +182,95 @@ socket.on('connect',()=>{$('conn').textContent='CONNECTED';$('connDot').classLis
 socket.on('disconnect',()=>{$('conn').textContent='DISCONNECTED';$('connDot').classList.remove('on')});
 
 function renderActive(t){
- if(!t){$('activeEmpty').style.display='block';$('activeTrade').style.display='none';$('activeCard').classList.remove('active');return}
- $('activeEmpty').style.display='none';$('activeTrade').style.display='block';$('activeCard').classList.add('active');
- $('atStock').textContent=t.symbol+' '+t.bias;$('atOption').textContent=t.option_symbol||'—';$('atEntry').textContent=fmt(t.entry_premium);$('atCurrent').textContent=fmt(t.current_option);$('atSL').textContent=fmt(t.underlying_sl);$('atTarget').textContent=fmt(t.underlying_target);
- $('tradeMeta').textContent=`Underlying ${fmt(t.current_underlying)} | Est. Risk ${money(t.estimated_rupee_risk)} | Score ${fmt(t.score,1)} | ${t.dte} DTE | ${t.exit_reason||'ACTIVE'}`;
- const entry=Number(t.entry_premium||0),cur=Number(t.current_option||entry);let pct=entry?Math.max(0,Math.min(100,((cur-entry)/Math.max(entry*.2,.01))*100)):0;$('pnlBar').style.width=pct+'%';
+ if(!t){
+   $('activeEmpty').style.display='block';
+   $('activeTrade').style.display='none';
+   $('activeCard').classList.remove('active');
+   return;
+ }
+
+ $('activeEmpty').style.display='none';
+ $('activeTrade').style.display='block';
+ $('activeCard').classList.add('active');
+
+ const entry = Number(t.entry_premium || 0);
+ const cur = Number(t.current_option || entry);
+ const lot = Number(t.lot_size || 0);
+
+ // Live option P&L.
+ // For both CALL and PUT buying:
+ // P&L = (current premium - entry premium) × lot size
+ const pnlPoints = cur - entry;
+ const pnlRupees = pnlPoints * lot;
+ const pnlPct = entry > 0 ? (pnlPoints / entry) * 100 : 0;
+
+ const pnlClass =
+   pnlRupees > 0 ? 'pnl-profit' :
+   pnlRupees < 0 ? 'pnl-loss' :
+   'pnl-flat';
+
+ $('atStock').textContent =
+   t.symbol + ' ' + t.bias;
+
+ $('atOption').textContent =
+   t.option_symbol || '—';
+
+ $('atEntry').textContent =
+   fmt(entry);
+
+ $('atCurrent').textContent =
+   fmt(cur);
+
+ $('atTP').textContent =
+  fmt(t.option_target);
+
+$('atSL').textContent =
+  fmt(t.option_sl);
+
+ // Live P&L in rupees.
+ $('atPnl').textContent =
+   (pnlRupees >= 0 ? '+' : '') + money(pnlRupees);
+
+ // Live P&L percentage.
+ $('atPnlPct').textContent =
+   (pnlPct >= 0 ? '+' : '') + fmt(pnlPct, 2) + '%';
+
+ // Apply glossy profit/loss styling.
+ $('atPnl').className = pnlClass;
+ $('atPnlPct').className = pnlClass;
+ $('atCurrent').className = pnlClass;
+
+ // Progress bar represents magnitude of option P&L.
+ // It never affects trading logic.
+ const barPct = Math.min(
+   100,
+   Math.abs(pnlPct) * 5
+ );
+
+ $('pnlBar').style.width = barPct + '%';
+
+ if(pnlRupees > 0){
+   $('pnlBar').style.background = 'var(--green)';
+   $('pnlBar').style.boxShadow =
+     '0 0 12px rgba(53,230,154,.75)';
+ }else if(pnlRupees < 0){
+   $('pnlBar').style.background = 'var(--red)';
+   $('pnlBar').style.boxShadow =
+     '0 0 12px rgba(255,92,112,.75)';
+ }else{
+   $('pnlBar').style.background = 'var(--yellow)';
+   $('pnlBar').style.boxShadow =
+     '0 0 10px rgba(255,200,87,.5)';
+ }
+
+ $('tradeMeta').textContent =
+   `Underlying Current ${fmt(t.current_underlying)} | ` +
+   `Est. Risk ${money(t.estimated_rupee_risk)} | ` +
+   `Score ${fmt(t.score,1)} | ` +
+   `${t.dte} DTE | ` +
+   `${t.exit_reason || 'ACTIVE'}`;
 }
+
 function renderCandidates(rows){
  const body=$('candidateBody');if(!rows||!rows.length){body.innerHTML='<tr><td colspan="16" class="empty">No option-qualified setups right now</td></tr>';return}
  body.innerHTML=rows.map((x,i)=>{const side=x.bias==='CALL'?'call':'put';return `<tr class="${i===0?'selected':''}">

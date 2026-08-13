@@ -74,7 +74,7 @@ MIN_OPTION_OI = 25_000
 MIN_OPTION_VOLUME = 5_000
 MAX_OPTION_SPREAD_PCT = 2.0
 PREFERRED_OPTION_SPREAD_PCT = 1.0
-MIN_OPTION_PREMIUM = 30.0
+MIN_OPTION_PREMIUM = 20.0
 MAX_OPTION_PREMIUM = 250.0
 MIN_DTE = 2
 MAX_DTE = 10
@@ -82,13 +82,17 @@ AVOID_EXPIRY_DAY = True
 
 # Risk / selection
 MAX_RISK_PER_TRADE = 2_000.0       # CHANGE BEFORE LIVE TRADING
-MAX_TRADES_PER_DAY = 2
+MAX_TRADES_PER_DAY = 3
 ONE_TRADE_PER_STOCK_PER_DAY = True
-MIN_RANK_SCORE = 72.0
+MIN_RANK_SCORE = 68.0
 SECOND_TRADE_MIN_SCORE = 78.0
 MIN_SCORE_GAP = 4.0
 TARGET_R_MULTIPLE = 2.0            # v1 starts at fixed 1:2
 MAX_ENTRY_EXTENSION_ATR = 0.30
+PULLBACK_RETEST_ATR = 0.20
+MAX_PULLBACK_ARM_EXTENSION_ATR = 0.80
+PULLBACK_MAX_WAIT_MINUTES = 30
+
 MAX_SL_ATR = 1.50
 MIN_SL_ATR = 0.15
 
@@ -143,6 +147,7 @@ nfo_df = pd.DataFrame()
 stock_universe = {}
 candidate_cache = {}
 intraday_cache = {}
+pending_pullbacks = {}
 last_universe_refresh = 0.0
 last_candidate_refresh = 0.0
 last_emit = 0.0
@@ -735,24 +740,94 @@ def detect_setup(symbol, meta, market):
     last = df.iloc[-1]
     prev = df.iloc[-2]
 
+    # -----------------------------------------------------------------------
+    # PULLBACK RE-ENTRY
+    # If a valid breakout became extended, wait for a controlled retest of
+    # the breakout trigger and a fresh reclaim before allowing entry.
+    # -----------------------------------------------------------------------
+    pending = pending_pullbacks.get(symbol)
+    pullback_reentry = False
+
+    if pending:
+        try:
+            armed_at = dt.datetime.fromisoformat(pending["armed_at"])
+            age_minutes = (now_ist() - armed_at).total_seconds() / 60.0
+        except Exception:
+            age_minutes = 999.0
+
+        if age_minutes > PULLBACK_MAX_WAIT_MINUTES:
+            pending_pullbacks.pop(symbol, None)
+            pending = None
+
+    if pending:
+        pending_bias = pending["bias"]
+        pending_trigger = float(pending["trigger"])
+        retest_distance = PULLBACK_RETEST_ATR * a
+
+        if pending_bias == "CALL":
+            pullback_touched = (
+                    float(prev["low"]) <= pending_trigger + retest_distance
+            )
+            reclaim = (
+                    price > pending_trigger
+                    and last["close"] > last["open"]
+                    and last["close"] > prev["high"]
+            )
+            if pullback_touched and reclaim:
+                bias = "CALL"
+                trigger = pending_trigger
+                pullback_reentry = True
+
+        else:
+            pullback_touched = (
+                    float(prev["high"]) >= pending_trigger - retest_distance
+            )
+            reclaim = (
+                    price < pending_trigger
+                    and last["close"] < last["open"]
+                    and last["close"] < prev["low"]
+            )
+            if pullback_touched and reclaim:
+                bias = "PUT"
+                trigger = pending_trigger
+                pullback_reentry = True
+
+        if pullback_reentry:
+            pending_pullbacks.pop(symbol, None)
+
     bull_break = price > swing_high and last["close"] > last["open"]
     bear_break = price < swing_low and last["close"] < last["open"]
 
-    if bull_break:
+    if pullback_reentry:
+        # Already assigned from the pending pullback state.
+        pass
+    elif bull_break:
         bias = "CALL"
         trigger = swing_high
     elif bear_break:
         bias = "PUT"
         trigger = swing_low
     else:
-        bull_cont = price > svwap and ema9 > ema21 and prev["close"] <= svwap and price > prev["high"]
-        bear_cont = price < svwap and ema9 < ema21 and prev["close"] >= svwap and price < prev["low"]
+        bull_cont = (
+            price > svwap
+            and ema9 > ema21
+            and prev["close"] <= svwap
+            and price > prev["high"]
+        )
+        bear_cont = (
+            price < svwap
+            and ema9 < ema21
+            and prev["close"] >= svwap
+            and price < prev["low"]
+        )
         if bull_cont:
             bias, trigger = "CALL", float(svwap)
         elif bear_cont:
             bias, trigger = "PUT", float(svwap)
         else:
             return None, "no fresh breakout/continuation trigger"
+
+
 
     score = 0.0
     components = {}
@@ -778,17 +853,20 @@ def detect_setup(symbol, meta, market):
         if bias == "CALL"
         else (last["high"] - last["close"]) / candle_range
     )
-    if (bias == "CALL" and bull_break) or (bias == "PUT" and bear_break):
-        breakout += 10
+    if pullback_reentry:
+        breakout += 7
+    elif (bias == "CALL" and bull_break) or (bias == "PUT" and bear_break):
+        breakout += 7
+
     if close_location >= 0.65:
-        breakout += 5
+        breakout += 4
     if abs(price - trigger) <= 0.30 * a:
-        breakout += 5
+        breakout += 4
     components["breakout_quality"] = breakout
     score += breakout
 
     participation = 0
-    if rvol >= 1.0: participation += 6
+    if rvol >= 1.0: participation += 7
     if rvol >= 1.3: participation += 5
     if rvol >= 1.7: participation += 4
     components["rvol"] = participation
@@ -801,11 +879,11 @@ def detect_setup(symbol, meta, market):
     relative = stock_move - nifty_move
     rs_points = 0
     if bias == "CALL":
-        if relative > 0.25: rs_points += 8
+        if relative > 0.25: rs_points += 9
         if relative > 0.50: rs_points += 4
         if relative > 0.90: rs_points += 3
     else:
-        if relative < -0.25: rs_points += 8
+        if relative < -0.25: rs_points += 9
         if relative < -0.50: rs_points += 4
         if relative < -0.90: rs_points += 3
     components["relative_strength"] = rs_points
@@ -873,7 +951,23 @@ def detect_setup(symbol, meta, market):
     if risk_points > MAX_SL_ATR * a:
         return None, f"SL too wide ({risk_points/a:.2f} ATR)"
     if extension > MAX_ENTRY_EXTENSION_ATR:
-        return None, f"entry extended {extension:.2f} ATR"
+        # Do not chase an already-extended move.
+        # Arm it for a controlled pullback + reclaim entry instead.
+        if extension <= MAX_PULLBACK_ARM_EXTENSION_ATR:
+            pending_pullbacks[symbol] = {
+                "symbol": symbol,
+                "bias": bias,
+                "trigger": float(trigger),
+                "armed_at": now_ist().isoformat(),
+                "armed_price": float(price),
+                "armed_extension_atr": float(extension),
+            }
+            return None, (
+                f"pullback armed {extension:.2f} ATR — "
+                f"waiting for trigger retest/reclaim"
+            )
+        return None, f"entry too extended {extension:.2f} ATR"
+
     if rvol < MIN_RVOL:
         return None, f"RVOL {rvol:.2f} below {MIN_RVOL}"
 
@@ -1171,7 +1265,7 @@ def scan_candidates():
                 })
                 continue
 
-            final_score = min(100, setup["score"] + option["option_score"] * 0.8)
+            final_score = min(100, setup["score"] + option["option_score"] * 0.9)
             setup["score"] = round(final_score, 1)
             setup["option"] = option
             setup["option_reason"] = option_reason
@@ -1321,6 +1415,7 @@ def choose_trade(candidates):
     # Version 1 is deliberately conservative: one top trade is selected.
     # The second-trade allowance is kept as a later research switch.
     selected = top
+    pending_pullbacks.pop(selected["symbol"], None)
 
     option = selected["option"]
     now = now_ist()
@@ -1383,9 +1478,23 @@ def choose_trade(candidates):
         "bid_at_entry": bid,
         "ask_at_entry": ask,
         "spread_pct": spread,
+
+        # Underlying structural levels — actual exit logic continues to use these.
         "underlying_sl": selected["sl_underlying"],
         "underlying_target": selected["target_underlying"],
         "risk_points_underlying": selected["risk_points_underlying"],
+
+        # ACTUAL OPTION-PREMIUM EXIT LEVELS
+        "option_risk_points": option["estimated_option_risk_points"],
+        "option_sl": max(
+            0.05,
+            entry_premium - option["estimated_option_risk_points"]
+        ),
+        "option_target": (
+                entry_premium
+                + option["estimated_option_risk_points"] * TARGET_R_MULTIPLE
+        ),
+
         "target_r_multiple": TARGET_R_MULTIPLE,
         "estimated_rupee_risk": estimated_risk,
         "mfe_underlying": underlying,
@@ -1444,6 +1553,11 @@ def monitor_active_trade():
     if option_ltp <= 0 or underlying <= 0:
         return
 
+    # Underlying is useful for logging/excursion tracking,
+    # but it must NOT block option-premium exit monitoring.
+    if underlying <= 0:
+        underlying = t.get("current_underlying", t["entry_underlying"])
+
     t["current_option"] = option_ltp
     t["current_underlying"] = underlying
     t["mfe_option"] = max(t.get("mfe_option", t["entry_premium"]), option_ltp)
@@ -1462,17 +1576,14 @@ def monitor_active_trade():
 
     exit_reason = None
 
-    if t["bias"] == "CALL":
-        if underlying <= t["underlying_sl"]:
-            exit_reason = "UNDERLYING_SL"
-        elif underlying >= t["underlying_target"]:
-            exit_reason = "2R_TARGET"
-    else:
-        if underlying >= t["underlying_sl"]:
-            exit_reason = "UNDERLYING_SL"
-        elif underlying <= t["underlying_target"]:
-            exit_reason = "2R_TARGET"
+    # ACTUAL EXIT LOGIC — OPTION PREMIUM
+    if option_ltp <= t["option_sl"]:
+        exit_reason = "OPTION_SL"
 
+    elif option_ltp >= t["option_target"]:
+        exit_reason = "OPTION_2R_TARGET"
+
+    # Mandatory end-of-day exit remains unchanged.
     if now_ist().time() >= HARD_EXIT:
         exit_reason = "3:15_HARD_EXIT"
 
