@@ -88,6 +88,14 @@ MIN_RANK_SCORE = 68.0
 SECOND_TRADE_MIN_SCORE = 78.0
 MIN_SCORE_GAP = 4.0
 TARGET_R_MULTIPLE = 2.0            # v1 starts at fixed 1:2
+
+# Dynamic option-premium profit protection
+PROFIT_LOCK_1_R = 1.00       # activate first protection at +1R
+PROFIT_LOCK_1_LOCK_R = 0.25 # protect +0.25R
+
+PROFIT_LOCK_2_R = 1.50       # stronger protection at +1.5R
+PROFIT_LOCK_2_LOCK_R = 0.75 # protect +0.75R
+
 MAX_ENTRY_EXTENSION_ATR = 0.30
 PULLBACK_RETEST_ATR = 0.20
 MAX_PULLBACK_ARM_EXTENSION_ATR = 0.80
@@ -1490,10 +1498,19 @@ def choose_trade(candidates):
             0.05,
             entry_premium - option["estimated_option_risk_points"]
         ),
-        "option_target": (
-                entry_premium
-                + option["estimated_option_risk_points"] * TARGET_R_MULTIPLE
+        "initial_option_sl": max(
+            0.05,
+            entry_premium - option["estimated_option_risk_points"]
         ),
+        "current_option_sl": max(
+            0.05,
+            entry_premium - option["estimated_option_risk_points"]
+        ),
+        "option_target": (
+            entry_premium
+            + option["estimated_option_risk_points"] * TARGET_R_MULTIPLE
+        ),
+        "profit_lock_stage": 0,
 
         "target_r_multiple": TARGET_R_MULTIPLE,
         "estimated_rupee_risk": estimated_risk,
@@ -1564,24 +1581,50 @@ def monitor_active_trade():
     t["mae_option"] = min(t.get("mae_option", t["entry_premium"]), option_ltp)
 
     # Track underlying excursion independently from option excursion.
-    t["mfe_underlying"] = max(
-        t.get("mfe_underlying", t["entry_underlying"]),
-        underlying
-    )
+    t["mfe_underlying"] = max(t.get("mfe_underlying", t["entry_underlying"]),underlying)
 
-    t["mae_underlying"] = min(
-        t.get("mae_underlying", t["entry_underlying"]),
-        underlying
-    )
+    t["mae_underlying"] = min(t.get("mae_underlying", t["entry_underlying"]), underlying)
 
     exit_reason = None
 
-    # ACTUAL EXIT LOGIC — OPTION PREMIUM
-    if option_ltp <= t["option_sl"]:
-        exit_reason = "OPTION_SL"
+    # ---------------------------------------------------------
+    # DYNAMIC OPTION-PREMIUM PROFIT PROTECTION
+    # ---------------------------------------------------------
+    entry_premium = float(t["entry_premium"])
+    risk_points = float(t["option_risk_points"])
+
+    if risk_points > 0:
+        current_r = (option_ltp - entry_premium) / risk_points
+
+        # Stage 1: once trade reaches +1R,
+        # protect +0.25R.
+        if current_r >= PROFIT_LOCK_1_R:
+            lock_price = (entry_premium + risk_points * PROFIT_LOCK_1_LOCK_R)
+
+            if lock_price > t["current_option_sl"]:
+                t["current_option_sl"] = lock_price
+                t["profit_lock_stage"] = max(t.get("profit_lock_stage", 0),1,)
+
+        # Stage 2: once trade reaches +1.5R,
+        # protect +0.75R.
+        if current_r >= PROFIT_LOCK_2_R:
+            lock_price = (entry_premium + risk_points * PROFIT_LOCK_2_LOCK_R)
+
+            if lock_price > t["current_option_sl"]:
+                t["current_option_sl"] = lock_price
+                t["profit_lock_stage"] = 2
+
+        t["current_r"] = current_r
+
+    # ---------------------------------------------------------
+    # EXIT CHECKS
+    # ---------------------------------------------------------
+    if option_ltp <= t["current_option_sl"]:
+        exit_reason = "OPTION_PROFIT_LOCK" if t.get("profit_lock_stage", 0) > 0 else "OPTION_SL"
 
     elif option_ltp >= t["option_target"]:
         exit_reason = "OPTION_2R_TARGET"
+
 
     # Mandatory end-of-day exit remains unchanged.
     if now_ist().time() >= HARD_EXIT:
