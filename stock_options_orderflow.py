@@ -82,7 +82,7 @@ AVOID_EXPIRY_DAY = True
 
 # Risk / selection
 MAX_RISK_PER_TRADE = 2_000.0       # CHANGE BEFORE LIVE TRADING
-MAX_TRADES_PER_DAY = 3
+MAX_TRADES_PER_DAY = 2
 ONE_TRADE_PER_STOCK_PER_DAY = True
 MIN_RANK_SCORE = 68.0
 SECOND_TRADE_MIN_SCORE = 78.0
@@ -1550,7 +1550,18 @@ def candidate_log_row(x, selected=False):
         "rvol": x["rvol"],
         "adx": x["adx"],
         "rsi": x["rsi"],
-        "relative_strength": x["relative_strength"],
+
+        # Preserve raw RS value, but explicitly mark invalid values.
+        "relative_strength": (
+            float(x["relative_strength"])
+            if x.get("relative_strength") is not None
+               and math.isfinite(float(x["relative_strength"]))
+            else None
+        ),
+        "relative_strength_valid": (
+                x.get("relative_strength") is not None
+                and math.isfinite(float(x["relative_strength"]))
+        ),
         "market_regime": x["market_regime"],
         "option_symbol": o.get("tradingsymbol"),
         "option_strike": o.get("strike"),
@@ -1686,7 +1697,18 @@ def choose_trade(candidates):
         "rvol": selected["rvol"],
         "adx": selected["adx"],
         "rsi": selected["rsi"],
-        "relative_strength": selected["relative_strength"],
+
+        # Raw RS value for post-trade analysis.
+        "relative_strength": (
+            float(selected["relative_strength"])
+            if selected.get("relative_strength") is not None
+               and math.isfinite(float(selected["relative_strength"]))
+            else None
+        ),
+        "relative_strength_valid": (
+                selected.get("relative_strength") is not None
+                and math.isfinite(float(selected["relative_strength"]))
+        ),
         "market_regime": selected["market_regime"],
         "option_oi": option["oi"],
         "option_volume": option["volume"],
@@ -1783,8 +1805,32 @@ def monitor_active_trade():
     # ---------------------------------------------------------
     # EXIT CHECKS
     # ---------------------------------------------------------
-    if option_ltp <= t["current_option_sl"]:
-        exit_reason = "OPTION_PROFIT_LOCK" if t.get("profit_lock_stage", 0) > 0 else "OPTION_SL"
+
+    # UNDERLYING STRUCTURAL SL — CATASTROPHIC BACKSTOP ONLY
+    #
+    # Option premium remains the PRIMARY exit/management model.
+    # This underlying SL exists only to protect against severe
+    # delta/IV/option-premium decoupling.
+
+    underlying_sl = float(t.get("underlying_sl", 0) or 0)
+
+    underlying_sl_hit = False
+    if underlying_sl > 0:
+        if t["bias"] == "CALL" and underlying <= underlying_sl:
+            underlying_sl_hit = True
+        elif t["bias"] == "PUT" and underlying >= underlying_sl:
+            underlying_sl_hit = True
+
+    if underlying_sl_hit:
+        exit_reason = "UNDERLYING_STRUCTURAL_SL"
+
+    # PRIMARY OPTION-PREMIUM EXIT LOGIC
+    elif option_ltp <= t["current_option_sl"]:
+        exit_reason = (
+            "OPTION_PROFIT_LOCK"
+            if t.get("profit_lock_stage", 0) > 0
+            else "OPTION_SL"
+        )
 
     elif option_ltp >= t["option_target"]:
         exit_reason = "OPTION_2R_TARGET"
