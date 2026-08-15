@@ -1807,14 +1807,9 @@ def monitor_active_trade():
     # ---------------------------------------------------------
 
     # UNDERLYING STRUCTURAL SL — CATASTROPHIC BACKSTOP ONLY
-    #
-    # Option premium remains the PRIMARY exit/management model.
-    # This underlying SL exists only to protect against severe
-    # delta/IV/option-premium decoupling.
-
     underlying_sl = float(t.get("underlying_sl", 0) or 0)
-
     underlying_sl_hit = False
+    
     if underlying_sl > 0:
         if t["bias"] == "CALL" and underlying <= underlying_sl:
             underlying_sl_hit = True
