@@ -59,6 +59,8 @@ CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED:
                                             # Revisit once you have real DTE<=2 samples.
 
 CRUDE_HARD_LOSS_CAP_PTS = 90
+CRUDE_EARLY_FAIL_MINUTES = 30
+CRUDE_EARLY_FAIL_MFE_PTS = 10
 
 LOG_DIR = "logs"
 # --- NEW RULE CONSTANTS ---
@@ -685,6 +687,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "market_regime": trade_snap.get('market_regime', ''),
         "signal_quality": trade_snap.get('signal_quality', 0),
         "breakeven_locked": trade_snap.get('breakeven_locked', False),
+        "early_fail_shadow_flag": trade_snap.get('early_fail_logged', False),
         "exit_state": exit_state,
         "exit_fill_source": exit_fill_source,
         "seconds_since_last_quote": seconds_since_last_quote,
