@@ -959,6 +959,23 @@ def run_crude_orderflow_scan():
                             safe_emit('crude_orderflow_signal', current_signal)
                             return
 
+                # --- EARLY-FAILURE EXIT (SHADOW ONLY — logs only, never forces an exit) ---
+                # Built from 12 real losses (5 original + 7 v2.11 week) that all matched this
+                # exact signature: MFE never exceeded ~10pts. Zero winners can structurally
+                # match this by definition of how near-miss/trail exits work — but we cannot
+                # yet rule out a slow-starting trade crossing 10pts in its final minutes
+                # (e.g. ff166741: final MFE 13pt at 33.5min). Shadow mode exists specifically
+                # to test that before this is ever allowed to force a real exit.
+                if not active_trade.get('trail_active', False) and not active_trade.get('early_fail_logged', False):
+                    minutes_elapsed_ef = (now - trade_entry_time).total_seconds() / 60
+                    mfe_now_ef = highest_premium - entry_option_ltp
+                    if minutes_elapsed_ef >= CRUDE_EARLY_FAIL_MINUTES and mfe_now_ef < CRUDE_EARLY_FAIL_MFE_PTS:
+                        active_trade['early_fail_logged'] = True
+                        logging.info(
+                            f"🔎 [SHADOW] Early-failure exit would fire: "
+                            f"{round(minutes_elapsed_ef, 1)}m elapsed, MFE only {mfe_now_ef:.1f}pt "
+                            f"(threshold {CRUDE_EARLY_FAIL_MFE_PTS}pt)")
+
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
                 mfe = highest_premium - entry_option_ltp
