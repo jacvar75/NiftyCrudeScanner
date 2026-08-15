@@ -1809,7 +1809,7 @@ def monitor_active_trade():
     # UNDERLYING STRUCTURAL SL — CATASTROPHIC BACKSTOP ONLY
     underlying_sl = float(t.get("underlying_sl", 0) or 0)
     underlying_sl_hit = False
-    
+
     if underlying_sl > 0:
         if t["bias"] == "CALL" and underlying <= underlying_sl:
             underlying_sl_hit = True

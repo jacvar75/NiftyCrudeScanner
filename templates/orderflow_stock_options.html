@@ -130,7 +130,10 @@ table{width:100%;border-collapse:collapse;font:11px var(--mono)}th{font-size:9px
           <label>Current Premium</label>
           <b id="atCurrent">—</b>
         </div>
-
+        <div class="tradebox">
+          <label>Qty</label>
+          <b id="atQty">—</b>
+        </div>
         <div class="tradebox pnl-box">
           <label>Option P&amp;L</label>
           <b id="atPnl">—</b>
@@ -220,6 +223,9 @@ function renderActive(t){
 
  $('atCurrent').textContent =
    fmt(cur);
+
+ $('atQty').textContent =
+   lot > 0 ? lot.toLocaleString() : '—';
 
  $('atTP').textContent =
   fmt(t.option_target);
