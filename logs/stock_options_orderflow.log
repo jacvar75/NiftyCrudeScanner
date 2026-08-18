@@ -1,0 +1,42 @@
+2026-08-18 10:32:01,741 - INFO - F&O stock universe built: 208
+2026-08-18 10:32:01,760 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
+2026-08-18 10:32:01,806 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8065
+ * Running on http://192.168.1.203:8065
+2026-08-18 10:32:01,806 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-18 10:32:02,067 - INFO - 127.0.0.1 - - [18/Aug/2026 10:32:02] "GET / HTTP/1.1" 200 -
+2026-08-18 10:32:02,183 - INFO - 127.0.0.1 - - [18/Aug/2026 10:32:02] "GET /socket.io/?EIO=4&transport=polling&t=Q0JFtcM HTTP/1.1" 200 -
+2026-08-18 10:32:02,332 - INFO - 127.0.0.1 - - [18/Aug/2026 10:32:02] "POST /socket.io/?EIO=4&transport=polling&t=Q0JFter&sid=kfCmGrwHHo8DHV1ZAAAA HTTP/1.1" 200 -
+2026-08-18 10:32:02,668 - INFO - 127.0.0.1 - - [18/Aug/2026 10:32:02] "GET /socket.io/?EIO=4&transport=polling&t=Q0JFtey&sid=kfCmGrwHHo8DHV1ZAAAA HTTP/1.1" 200 -
+2026-08-18 10:32:02,697 - INFO - 127.0.0.1 - - [18/Aug/2026 10:32:02] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-18 10:32:03,605 - INFO - F&O stock universe built: 208
+2026-08-18 11:09:13,023 - ERROR - Engine loop error
+Traceback (most recent call last):
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1963, in engine_loop
+    engine_tick()
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1912, in engine_tick
+    f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
+       ~~~~~~~~~~~~^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2026-08-18 11:10:14,052 - INFO - F&O stock universe built: 208
+2026-08-18 11:27:16,595 - INFO - F&O stock universe built: 208
+2026-08-18 11:44:17,444 - INFO - F&O stock universe built: 208
+2026-08-18 12:01:18,183 - INFO - F&O stock universe built: 208
+2026-08-18 12:18:19,871 - INFO - F&O stock universe built: 208
+2026-08-18 12:35:19,943 - INFO - F&O stock universe built: 208
+2026-08-18 12:52:25,669 - INFO - F&O stock universe built: 208
+2026-08-18 13:09:37,826 - INFO - F&O stock universe built: 208
+2026-08-18 13:26:40,525 - INFO - F&O stock universe built: 208
+2026-08-18 13:43:41,669 - INFO - F&O stock universe built: 208
+2026-08-18 14:25:03,368 - ERROR - Engine loop error
+Traceback (most recent call last):
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1963, in engine_loop
+    engine_tick()
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 1912, in engine_tick
+    f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
+       ~~~~~~~~~~~~^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2026-08-18 14:26:04,118 - INFO - F&O stock universe built: 208
+2026-08-18 14:43:01,508 - INFO - F&O stock universe built: 208
+2026-08-18 15:21:21,163 - INFO - 127.0.0.1 - - [18/Aug/2026 15:21:21] "GET /socket.io/?EIO=4&transport=websocket&sid=kfCmGrwHHo8DHV1ZAAAA HTTP/1.1" 200 -
