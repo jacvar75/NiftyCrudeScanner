@@ -49,18 +49,23 @@ MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
-CRUDE_BREAKEVEN_MFE_PTS = 18
+CRUDE_BREAKEVEN_MFE_PTS = 20
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
-CRUDE_TRAIL_FLOOR = 15                      # tightest the trail can ratchet down to
-CRUDE_SL_PCT = 0.10                         # SL = 10% of entry premium (replaces fixed ₹38 SL — was 7-29.5% of premium in practice)
-CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 120       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
+CRUDE_TRAIL_FLOOR = 20                      # wider floor to let trends breathe
+CRUDE_SL_PCT = 0.12                         # SL = 12% of entry premium (wider to breathe)
+CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 60       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
 CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
                                             # Revisit once you have real DTE<=2 samples.
 
-CRUDE_HARD_LOSS_CAP_PTS = 90
+CRUDE_HARD_LOSS_CAP_PTS = 60
 CRUDE_EARLY_FAIL_MINUTES = 30
 CRUDE_EARLY_FAIL_MFE_PTS = 10
+
+# New constants for adaptive SL & TP
+ATR_STOP_MULTIPLIER = 1.5
+TAKE_PROFIT_RISK_RATIO = 1.5                 # was 2.0 (hardcoded)
+ENTRY_SCORE_THRESHOLD = 55                   # was 45
 
 LOG_DIR = "logs"
 # --- NEW RULE CONSTANTS ---
@@ -70,7 +75,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.7   # giveback must exceed 70% of MFE
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.11"
+STRATEGY_VERSION = "v2.12"
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -264,9 +269,10 @@ def compute_breakout_acceptance(candles, key_levels):
     close = candles['close'].iloc[-1]
     high = candles['high'].iloc[-1]
     low = candles['low'].iloc[-1]
-    if high > pdh and close > pdh * 0.998:
+
+    if high > pdh and close > pdh:
         return {"value": 1, "score": 6, "reason": "Breakout above PDH accepted"}
-    elif low < pdl and close < pdl * 1.002:
+    elif low < pdl and close < pdl:
         return {"value": 1, "score": 6, "reason": "Breakout below PDL accepted"}
     return {"value": 0, "score": 0, "reason": "No breakout"}
 
@@ -691,7 +697,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     # R-multiple measured against risk taken AT ENTRY (fixed), not the live/trailed sl_price —
     # using the live sl_price understated R once breakeven or trail moved it, silently zeroing
     # out well over 10 historical trades where risk_per_lot collapsed to 0.
-    original_risk_per_lot = entry * CRUDE_SL_PCT * CRUDE_LOT_SIZE
+    original_risk_per_lot = trade_snap.get('entry_risk_points', entry * CRUDE_SL_PCT) * CRUDE_LOT_SIZE
     r_multiple = exit_pnl / original_risk_per_lot if original_risk_per_lot != 0 else 0
 
 
@@ -955,6 +961,21 @@ def run_crude_orderflow_scan():
                         logging.warning(
                             f"⚠️ Underlying LTP refresh failed for {fut_sym} (using stale price {underlying_ltp}): {e}")
 
+                # --- ADD TAKE PROFIT (2x Risk) ---
+                risk_points = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
+                take_profit_price = entry_option_ltp + risk_points * TAKE_PROFIT_RISK_RATIO
+
+                if current_premium >= take_profit_price:
+                    exit_pnl = force_close_trade(
+                        f"TAKE PROFIT (2:1 R:R)",
+                        "TAKE PROFIT", underlying_ltp, is_sim=True
+                    )
+                    current_signal = {"decision": "EXIT — TAKE PROFIT",
+                                      "reason": f"Target 2:1 hit | PnL: ₹{exit_pnl:.0f}"}
+                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
+
                 # --- Fixed SL: only apply if trail is NOT active ---
                 if not active_trade.get('trail_active', False):
                     sl_price = active_trade.get('sl_price', max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))
@@ -1007,10 +1028,12 @@ def run_crude_orderflow_scan():
                     mfe_now_ef = highest_premium - entry_option_ltp
                     if minutes_elapsed_ef >= CRUDE_EARLY_FAIL_MINUTES and mfe_now_ef < CRUDE_EARLY_FAIL_MFE_PTS:
                         active_trade['early_fail_logged'] = True
-                        logging.info(
-                            f"🔎 [SHADOW] Early-failure exit would fire: "
-                            f"{round(minutes_elapsed_ef, 1)}m elapsed, MFE only {mfe_now_ef:.1f}pt "
-                            f"(threshold {CRUDE_EARLY_FAIL_MFE_PTS}pt)")
+                        exit_pnl = force_close_trade("EARLY FAILURE EXIT", "EARLY FAILURE", underlying_ltp, is_sim=True)
+                        current_signal = {"decision": "EXIT — EARLY FAILURE",
+                                          "reason": f"MFE < {CRUDE_EARLY_FAIL_MFE_PTS} after {CRUDE_EARLY_FAIL_MINUTES}m | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('crude_orderflow_signal', current_signal)
+                        return
 
                 # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
                 base_trail = active_trade.get('trail_distance', 20)
@@ -1023,8 +1046,9 @@ def run_crude_orderflow_scan():
                     trail_distance = base_trail
 
                 active_trade['trail_distance'] = trail_distance
-                activation_threshold = active_trade.get('activation_threshold',
-                                                        CRUDE_TRAIL_ACTIVATION)  # CRUDE_TRAIL_ACTIVATION in Crude
+                # DYNAMIC THRESHOLD: 4% of entry premium, min 15 pts
+                activation_threshold = max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04))
+
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
                         active_trade['trail_active'] = True
@@ -1237,6 +1261,7 @@ def run_crude_orderflow_scan():
                     oi_chg = 0
 
             comp = composite_score(candles_15m, price_chg, oi_chg, key_levels)
+            score_reasons = comp["reasons"]
             base_score = comp["score"]
             bias = comp["bias"]
 
@@ -1278,16 +1303,16 @@ def run_crude_orderflow_scan():
                 log_score_distribution(
                     now, total_score, base_score, bonus, interaction_bonus, bias,
                     futures_ltp, market_regime, dte,
-                    "Accepted" if total_score >= 57 and bias != "NEUTRAL" else "Rejected"
+                    "Accepted" if total_score >= ENTRY_SCORE_THRESHOLD and bias != "NEUTRAL" else "Rejected"
                 )
 
-            if total_score < 57 or bias == "NEUTRAL":
+            if total_score < ENTRY_SCORE_THRESHOLD or bias == "NEUTRAL":
                 print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < 57, Bias: {bias}")
                 current_signal = {"decision": "NO TRADE", "reason": f"Entry Score {round(total_score, 1)}"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 current_signal["score_breakdown"] = {
                     "total": round(total_score, 1),
-                    "threshold": 57,
+                    "threshold": ENTRY_SCORE_THRESHOLD,
                     "features": {
                         name: {
                             "score": round(v.get("score", 0), 2),
@@ -1352,14 +1377,10 @@ def run_crude_orderflow_scan():
             # ADX-gated version. This will meaningfully cut trade volume — that's intentional. ===
             breakout_val = feature_scores.get("breakout_acceptance", {}).get("value", 0)
             if breakout_val == 1:
-                reason_str = "Breakout acceptance: 47 trades, -₹20,010 net historically — rejected"
-                print(f"🔴 REJECTED: {reason_str}")
-                current_signal = {"decision": "NO TRADE", "reason": reason_str}
-                current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                current_signal["dte"] = dte
-                current_signal["expiry_date"] = expiry_date_str
-                safe_emit('crude_orderflow_signal', current_signal)
-                return
+                # Instead of rejecting, penalize the score heavily and let it through
+                total_score -= 15
+                logging.info(f"🔶 Breakout detected: Penalizing score by 15 (New total: {total_score})")
+                print(f"🔶 Breakout detected: Penalizing score by 15")
 
             ht_candles = get_higher_tf_candles(fut_token)
             if ht_candles.empty or len(ht_candles) < 8:
@@ -1377,22 +1398,11 @@ def run_crude_orderflow_scan():
 
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
-                logging.info(f"🔴 HTF mismatch ({ht_bias} vs {bias}). Hard reject — no entry.")
-
-                try:
-                    htf_log_file = os.path.join(LOG_DIR, "crude_htf_rejections.csv")
-                    append_csv_row_safe(htf_log_file, {
-                        "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
-                        "futures_price": round(futures_ltp, 2),
-                        "entry_tf_bias": bias,
-                        "entry_tf_score": round(total_score, 1),
-                        "htf_bias": ht_bias,
-                        "htf_vwap": round(ht_vwap, 2),
-                        "market_regime": market_regime,
-                        "outcome": "HARD_REJECTED",
-                    })
-                except Exception as e:
-                    logging.warning(f"⚠️ Failed to log HTF rejection: {e}")
+                # Instead of hard rejecting, penalize the score and continue
+                total_score -= HTF_MISMATCH_PENALTY  # HTF_MISMATCH_PENALTY = 15 (defined at the top)
+                logging.info(
+                    f"🔶 HTF mismatch ({ht_bias} vs {bias}): Penalizing score by {HTF_MISMATCH_PENALTY} (New total: {total_score})")
+                print(f"🔶 HTF mismatch: Penalizing score by {HTF_MISMATCH_PENALTY}")
 
                 current_signal = {
                     "decision": "NO TRADE",
@@ -1439,146 +1449,182 @@ def run_crude_orderflow_scan():
                 return
 
             if active_trade is None:
-                try:
-                    opt_quote = kite_call_with_timeout(kite.quote, [f"MCX:{option_symbol}"])
-                    if opt_quote is None:
-                        # print(f"🔴 REJECTED: Option quote fetch failed for {option_symbol}")
-                        current_signal = {"decision": "NO TRADE", "reason": "Option quote fetch failed"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('crude_orderflow_signal', current_signal)
-                        return
-
-                    option_ltp = opt_quote.get(f"MCX:{option_symbol}", {}).get('last_price', 0)
-                    # --- Spread/Liquidity Filter — moved ahead of the premium floor so the
-                    # floor check uses the real fillable price (ask), not stale LTP ---
-                    depth = opt_quote.get(f"MCX:{option_symbol}", {}).get('depth', {})
-                    bid = depth.get('buy', [{}])[0].get('price', 0)
-                    ask = depth.get('sell', [{}])[0].get('price', 0)
-
-                    if bid <= 0 or ask <= 0:
-                        current_signal = {"decision": "NO TRADE", "reason": "No two-sided market"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('crude_orderflow_signal', current_signal)
-                        return
-                    spread_pct = (ask - bid) / ((ask + bid) / 2) * 100
-                    if spread_pct > MAX_SPREAD_PCT:
-                        current_signal = {"decision": "NO TRADE", "reason": f"Spread too wide ({spread_pct:.1f}%)"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('crude_orderflow_signal', current_signal)
-                        return
-
-                    # --- ADDED: simulate a realistic buy fill at the ask, not LTP ---
-                    option_ltp = ask
-
-                    # --- LOGGING ONLY: implied volatility at entry, no historical baseline yet ---
-                    entry_iv = calculate_implied_volatility(option_ltp, futures_ltp, candidate_strike, dte, option_type='CE' if bias == 'CALL' else 'PE')
-
-                    if option_ltp <= 48:
-                        current_signal = {"decision": "NO TRADE", "reason": f"Option premium too low ({option_ltp})"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('crude_orderflow_signal', current_signal)
-                        return
-                except Exception as e:
-                    logging.warning(f"⚠️ Entry quote/spread check exception for {option_symbol}: {e}")
-                    current_signal = {"decision": "NO TRADE",
-                                      "reason": f"Exception fetching option quote: {type(e).__name__}"}
+                # ========== PATCH 4: STOP-HUNT PARADOX FILTER ==========
+                score_reasons = comp["reasons"]  # ensure we have the list of reasons
+                breakout_val = feature_scores.get("breakout_acceptance", {}).get("value", 0)
+                if breakout_val == 1 and "Stop hunt above" in score_reasons:
+                    current_signal = {"decision": "NO TRADE", "reason": "Stop hunt vs Breakout clash (above) rejected"}
+                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
+                if breakout_val == 1 and "Stop hunt below" in score_reasons:
+                    current_signal = {"decision": "NO TRADE", "reason": "Stop hunt vs Breakout clash (below) rejected"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
 
-                signal_id = str(uuid.uuid4())
-                with state_lock:
-                    trade_entry_time = now
-                    entry_option_ltp = option_ltp
-                    active_trade = {
-                        "option_ltp": option_ltp,
-                        "highest_premium": option_ltp,
-                        "lowest_premium": option_ltp,
-                        "bias": bias,
-                        "trail_active": False,
-                        "trail_activated_at": None,
-                        "minutes_to_trail_activation": None,
-                        "breakeven_locked": False,
-                        "symbol": option_symbol,
-                        "lots": 1,
-                        "strike": candidate_strike,
-                        "setup_quality": base_score,
-                        "signal_quality": signal_quality,
-                        "dte": dte,
-                        "expiry_date": expiry_date_str,
-                        "adx": round(adx_val, 2),
-                        "rsi": round(rsi_val, 2),
-                        "entry_spread_pct": round(spread_pct, 2),
-                        "underlying": "CRUDE",
-                        "underlying_ltp": futures_ltp,
-                        "fut_sym": fut_sym,
-                        "signal_id": signal_id,
-                        "market_regime": market_regime,
-                        "sl_price": max(option_ltp * (1 - CRUDE_SL_PCT), 10.0),
-                        "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                        "trail_distance": max(20, min(55, int(entry_atr * 0.5))),
-                        "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(55, int(entry_atr * 0.5)))),
-                        "entry_atr": round(entry_atr, 2),
-                        "distance_to_level_atr": distance_to_level_atr,
-                        "last_quote_time": now,
-                        "feature_snapshot": convert_numpy(
-                            {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()}),
-                        # --- LOGGING ONLY: raw candle data used for this entry decision, for offline re-testing ---
-                        "entry_candle_raw": {
-                            "signal_candle": {
-                                "open": float(candles_15m['open'].iloc[-1]) if not candles_15m.empty else None,
-                                "high": float(candles_15m['high'].iloc[-1]) if not candles_15m.empty else None,
-                                "low": float(candles_15m['low'].iloc[-1]) if not candles_15m.empty else None,
-                                "close": float(candles_15m['close'].iloc[-1]) if not candles_15m.empty else None,
-                                "volume": float(candles_15m['volume'].iloc[-1]) if not candles_15m.empty else None,
-                                "oi": float(candles_15m['oi'].iloc[-1]) if (
+                # === ENTRY SCORE GATE (your threshold ENTRY_SCORE_THRESHOLD) ===
+                if total_score >= ENTRY_SCORE_THRESHOLD:
+                    try:
+                        opt_quote = kite_call_with_timeout(kite.quote, [f"MCX:{option_symbol}"])
+                        if opt_quote is None:
+                            # print(f"🔴 REJECTED: Option quote fetch failed for {option_symbol}")
+                            current_signal = {"decision": "NO TRADE", "reason": "Option quote fetch failed"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
+
+                        option_ltp = opt_quote.get(f"MCX:{option_symbol}", {}).get('last_price', 0)
+                        # --- Spread/Liquidity Filter — moved ahead of the premium floor so the
+                        # floor check uses the real fillable price (ask), not stale LTP ---
+                        depth = opt_quote.get(f"MCX:{option_symbol}", {}).get('depth', {})
+                        bid = depth.get('buy', [{}])[0].get('price', 0)
+                        ask = depth.get('sell', [{}])[0].get('price', 0)
+
+                        if bid <= 0 or ask <= 0:
+                            current_signal = {"decision": "NO TRADE", "reason": "No two-sided market"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
+                        spread_pct = (ask - bid) / ((ask + bid) / 2) * 100
+                        if spread_pct > MAX_SPREAD_PCT:
+                            current_signal = {"decision": "NO TRADE", "reason": f"Spread too wide ({spread_pct:.1f}%)"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
+
+                        # --- ADDED: simulate a realistic buy fill at the ask, not LTP ---
+                        option_ltp = ask
+
+                        # --- LOGGING ONLY: implied volatility at entry, no historical baseline yet ---
+                        entry_iv = calculate_implied_volatility(option_ltp, futures_ltp, candidate_strike, dte,
+                                                                option_type='CE' if bias == 'CALL' else 'PE')
+
+                        if option_ltp <= 48:
+                            current_signal = {"decision": "NO TRADE", "reason": f"Option premium too low ({option_ltp})"}
+                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                            safe_emit('crude_orderflow_signal', current_signal)
+                            return
+                    except Exception as e:
+                        logging.warning(f"⚠️ Entry quote/spread check exception for {option_symbol}: {e}")
+                        current_signal = {"decision": "NO TRADE",
+                                          "reason": f"Exception fetching option quote: {type(e).__name__}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        safe_emit('crude_orderflow_signal', current_signal)
+                        return
+
+                    signal_id = str(uuid.uuid4())
+                    with state_lock:
+                        trade_entry_time = now
+                        entry_option_ltp = option_ltp
+                        if entry_atr > 0:
+                            sl_price = max(option_ltp - ATR_STOP_MULTIPLIER * entry_atr, 10.0)
+                        else:
+                            sl_price = max(option_ltp * (1 - CRUDE_SL_PCT), 10.0)
+                        active_trade = {
+                            "option_ltp": option_ltp,
+                            "highest_premium": option_ltp,
+                            "lowest_premium": option_ltp,
+                            "bias": bias,
+                            "trail_active": False,
+                            "trail_activated_at": None,
+                            "minutes_to_trail_activation": None,
+                            "breakeven_locked": False,
+                            "symbol": option_symbol,
+                            "lots": 1,
+                            "strike": candidate_strike,
+                            "setup_quality": base_score,
+                            "signal_quality": signal_quality,
+                            "dte": dte,
+                            "expiry_date": expiry_date_str,
+                            "adx": round(adx_val, 2),
+                            "rsi": round(rsi_val, 2),
+                            "entry_spread_pct": round(spread_pct, 2),
+                            "underlying": "CRUDE",
+                            "underlying_ltp": futures_ltp,
+                            "fut_sym": fut_sym,
+                            "signal_id": signal_id,
+                            "market_regime": market_regime,
+                            "sl_price": sl_price,
+                            "entry_risk_points": option_ltp - sl_price,
+                            "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
+                            "trail_distance": max(20, min(80, int(entry_atr * 0.5))),
+                            "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(80, int(entry_atr * 0.5)))),
+                            "entry_atr": round(entry_atr, 2),
+                            "distance_to_level_atr": distance_to_level_atr,
+                            "last_quote_time": now,
+                            "feature_snapshot": convert_numpy(
+                                {k: v['value'] if not isinstance(v, dict) else v for k, v in feature_scores.items()}),
+                            # --- LOGGING ONLY: raw candle data used for this entry decision, for offline re-testing ---
+                            "entry_candle_raw": {
+                                "signal_candle": {
+                                    "open": float(candles_15m['open'].iloc[-1]) if not candles_15m.empty else None,
+                                    "high": float(candles_15m['high'].iloc[-1]) if not candles_15m.empty else None,
+                                    "low": float(candles_15m['low'].iloc[-1]) if not candles_15m.empty else None,
+                                    "close": float(candles_15m['close'].iloc[-1]) if not candles_15m.empty else None,
+                                    "volume": float(candles_15m['volume'].iloc[-1]) if not candles_15m.empty else None,
+                                    "oi": float(candles_15m['oi'].iloc[-1]) if (
                                             'oi' in candles_15m.columns and not candles_15m.empty) else None,
-                            },
-                            "prior_candle": {
-                                "close": float(candles_15m['close'].iloc[-2]) if len(candles_15m) >= 2 else None,
-                                "oi": float(candles_15m['oi'].iloc[-2]) if (
+                                },
+                                "prior_candle": {
+                                    "close": float(candles_15m['close'].iloc[-2]) if len(candles_15m) >= 2 else None,
+                                    "oi": float(candles_15m['oi'].iloc[-2]) if (
                                             'oi' in candles_15m.columns and len(candles_15m) >= 2) else None,
-                            }
-                        },
-                        "signal_candle_time": signal_candle_time,
-                        "signal_candle_age_seconds": signal_candle_age_seconds,
-                        "entry_iv": entry_iv,
+                                }
+                            },
+                            "signal_candle_time": signal_candle_time,
+                            "signal_candle_age_seconds": signal_candle_age_seconds,
+                            "entry_iv": entry_iv,
+                        }
+                        save_state()
+                        entry_snapshot = active_trade  # local ref — safe even if another thread
+                        # clears active_trade right after lock release
+
+                    log_json("TRADE_OPENED", {
+                        "signal_id": signal_id,
+                        "strategy_version": STRATEGY_VERSION,
+                        "entry_time": now.isoformat(),
+                        "bias": bias,
+                        "strike": candidate_strike,
+                        "symbol": option_symbol,
+                        "entry_price": option_ltp,
+                        "underlying_entry": futures_ltp,
+                        "base_score": base_score,
+                        "oi_class": comp.get("oi_class"),
+                        "score_reasons": comp.get("reasons"),
+                        "signal_quality": signal_quality,
+                        "market_regime": market_regime,
+                        "feature_scores": entry_snapshot['feature_scores'],
+                        "feature_snapshot": entry_snapshot['feature_snapshot'],
+                        "entry_candle_raw": entry_snapshot.get('entry_candle_raw'),
+                        "signal_candle_time": entry_snapshot.get('signal_candle_time'),
+                        "signal_candle_age_seconds": entry_snapshot.get('signal_candle_age_seconds'),
+                        "dte": dte,
+                        "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
+                        "adx": entry_snapshot.get('adx', 0),
+                        "rsi": entry_snapshot.get('rsi', 0),
+                        "entry_spread_pct": entry_snapshot.get('entry_spread_pct', 0),
+                        "entry_atr": entry_snapshot.get('entry_atr', 0),
+                        "distance_to_level_atr": entry_snapshot.get('distance_to_level_atr'),
+                        "entry_iv": entry_snapshot.get('entry_iv'),
+                        "is_sim": True
+                    })
+                    logging.info(
+                        f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
+                else:
+                    # Reject because total_score < ENTRY_SCORE_THRESHOLD
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": f"Entry score {round(total_score, 1)} < 55",
+                        "last_scan": now.strftime("%H:%M:%S"),
+                        "dte": dte,
+                        "spot_price": round(futures_ltp, 2),
+                        "expiry_date": expiry_date_str,
                     }
-                    save_state()
-                    entry_snapshot = active_trade  # local ref — safe even if another thread
-                    # clears active_trade right after lock release
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
 
-                log_json("TRADE_OPENED", {
-                    "signal_id": signal_id,
-                    "strategy_version": STRATEGY_VERSION,
-                    "entry_time": now.isoformat(),
-                    "bias": bias,
-                    "strike": candidate_strike,
-                    "symbol": option_symbol,
-                    "entry_price": option_ltp,
-                    "underlying_entry": futures_ltp,
-                    "base_score": base_score,
-                    "oi_class": comp.get("oi_class"),
-                    "score_reasons": comp.get("reasons"),
-                    "signal_quality": signal_quality,
-                    "market_regime": market_regime,
-                    "feature_scores": entry_snapshot['feature_scores'],
-                    "feature_snapshot": entry_snapshot['feature_snapshot'],
-                    "entry_candle_raw": entry_snapshot.get('entry_candle_raw'),
-                    "signal_candle_time": entry_snapshot.get('signal_candle_time'),
-                    "signal_candle_age_seconds": entry_snapshot.get('signal_candle_age_seconds'),
-                    "dte": dte,
-                    "dead_trade_cutoff_minutes": CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY if dte <= 2 else CRUDE_DEAD_TRADE_CUTOFF_DEFAULT,
-                    "adx": entry_snapshot.get('adx', 0),
-                    "rsi": entry_snapshot.get('rsi', 0),
-                    "entry_spread_pct": entry_snapshot.get('entry_spread_pct', 0),
-                    "entry_atr": entry_snapshot.get('entry_atr', 0),
-                    "distance_to_level_atr": entry_snapshot.get('distance_to_level_atr'),
-                    "entry_iv": entry_snapshot.get('entry_iv'),
-                    "is_sim": True
-                })
-                logging.info(f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
-
+            # --- MONITOR SIGNAL: update dashboard with active trade status ---
             if active_trade:
                 monitor_signal = {
                     "decision": f"{active_trade.get('bias', '')} BUY ([SIM])",
@@ -1596,7 +1642,6 @@ def run_crude_orderflow_scan():
                     "signal_id": active_trade.get('signal_id'),
                     "last_scan": now.strftime("%H:%M:%S"),
                     "primary_reason": f"[SIM] Score {active_trade.get('signal_quality', 0)}",
-                    # Full dashboard fields
                     "dte": active_trade.get('dte', 0),
                     "expiry_date": active_trade.get('expiry_date'),
                     "vix_value": 0.0,
@@ -1612,12 +1657,14 @@ def run_crude_orderflow_scan():
                     "highest_premium": round(active_trade.get('highest_premium', entry_option_ltp), 2),
                     "trail_stop": round(
                         active_trade.get('highest_premium', entry_option_ltp) - active_trade.get('trail_distance', 0),
-                        2)
-                    if active_trade.get('trail_active', False) else None,
+                        2
+                    ) if active_trade.get('trail_active', False) else None,
                     "trail_active": active_trade.get('trail_active', False),
                     "max_loss": round(
                         (entry_option_ltp - active_trade.get('sl_price',
-                                                             max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))) * CRUDE_LOT_SIZE, 0),
+                                                             max(entry_option_ltp * (1 - CRUDE_SL_PCT), 10.0))) * CRUDE_LOT_SIZE,
+                        0
+                    ),
                     "daily_loss_cap": max_daily_loss,
                 }
                 safe_emit('crude_orderflow_signal', monitor_signal)
@@ -1633,6 +1680,7 @@ def run_crude_orderflow_scan():
                     "expiry_date": expiry_date_str,
                 }
                 safe_emit('crude_orderflow_signal', current_signal)
+
         except Exception as e:
             logging.error(f"Crude order-flow scan error: {e}")
 
