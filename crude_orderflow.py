@@ -1032,17 +1032,18 @@ def run_crude_orderflow_scan():
                         return
 
                 # --- ASYMMETRIC TRAIL: Wide leash, tightens only for monster winners ---
-                base_trail = active_trade.get('trail_distance', int(entry_atr * 1.5))
+                stored_atr = active_trade.get('entry_atr', 20)
+                base_trail = active_trade.get('trail_distance', int(stored_atr * 1.5))
                 mfe = highest_premium - entry_option_ltp
                 risk = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
 
                 # Only tighten when profit exceeds 3R (massive) AND MFE is large
                 if mfe >= risk * 3.0 and mfe >= base_trail * 2.5:
-                    trail_distance = max(12, base_trail * 0.5)   # Tight – lock in the monster
+                    trail_distance = max(12, base_trail * 0.5)  # Tight – lock in the monster
                 elif mfe >= risk * 2.0 and mfe >= base_trail * 1.5:
-                    trail_distance = max(15, base_trail * 0.7)   # Moderately tight
+                    trail_distance = max(15, base_trail * 0.7)  # Moderately tight
                 else:
-                    trail_distance = base_trail                  # Wide open – let it run
+                    trail_distance = base_trail  # Wide open – let it run
 
                 active_trade['trail_distance'] = trail_distance
 
