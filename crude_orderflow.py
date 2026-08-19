@@ -1346,10 +1346,13 @@ def run_crude_orderflow_scan():
                     safe_emit('crude_orderflow_signal', monitor_signal)
                 return
 
-            # === RULE 1: Reject breakout-driven high scores with weak trend confirmation ===
+            # === RULE 1 (v2): Reject ALL breakout-acceptance entries — 70-trade sample shows
+            # this category nets -₹20,010 across 47 trades (55.3% WR), while non-breakout
+            # entries net +₹26,993 across 23 trades (69.6% WR). Supersedes the narrower
+            # ADX-gated version. This will meaningfully cut trade volume — that's intentional. ===
             breakout_val = feature_scores.get("breakout_acceptance", {}).get("value", 0)
-            if breakout_val == 1 and total_score >= 70 and adx_val < BREAKOUT_ADX_REJECT_MAX:
-                reason_str = f"Breakout+high-score with ADX {adx_val:.1f} < {BREAKOUT_ADX_REJECT_MAX} — rejected"
+            if breakout_val == 1:
+                reason_str = "Breakout acceptance: 47 trades, -₹20,010 net historically — rejected"
                 print(f"🔴 REJECTED: {reason_str}")
                 current_signal = {"decision": "NO TRADE", "reason": reason_str}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
