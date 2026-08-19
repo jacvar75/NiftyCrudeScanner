@@ -1714,7 +1714,7 @@ def choose_trade(candidates):
         return None, "no qualified candidates"
 
     top = candidates[0]
-    if top["score"] < MIN_RANK_SCORE:
+    if top["alpha_score"] < MIN_RANK_SCORE:
         return None, f"top score {top['alpha_score']:.1f} < {MIN_RANK_SCORE}"
 
     # Version 1 is deliberately conservative: one top trade is selected.
