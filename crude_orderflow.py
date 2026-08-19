@@ -75,7 +75,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.12"
+STRATEGY_VERSION = "v2.13"
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -328,6 +328,39 @@ def compute_scenario_probs(base_score, bias):
 
 # ======================== SCORE DISTRIBUTION LOGGER ========================
 _score_lock = threading.Lock()
+
+
+# ======================== HIGH QUALITY SETUP FILTER ========================
+def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, feature_scores, bias, oi_class, entry_atr):
+    """
+    Strict quality filter for Crude Oil order-flow.
+    Kills mediocrity (low RVOL, choppy candles, conflicting OI) while keeping high-conviction moves.
+    Returns: (bool, reason_string)
+    """
+    # 1. Confluence or Strong Trend (ADX > 28)
+    if interaction_bonus == 0 and adx_val < 28:
+        return False, f"No confluence (bonus=0, adx={adx_val:.1f} < 28)"
+
+    # 2. Volatility Expansion (Candle must be at least 80% of average range)
+    rel_range = feature_scores.get("relative_range", {}).get("value", 0)
+    if rel_range < 0.8:
+        return False, f"Choppy candle (RelRange {rel_range:.2f} < 0.8)"
+
+    # 3. Smart OI Conflict Resolution
+    # If OI conflicts with bias, we ONLY allow it if ADX > 30 (massive trend overrides OI)
+    if bias == "CALL" and oi_class == "FRESH_SHORTS":
+        if adx_val < 30:
+            return False, f"OI conflict: Fresh Shorts vs CALL (ADX {adx_val:.1f} < 30)"
+    if bias == "PUT" and oi_class == "FRESH_LONGS":
+        if adx_val < 30:
+            return False, f"OI conflict: Fresh Longs vs PUT (ADX {adx_val:.1f} < 30)"
+
+    # 4. Minimum Momentum Safety (Low ATR + Low ADX = Dead market)
+    if entry_atr < 25 and adx_val < 25:
+        return False, f"Dead consolidation (ATR {entry_atr:.1f} < 25 & ADX {adx_val:.1f} < 25)"
+
+    # If we pass all, it is a genuinely high-quality setup
+    return True, "High quality setup confirmed"
 
 def log_score_distribution(now, total_score, base_score, bonus, interaction_bonus, bias,
                            futures_ltp, market_regime, dte, reason):
@@ -1471,8 +1504,20 @@ def run_crude_orderflow_scan():
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
 
-                # === ENTRY SCORE GATE (your threshold ENTRY_SCORE_THRESHOLD) ===
-                if total_score >= ENTRY_SCORE_THRESHOLD:
+                # === ENTRY SCORE GATE + HIGH QUALITY FILTER (v2.13) ===
+                # First, run the quality check on this setup
+                quality_pass, quality_reason = is_high_quality_setup(
+                    total_score,
+                    base_score,
+                    interaction_bonus,
+                    adx_val,
+                    feature_scores,
+                    bias,
+                    comp.get("oi_class"),
+                    entry_atr
+                )
+
+                if total_score >= ENTRY_SCORE_THRESHOLD and quality_pass:
                     try:
                         opt_quote = kite_call_with_timeout(kite.quote, [f"MCX:{option_symbol}"])
                         if opt_quote is None:
@@ -1620,6 +1665,20 @@ def run_crude_orderflow_scan():
                     })
                     logging.info(
                         f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
+
+                elif total_score >= ENTRY_SCORE_THRESHOLD and not quality_pass:
+                    # Reject with the specific quality reason
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": f"Mediocre Setup: {quality_reason} (Score: {round(total_score,1)})",
+                        "last_scan": now.strftime("%H:%M:%S"),
+                        "dte": dte,
+                        "expiry_date": expiry_date_str,
+                        "spot_price": round(futures_ltp, 2),
+                    }
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
+
                 else:
                     # Reject because total_score < ENTRY_SCORE_THRESHOLD
                     current_signal = {
