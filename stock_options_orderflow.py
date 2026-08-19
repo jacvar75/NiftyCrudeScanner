@@ -82,7 +82,7 @@ AVOID_EXPIRY_DAY = True
 
 # Risk / selection
 MAX_RISK_PER_TRADE = 2_000.0       # CHANGE BEFORE LIVE TRADING
-MAX_TRADES_PER_DAY = 2
+MAX_TRADES_PER_DAY = 3
 ONE_TRADE_PER_STOCK_PER_DAY = True
 MIN_RANK_SCORE = 68.0
 SECOND_TRADE_MIN_SCORE = 78.0
@@ -103,6 +103,7 @@ PULLBACK_MAX_WAIT_MINUTES = 30
 
 MAX_SL_ATR = 1.50
 MIN_SL_ATR = 0.15
+INTRADAY_CACHE_SECONDS = 60
 
 # We estimate one-lot option risk using delta, then add a conservative
 # uncertainty buffer. Actual shadow P&L is always marked from option quotes.
@@ -654,6 +655,22 @@ def get_market_context():
     ema9 = float(nf["close"].ewm(span=9, adjust=False).mean().iloc[-1])
     ema21 = float(nf["close"].ewm(span=21, adjust=False).mean().iloc[-1])
 
+    # NIFTY index volume is not reliable for VWAP-based
+    # relative-strength measurement.
+    # Use today's opening price as the benchmark instead.
+    today_nf = nf[nf["date"].dt.date == now_ist().date()]
+
+    if not today_nf.empty:
+        nifty_open = float(today_nf["open"].iloc[0])
+    else:
+        nifty_open = price
+
+    nifty_intraday_return = (
+        ((nifty / nifty_open) - 1) * 100
+        if nifty_open > 0
+        else 0.0
+    )
+
     directional = abs(price - nvwap) / a if a and not pd.isna(a) and a > 0 else 0
     bullish = price > nvwap and ema9 > ema21
     bearish = price < nvwap and ema9 < ema21
@@ -676,6 +693,8 @@ def get_market_context():
         "nifty": {
             "ltp": nifty,
             "vwap": nvwap,
+            "open": nifty_open,
+            "intraday_return": nifty_intraday_return,
             "adx": adx_val,
             "ema9": ema9,
             "ema21": ema21,
@@ -693,7 +712,7 @@ def get_stock_intraday(symbol, meta):
     # pulling 5m candles for 40 stocks every 60 seconds would unnecessarily
     # hammer the Kite historical-data endpoint.
     cached = intraday_cache.get(symbol)
-    if cached and time.time() - cached["time"] < 300:
+    if cached and time.time() - cached["time"] < 60:
         return cached["df"]
 
     df5 = get_historical(meta["nse_token"], "5minute", 10)
@@ -856,11 +875,58 @@ def detect_setup(symbol, meta, market):
 
     breakout = 0
     candle_range = max(float(last["high"] - last["low"]), 1e-9)
+
+    # ---------------------------------------------------------
+    # BREAKOUT EXPANSION
+    # ---------------------------------------------------------
+    # Measure whether the current breakout candle is expanding
+    # in range and volume compared with the recent candles.
+    #
+    # This is a SCORE BONUS only.
+    # It does NOT reject a trade when expansion is weak.
+
+    recent_ranges = (
+        (prior["high"] - prior["low"])
+        .replace([np.inf, -np.inf], np.nan)
+        .dropna()
+    )
+
+    median_range = (
+        float(recent_ranges.tail(6).median())
+        if len(recent_ranges) >= 3
+        else candle_range
+    )
+
+    range_expansion = (
+        candle_range / median_range
+        if median_range > 0
+        else 1.0
+    )
+
+    recent_volumes = (
+        prior["volume"]
+        .replace([np.inf, -np.inf], np.nan)
+        .dropna()
+    )
+
+    median_volume = (
+        float(recent_volumes.tail(6).median())
+        if len(recent_volumes) >= 3
+        else 0.0
+    )
+
+    volume_expansion = (
+        float(last["volume"]) / median_volume
+        if median_volume > 0
+        else 1.0
+    )
+
     close_location = (
         (last["close"] - last["low"]) / candle_range
         if bias == "CALL"
         else (last["high"] - last["close"]) / candle_range
     )
+
     if pullback_reentry:
         breakout += 7
     elif (bias == "CALL" and bull_break) or (bias == "PUT" and bear_break):
@@ -870,7 +936,26 @@ def detect_setup(symbol, meta, market):
         breakout += 4
     if abs(price - trigger) <= 0.30 * a:
         breakout += 4
+    # ---------------------------------------------------------
+    # EXPANSION BONUS
+    # ---------------------------------------------------------
+    # Reward stronger breakouts without making expansion
+    # a mandatory requirement.
+
+    if range_expansion >= 1.50:
+        breakout += 4
+    elif range_expansion >= 1.20:
+        breakout += 2
+
+    if volume_expansion >= 1.50:
+        breakout += 4
+    elif volume_expansion >= 1.20:
+        breakout += 2
+
     components["breakout_quality"] = breakout
+    components["range_expansion"] = round(range_expansion, 2)
+    components["volume_expansion"] = round(volume_expansion, 2)
+
     score += breakout
 
     participation = 0
@@ -880,30 +965,56 @@ def detect_setup(symbol, meta, market):
     components["rvol"] = participation
     score += participation
 
-    nifty_ltp = market["nifty"].get("ltp", 0)
-    nifty_vwap = market["nifty"].get("vwap", nifty_ltp)
-    nifty_move = (nifty_ltp / nifty_vwap - 1) * 100 if nifty_vwap else 0
-    stock_move = (price / svwap - 1) * 100 if svwap else 0
-    relative = stock_move - nifty_move
-    rs_points = 0
-    if bias == "CALL":
-        if relative > 0.25: rs_points += 9
-        if relative > 0.50: rs_points += 4
-        if relative > 0.90: rs_points += 3
+    # ---------------------------------------------------------
+    # RELATIVE STRENGTH VS NIFTY
+    # ---------------------------------------------------------
+    # Compare the stock's intraday return from today's open
+    # against NIFTY's intraday return from today's open.
+
+    nifty_return = market["nifty"].get("intraday_return", 0.0)
+
+    today_stock = df[df["date"].dt.date == now_ist().date()]
+
+    if not today_stock.empty:
+        stock_open = float(today_stock["open"].iloc[0])
     else:
-        if relative < -0.25: rs_points += 9
-        if relative < -0.50: rs_points += 4
-        if relative < -0.90: rs_points += 3
+        stock_open = price
+
+    stock_return = (
+        ((price / stock_open) - 1) * 100
+        if stock_open > 0
+        else 0.0
+    )
+
+    relative = stock_return - nifty_return
+
+    rs_points = 0
+
+    if bias == "CALL":
+        if relative > 0.25:
+            rs_points += 9
+        if relative > 0.50:
+            rs_points += 4
+        if relative > 0.90:
+            rs_points += 3
+    else:
+        if relative < -0.25:
+            rs_points += 9
+        if relative < -0.50:
+            rs_points += 4
+        if relative < -0.90:
+            rs_points += 3
+
     components["relative_strength"] = rs_points
     score += rs_points
 
     momentum = 0
-    if adx_val >= 18: momentum += 4
-    if adx_val >= 22: momentum += 3
-    if bias == "CALL" and 52 <= rsi_val <= 72: momentum += 4
-    if bias == "PUT" and 28 <= rsi_val <= 48: momentum += 4
+    if adx_val >= 18: momentum += 3
+    if adx_val >= 25: momentum += 3
+    if bias == "CALL" and 52 <= rsi_val <= 72: momentum += 3
+    if bias == "PUT" and 28 <= rsi_val <= 48: momentum += 3
     if (bias == "CALL" and price > ema9) or (bias == "PUT" and price < ema9):
-        momentum += 4
+        momentum += 3
     components["momentum"] = momentum
     score += momentum
 
@@ -1437,11 +1548,22 @@ def scan_candidates():
                 })
                 continue
 
-            final_score = min(100, setup["score"] + option["option_score"] * 0.9)
-            setup["score"] = round(final_score, 1)
+            # Keep the stock's directional score independent from
+            # option execution quality.
+            #
+            # The stock score answers:
+            # "How good is the underlying trade?"
+            #
+            # The option score answers:
+            # "How good is the option vehicle?"
+
+            setup["alpha_score"] = round(setup["score"], 1)
+            setup["execution_score"] = option["option_score"]
+
             setup["option"] = option
             setup["option_reason"] = option_reason
             results.append(setup)
+
         except Exception as exc:
             logging.exception("Option candidate error %s", setup["symbol"])
             rejections.append({
@@ -1459,7 +1581,7 @@ def scan_candidates():
             "reason": "underlying rank below top-8 option inspection cutoff",
         })
 
-    results.sort(key=lambda x: x["score"], reverse=True)
+    results.sort(key=lambda x: x["alpha_score"], reverse=True)
     candidate_cache = {x["symbol"]: x for x in results}
     last_candidate_refresh = time.time()
 
@@ -1593,7 +1715,7 @@ def choose_trade(candidates):
 
     top = candidates[0]
     if top["score"] < MIN_RANK_SCORE:
-        return None, f"top score {top['score']:.1f} < {MIN_RANK_SCORE}"
+        return None, f"top score {top['alpha_score']:.1f} < {MIN_RANK_SCORE}"
 
     # Version 1 is deliberately conservative: one top trade is selected.
     # The second-trade allowance is kept as a later research switch.
@@ -1657,6 +1779,7 @@ def choose_trade(candidates):
         "lot_size": int(selected["lot_size"]),
         "entry_time": now.isoformat(),
         "entry_underlying": underlying,
+        "trigger": float(selected["trigger"]),
         "entry_premium": entry_premium,
         "bid_at_entry": bid,
         "ask_at_entry": ask,
@@ -1751,6 +1874,23 @@ def monitor_active_trade():
     uq = q.get(ukey, {})
 
     option_ltp = float(oq.get("last_price", 0) or 0)
+
+    depth = oq.get("depth", {}) or {}
+
+    option_bid = float(
+        (depth.get("buy") or [{}])[0].get("price", 0) or 0
+    )
+
+    option_ask = float(
+        (depth.get("sell") or [{}])[0].get("price", 0) or 0
+    )
+
+    # For a long option:
+    # entry = ASK
+    # exit  = BID
+    executable_exit = option_bid if option_bid > 0 else option_ltp
+
+
     underlying = float(uq.get("last_price", 0) or 0)
 
     if option_ltp <= 0 or underlying <= 0:
@@ -1761,7 +1901,7 @@ def monitor_active_trade():
     if underlying <= 0:
         underlying = t.get("current_underlying", t["entry_underlying"])
 
-    t["current_option"] = option_ltp
+    t["current_option"] = executable_exit
     t["current_underlying"] = underlying
     t["mfe_option"] = max(t.get("mfe_option", t["entry_premium"]), option_ltp)
     t["mae_option"] = min(t.get("mae_option", t["entry_premium"]), option_ltp)
@@ -1772,6 +1912,20 @@ def monitor_active_trade():
     t["mae_underlying"] = min(t.get("mae_underlying", t["entry_underlying"]), underlying)
 
     exit_reason = None
+
+    # ---------------------------------------------------------
+    # FAST BREAKOUT FAILURE PROTECTION
+    # ---------------------------------------------------------
+
+    trigger = float(t.get("trigger", 0) or 0)
+
+    if trigger > 0:
+        if t["bias"] == "CALL":
+            if underlying < trigger:
+                exit_reason = "BREAKOUT_FAILURE"
+        else:
+            if underlying > trigger:
+                exit_reason = "BREAKOUT_FAILURE"
 
     # ---------------------------------------------------------
     # DYNAMIC OPTION-PREMIUM PROFIT PROTECTION
