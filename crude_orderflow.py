@@ -450,6 +450,39 @@ def composite_score(candles, price_chg, oi_chg, key_levels):
     return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons}
 
 # ======================== CRUDE HELPERS ========================
+
+def calculate_implied_volatility(option_price, spot, strike, dte, option_type='CE', risk_free_rate=0.065):
+    """
+    Bisection solve for Black-Scholes implied volatility. Self-contained, no scipy needed.
+    Returns annualized IV (e.g. 0.65 = 65%), or None if unsolvable (e.g. price below intrinsic).
+    """
+    T = max(dte, 1) / 365.0
+    if option_price <= 0 or spot <= 0 or strike <= 0:
+        return None
+    intrinsic = max(0, (spot - strike) if option_type == 'CE' else (strike - spot))
+    if option_price < intrinsic:
+        return None
+
+    def bs_price(sigma):
+        d1 = (math.log(spot / strike) + (risk_free_rate + 0.5 * sigma ** 2) * T) / (sigma * math.sqrt(T))
+        d2 = d1 - sigma * math.sqrt(T)
+        N = lambda x: 0.5 * (1 + math.erf(x / math.sqrt(2)))
+        if option_type == 'CE':
+            return spot * N(d1) - strike * math.exp(-risk_free_rate * T) * N(d2)
+        return strike * math.exp(-risk_free_rate * T) * N(-d2) - spot * N(-d1)
+
+    lo, hi = 0.01, 5.0
+    for _ in range(50):
+        mid = (lo + hi) / 2
+        if bs_price(mid) > option_price:
+            hi = mid
+        else:
+            lo = mid
+        if hi - lo < 1e-5:
+            break
+    return round((lo + hi) / 2, 4)
+
+
 def resolve_current_expiry():
     global expiry_cache, last_cache_time
     try:
@@ -1433,6 +1466,10 @@ def run_crude_orderflow_scan():
 
                     # --- ADDED: simulate a realistic buy fill at the ask, not LTP ---
                     option_ltp = ask
+
+                    # --- LOGGING ONLY: implied volatility at entry, no historical baseline yet ---
+                    entry_iv = calculate_implied_volatility(option_ltp, futures_ltp, candidate_strike, dte, option_type='CE' if bias == 'CALL' else 'PE')
+
                     if option_ltp <= 48:
                         current_signal = {"decision": "NO TRADE", "reason": f"Option premium too low ({option_ltp})"}
                         current_signal["last_scan"] = now.strftime("%H:%M:%S")
@@ -1502,6 +1539,7 @@ def run_crude_orderflow_scan():
                         },
                         "signal_candle_time": signal_candle_time,
                         "signal_candle_age_seconds": signal_candle_age_seconds,
+                        "entry_iv": entry_iv,
                     }
                     save_state()
                     entry_snapshot = active_trade  # local ref — safe even if another thread
@@ -1533,6 +1571,7 @@ def run_crude_orderflow_scan():
                     "entry_spread_pct": entry_snapshot.get('entry_spread_pct', 0),
                     "entry_atr": entry_snapshot.get('entry_atr', 0),
                     "distance_to_level_atr": entry_snapshot.get('distance_to_level_atr'),
+                    "entry_iv": entry_snapshot.get('entry_iv'),
                     "is_sim": True
                 })
                 logging.info(f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
