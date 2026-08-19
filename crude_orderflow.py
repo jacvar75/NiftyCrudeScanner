@@ -49,29 +49,29 @@ MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
-CRUDE_BREAKEVEN_MFE_PTS = 20
+CRUDE_BREAKEVEN_MFE_PTS = 25
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 20                      # wider floor to let trends breathe
 CRUDE_SL_PCT = 0.12                         # SL = 12% of entry premium (wider to breathe)
-CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 60       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
-CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 30    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
+CRUDE_DEAD_TRADE_CUTOFF_DEFAULT = 90       # minutes, DTE > 2 — force exit if trail never activated (raised from 60: real winners took up to 82 min to trail-activate, 60 risked cutting them)
+CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 45    # minutes, DTE <= 2 — UNVALIDATED: no near-expiry trades in
                                             # the log yet, this is extrapolated from the crude 18/10 ratio.
                                             # Revisit once you have real DTE<=2 samples.
 
 CRUDE_HARD_LOSS_CAP_PTS = 60
-CRUDE_EARLY_FAIL_MINUTES = 30
-CRUDE_EARLY_FAIL_MFE_PTS = 10
+CRUDE_EARLY_FAIL_MINUTES = 60
+CRUDE_EARLY_FAIL_MFE_PTS = 15
 
 # New constants for adaptive SL & TP
 ATR_STOP_MULTIPLIER = 1.5
-TAKE_PROFIT_RISK_RATIO = 1.5                 # was 2.0 (hardcoded)
+TAKE_PROFIT_RISK_RATIO = 2.0                 # was 2.0 (hardcoded)
 ENTRY_SCORE_THRESHOLD = 55                   # was 45
 
 LOG_DIR = "logs"
 # --- NEW RULE CONSTANTS ---
 BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this ADX
-NEAR_MISS_MFE_PCT = 0.5        # MFE must reach 50% of trail threshold
-NEAR_MISS_GIVEBACK_PCT = 0.7   # giveback must exceed 70% of MFE
+NEAR_MISS_MFE_PCT = 0.6        # require 60% of trail threshold before considering
+NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -107,7 +107,7 @@ entry_option_ltp = None
 active_trade = None
 last_exit_time = None
 daily_pnl = 0
-max_daily_loss = -3000
+max_daily_loss = -5000
 daily_reset_date = now_ist().date()
 
 _candle_cache = {}
@@ -961,20 +961,16 @@ def run_crude_orderflow_scan():
                         logging.warning(
                             f"⚠️ Underlying LTP refresh failed for {fut_sym} (using stale price {underlying_ltp}): {e}")
 
-                # --- ADD TAKE PROFIT (2x Risk) ---
-                risk_points = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
-                take_profit_price = entry_option_ltp + risk_points * TAKE_PROFIT_RISK_RATIO
+                # --- ADD TAKE PROFIT (1.5:1x Risk) ---
+                # risk_points = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
+                # take_profit_price = entry_option_ltp + risk_points * TAKE_PROFIT_RISK_RATIO
 
-                if current_premium >= take_profit_price:
-                    exit_pnl = force_close_trade(
-                        f"TAKE PROFIT (2:1 R:R)",
-                        "TAKE PROFIT", underlying_ltp, is_sim=True
-                    )
-                    current_signal = {"decision": "EXIT — TAKE PROFIT",
-                                      "reason": f"Target 2:1 hit | PnL: ₹{exit_pnl:.0f}"}
-                    current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                    safe_emit('crude_orderflow_signal', current_signal)
-                    return
+                # if current_premium >= take_profit_price:
+                    # exit_pnl = force_close_trade(f"TAKE PROFIT (2:1 R:R)","TAKE PROFIT", underlying_ltp, is_sim=True)
+                    # current_signal = {"decision": "EXIT — TAKE PROFIT", "reason": f"Target 2:1 hit | PnL: ₹{exit_pnl:.0f}"}
+                    # current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                    # safe_emit('crude_orderflow_signal', current_signal)
+                    # return
 
                 # --- Fixed SL: only apply if trail is NOT active ---
                 if not active_trade.get('trail_active', False):
@@ -1035,17 +1031,21 @@ def run_crude_orderflow_scan():
                         safe_emit('crude_orderflow_signal', current_signal)
                         return
 
-                # --- PROFIT-RATCHETING TRAIL: tighten trail distance as MFE grows, floor at CRUDE_TRAIL_FLOOR ---
-                base_trail = active_trade.get('trail_distance', 20)
+                # --- ASYMMETRIC TRAIL: Wide leash, tightens only for monster winners ---
+                base_trail = active_trade.get('trail_distance', int(entry_atr * 1.5))
                 mfe = highest_premium - entry_option_ltp
-                if mfe >= base_trail * 2.5:
-                    trail_distance = max(CRUDE_TRAIL_FLOOR, base_trail * 0.5)
-                elif mfe >= base_trail * 1.5:
-                    trail_distance = max(CRUDE_TRAIL_FLOOR, base_trail * 0.7)
+                risk = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
+
+                # Only tighten when profit exceeds 3R (massive) AND MFE is large
+                if mfe >= risk * 3.0 and mfe >= base_trail * 2.5:
+                    trail_distance = max(12, base_trail * 0.5)   # Tight – lock in the monster
+                elif mfe >= risk * 2.0 and mfe >= base_trail * 1.5:
+                    trail_distance = max(15, base_trail * 0.7)   # Moderately tight
                 else:
-                    trail_distance = base_trail
+                    trail_distance = base_trail                  # Wide open – let it run
 
                 active_trade['trail_distance'] = trail_distance
+
                 # DYNAMIC THRESHOLD: 4% of entry premium, min 15 pts
                 activation_threshold = max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04))
 
@@ -1231,6 +1231,13 @@ def run_crude_orderflow_scan():
                 ], axis=1).max(axis=1)
                 entry_atr = tr.ewm(alpha=1/14, adjust=False).mean().iloc[-1]
 
+            # Skip if volatility too low (ATR < 10 points or < 0.15% of price)
+            if entry_atr < 10:
+                current_signal = {"decision": "NO TRADE", "reason": f"ATR too low ({entry_atr:.1f})"}
+                current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                safe_emit('crude_orderflow_signal', current_signal)
+                return
+
             vwap = calculate_vwap(candles_15m.tail(40)) if not candles_15m.empty else futures_ltp
             key_levels = {"VWAP": vwap, "PDH": candles_day['high'].iloc[-2] if len(candles_day)>=2 else None,
                           "PDL": candles_day['low'].iloc[-2] if len(candles_day)>=2 else None}
@@ -1307,7 +1314,7 @@ def run_crude_orderflow_scan():
                 )
 
             if total_score < ENTRY_SCORE_THRESHOLD or bias == "NEUTRAL":
-                print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < 57, Bias: {bias}")
+                print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < {ENTRY_SCORE_THRESHOLD}, Bias: {bias}")
                 current_signal = {"decision": "NO TRADE", "reason": f"Entry Score {round(total_score, 1)}"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 current_signal["score_breakdown"] = {
@@ -1548,7 +1555,7 @@ def run_crude_orderflow_scan():
                             "sl_price": sl_price,
                             "entry_risk_points": option_ltp - sl_price,
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                            "trail_distance": max(20, min(80, int(entry_atr * 0.5))),
+                            "trail_distance": max(20, min(80, int(entry_atr * 1.5))),  # Start wide (1.5x ATR)
                             "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(80, int(entry_atr * 0.5)))),
                             "entry_atr": round(entry_atr, 2),
                             "distance_to_level_atr": distance_to_level_atr,
@@ -1607,6 +1614,7 @@ def run_crude_orderflow_scan():
                         "entry_atr": entry_snapshot.get('entry_atr', 0),
                         "distance_to_level_atr": entry_snapshot.get('distance_to_level_atr'),
                         "entry_iv": entry_snapshot.get('entry_iv'),
+                        "entry_risk_points": entry_snapshot.get('entry_risk_points', 0),
                         "is_sim": True
                     })
                     logging.info(
