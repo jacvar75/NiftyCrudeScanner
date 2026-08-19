@@ -1012,7 +1012,7 @@ def run_crude_orderflow_scan():
                             safe_emit('crude_orderflow_signal', current_signal)
                             return
 
-                # --- EARLY-FAILURE EXIT (SHADOW ONLY — logs only, never forces an exit) ---
+                # --- EARLY-FAILURE EXIT: Exits after 60 min if MFE < 15 pts (relaxed safety net) ---
                 # Built from 12 real losses (5 original + 7 v2.11 week) that all matched this
                 # exact signature: MFE never exceeded ~10pts. Zero winners can structurally
                 # match this by definition of how near-miss/trail exits work — but we cannot
