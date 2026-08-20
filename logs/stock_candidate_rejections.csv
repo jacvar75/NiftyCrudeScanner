@@ -50158,3 +50158,442 @@ timestamp,symbol,stage,reason
 2026-08-20T11:49:22.537287,HINDUNILVR,setup,no fresh breakout/continuation trigger
 2026-08-20T11:49:22.538550,EICHERMOT,setup,no fresh breakout/continuation trigger
 2026-08-20T11:49:22.538550,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,SBIN,trade_limit,already traded today
+2026-08-20T11:50:25.337438,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:50:25.337438,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.337438,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,BEL,setup,pullback armed 0.68 ATR — waiting for trigger retest/reclaim
+2026-08-20T11:50:25.353498,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,JIOFIN,setup,RVOL 0.08 below 1.0
+2026-08-20T11:50:25.353498,DIXON,trade_limit,already traded today
+2026-08-20T11:50:25.353498,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:50:25.353498,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.288217,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.288217,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.289221,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.290269,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,SBIN,trade_limit,already traded today
+2026-08-20T11:51:28.291336,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:51:28.291336,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,BEL,setup,pullback armed 0.67 ATR — waiting for trigger retest/reclaim
+2026-08-20T11:51:28.291336,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,HINDALCO,setup,RVOL 0.23 below 1.0
+2026-08-20T11:51:28.291336,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,DIXON,trade_limit,already traded today
+2026-08-20T11:51:28.291336,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.291336,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.307351,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.307351,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.307351,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.307351,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:51:28.307351,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.292367,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.292367,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.292367,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.292367,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.304543,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.305631,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.306646,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.306646,SBIN,trade_limit,already traded today
+2026-08-20T11:52:31.307883,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:52:31.307883,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,HINDALCO,setup,pullback armed 0.36 ATR — waiting for trigger retest/reclaim
+2026-08-20T11:52:31.307883,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,DIXON,trade_limit,already traded today
+2026-08-20T11:52:31.307883,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.307883,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.321252,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.322285,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.322285,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.323427,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.323427,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.324396,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.324396,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.324396,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.324396,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:52:31.324396,BEL,option,BEL26AUG410PE: spread 2.53%; BEL26AUG405PE: spread 2.67%; BEL26AUG415PE: spread 2.09%; BEL26AUG400PE: spread 6.06%; BEL26AUG420PE: premium 11.4 outside range
+2026-08-20T11:53:34.123811,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.123811,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.124838,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.124838,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.126309,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.126309,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.127744,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.127744,SBIN,trade_limit,already traded today
+2026-08-20T11:53:34.129095,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:53:34.129095,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.130126,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.131122,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.131122,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.132119,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.132119,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.133117,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.134447,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.134447,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,HINDALCO,setup,pullback armed 0.34 ATR — waiting for trigger retest/reclaim
+2026-08-20T11:53:34.135460,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,DIXON,trade_limit,already traded today
+2026-08-20T11:53:34.135460,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:53:34.135460,BEL,option,BEL26AUG410PE: spread 2.50%; BEL26AUG405PE: spread 2.67%; BEL26AUG415PE: spread 2.08%; BEL26AUG400PE: spread 6.06%; BEL26AUG420PE: premium 11.6 outside range
+2026-08-20T11:54:36.885351,HDFCBANK,setup,RVOL 0.34 below 1.0
+2026-08-20T11:54:36.885351,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.885351,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.885351,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.885351,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.885351,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.885351,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,SBIN,trade_limit,already traded today
+2026-08-20T11:54:36.901383,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:54:36.901383,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,BEL,setup,SL too wide (1.54 ATR)
+2026-08-20T11:54:36.901383,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,DIXON,trade_limit,already traded today
+2026-08-20T11:54:36.901383,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.901383,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:54:36.917064,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,SBIN,trade_limit,already traded today
+2026-08-20T11:55:39.741011,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:55:39.741011,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,BEL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.741011,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,DIXON,trade_limit,already traded today
+2026-08-20T11:55:39.756911,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.756911,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.763698,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:55:39.763698,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,SBIN,trade_limit,already traded today
+2026-08-20T11:58:22.246130,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:58:22.246130,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,M&M,setup,pullback armed 0.37 ATR — waiting for trigger retest/reclaim
+2026-08-20T11:58:22.246130,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,LT,setup,SL too wide (2.28 ATR)
+2026-08-20T11:58:22.246130,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,BEL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.246130,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,DIXON,trade_limit,already traded today
+2026-08-20T11:58:22.261793,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:58:22.261793,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,SBIN,trade_limit,already traded today
+2026-08-20T11:59:25.197952,BAJFINANCE,trade_limit,already traded today
+2026-08-20T11:59:25.197952,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.197952,M&M,setup,pullback armed 0.44 ATR — waiting for trigger retest/reclaim
+2026-08-20T11:59:25.197952,LICI,setup,SL too wide (1.71 ATR)
+2026-08-20T11:59:25.213744,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,LT,setup,SL too wide (2.37 ATR)
+2026-08-20T11:59:25.213744,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,BEL,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,DIXON,trade_limit,already traded today
+2026-08-20T11:59:25.213744,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T11:59:25.213744,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,SBIN,trade_limit,already traded today
+2026-08-20T12:00:28.088679,BAJFINANCE,trade_limit,already traded today
+2026-08-20T12:00:28.088679,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,LT,setup,SL too wide (1.77 ATR)
+2026-08-20T12:00:28.088679,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,BEL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.088679,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,POWERINDIA,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,DIXON,trade_limit,already traded today
+2026-08-20T12:00:28.104333,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T12:00:28.104333,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,SBIN,trade_limit,already traded today
+2026-08-20T12:01:30.902135,BAJFINANCE,trade_limit,already traded today
+2026-08-20T12:01:30.902135,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,LICI,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,LT,setup,SL too wide (1.77 ATR)
+2026-08-20T12:01:30.902135,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.902135,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,BEL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,POWERINDIA,setup,RVOL 0.36 below 1.0
+2026-08-20T12:01:30.918152,DIXON,trade_limit,already traded today
+2026-08-20T12:01:30.918152,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,SUNPHARMA,setup,RVOL 0.14 below 1.0
+2026-08-20T12:01:30.918152,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T12:01:30.918152,MUTHOOTFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.756230,HDFCBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.757234,ICICIBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.758292,INFY,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.759280,RELIANCE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.759280,BSE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.760410,BHARTIARTL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.763573,KALYANKJIL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.764576,SBIN,trade_limit,already traded today
+2026-08-20T12:02:33.764576,BAJFINANCE,trade_limit,already traded today
+2026-08-20T12:02:33.765886,ETERNAL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.765886,TCS,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.766890,M&M,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.767902,LICI,setup,SL too wide (2.29 ATR)
+2026-08-20T12:02:33.767902,AXISBANK,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.767902,PAYTM,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.769119,MCX,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.770213,SWIGGY,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.770213,LT,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.771217,KAYNES,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.771217,COFORGE,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.772521,SHRIRAMFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.772521,HAL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.773612,MARUTI,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.773612,BEL,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.774615,TVSMOTOR,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.774615,HINDALCO,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,POWERINDIA,setup,pullback armed 0.31 ATR — waiting for trigger retest/reclaim
+2026-08-20T12:02:33.775565,DIXON,trade_limit,already traded today
+2026-08-20T12:02:33.775565,JIOFIN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,TITAN,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,TECHM,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,SUNPHARMA,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,GVT&D,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,DIVISLAB,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,ITC,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,HEROMOTOCO,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,LAURUSLABS,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,HINDUNILVR,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,EICHERMOT,setup,no fresh breakout/continuation trigger
+2026-08-20T12:02:33.775565,MUTHOOTFIN,setup,no fresh breakout/continuation trigger

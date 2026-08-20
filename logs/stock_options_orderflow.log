@@ -40,3 +40,48 @@ TypeError: 'NoneType' object is not subscriptable
 2026-08-18 14:26:04,118 - INFO - F&O stock universe built: 208
 2026-08-18 14:43:01,508 - INFO - F&O stock universe built: 208
 2026-08-18 15:21:21,163 - INFO - 127.0.0.1 - - [18/Aug/2026 15:21:21] "GET /socket.io/?EIO=4&transport=websocket&sid=kfCmGrwHHo8DHV1ZAAAA HTTP/1.1" 200 -
+2026-08-20 10:09:33,731 - INFO - F&O stock universe built: 208
+2026-08-20 10:09:33,765 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
+2026-08-20 10:09:33,824 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8065
+ * Running on http://192.168.1.202:8065
+2026-08-20 10:09:33,824 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-20 10:09:35,157 - INFO - F&O stock universe built: 208
+2026-08-20 10:09:42,741 - INFO - 127.0.0.1 - - [20/Aug/2026 10:09:42] "[36mGET / HTTP/1.1[0m" 304 -
+2026-08-20 10:09:43,016 - INFO - 127.0.0.1 - - [20/Aug/2026 10:09:43] "GET /socket.io/?EIO=4&transport=polling&t=Q0TTy6v HTTP/1.1" 200 -
+2026-08-20 10:09:43,177 - INFO - 127.0.0.1 - - [20/Aug/2026 10:09:43] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-20 10:09:43,328 - INFO - 127.0.0.1 - - [20/Aug/2026 10:09:43] "POST /socket.io/?EIO=4&transport=polling&t=Q0TTyAg&sid=n67SsK3OPhznLQLOAAAA HTTP/1.1" 200 -
+2026-08-20 10:09:43,330 - INFO - 127.0.0.1 - - [20/Aug/2026 10:09:43] "GET /socket.io/?EIO=4&transport=polling&t=Q0TTyAj&sid=n67SsK3OPhznLQLOAAAA HTTP/1.1" 200 -
+2026-08-20 10:09:43,640 - INFO - 127.0.0.1 - - [20/Aug/2026 10:09:43] "GET /socket.io/?EIO=4&transport=polling&t=Q0TTyFb&sid=n67SsK3OPhznLQLOAAAA HTTP/1.1" 200 -
+2026-08-20 10:27:06,802 - INFO - F&O stock universe built: 208
+2026-08-20 10:34:11,673 - ERROR - Engine loop error
+Traceback (most recent call last):
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 2117, in engine_loop
+    engine_tick()
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 2066, in engine_tick
+    f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
+       ~~~~~~~~~~~~^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2026-08-20 10:44:37,599 - INFO - F&O stock universe built: 208
+2026-08-20 11:04:02,781 - ERROR - Engine loop error
+Traceback (most recent call last):
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 2117, in engine_loop
+    engine_tick()
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 2066, in engine_tick
+    f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
+       ~~~~~~~~~~~~^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2026-08-20 11:05:03,349 - INFO - F&O stock universe built: 208
+2026-08-20 11:22:26,537 - INFO - F&O stock universe built: 208
+2026-08-20 11:30:56,147 - ERROR - Engine loop error
+Traceback (most recent call last):
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 2117, in engine_loop
+    engine_tick()
+  File "C:\Users\jacva\AppData\Local\Programs\Python\Python312\nse\AI_V2\stock_options_orderflow.py", line 2066, in engine_tick
+    f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
+       ~~~~~~~~~~~~^^^^^^^^^^
+TypeError: 'NoneType' object is not subscriptable
+2026-08-20 11:39:16,853 - INFO - F&O stock universe built: 208
+2026-08-20 11:56:40,322 - INFO - F&O stock universe built: 208
+2026-08-20 12:02:40,276 - INFO - 127.0.0.1 - - [20/Aug/2026 12:02:40] "GET /socket.io/?EIO=4&transport=websocket&sid=n67SsK3OPhznLQLOAAAA HTTP/1.1" 200 -

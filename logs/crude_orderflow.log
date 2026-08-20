@@ -10,3 +10,178 @@
 2026-08-20 10:24:43,217 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:43] "POST /socket.io/?EIO=4&transport=polling&t=Q0TXNtM&sid=2J1uA8qxgrC6IpT6AAAA HTTP/1.1" 200 -
 2026-08-20 10:24:43,224 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:43] "GET /socket.io/?EIO=4&transport=polling&t=Q0TXNtO&sid=2J1uA8qxgrC6IpT6AAAA HTTP/1.1" 200 -
 2026-08-20 10:24:43,232 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:25:13,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:25:40,397 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:25:43,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:26:13,150 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:26:40,398 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:26:43,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:27:13,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:27:40,400 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:27:43,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:28:13,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:28:40,401 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:29:14,138 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:29:40,403 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:30:15,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:30:40,405 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:31:16,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:31:40,406 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:32:17,138 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:32:40,408 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:33:18,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:33:40,410 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:34:19,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:34:40,412 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:35:20,458 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:35:40,414 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:36:21,152 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:36:40,416 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:37:22,143 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:37:40,418 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:38:23,136 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:38:40,420 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:39:24,143 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:39:40,421 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:40:25,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:40:40,423 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:41:26,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:41:40,425 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:42:27,138 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:42:40,427 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:43:28,144 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:43:40,428 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:44:29,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:44:40,430 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:45:30,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:45:40,432 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:46:31,150 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:46:40,435 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:47:32,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:47:40,436 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:48:33,151 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:48:40,438 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:49:34,150 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:49:40,440 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:50:35,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:50:40,441 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:51:36,173 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:51:40,443 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:52:37,141 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:52:40,445 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:53:38,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:53:40,446 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:54:39,143 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:54:40,448 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:55:40,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:55:40,449 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:56:40,451 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:56:41,148 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:57:40,454 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:57:42,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:58:40,456 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:58:42,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:59:40,458 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:59:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 11:00:41,082 - INFO - MCX instrument cache refreshed: 16594 instruments
+2026-08-20 11:00:41,227 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:00:42,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:01:41,273 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:01:42,136 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:02:41,339 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:02:42,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:03:41,386 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:03:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:04:41,449 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:04:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:05:41,519 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:05:42,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:06:41,599 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:06:42,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:07:41,641 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:07:42,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:08:41,717 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:08:42,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:09:41,763 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:09:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:10:41,864 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:10:42,139 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:11:41,917 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:11:42,147 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:12:41,986 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:12:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:13:42,030 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:13:42,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:14:42,108 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:14:42,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:15:42,174 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:15:42,174 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:16:42,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-20 11:16:42,244 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:17:42,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:17:42,299 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:18:42,144 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:18:42,357 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:19:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:19:42,399 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:20:42,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:20:42,497 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:21:42,139 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:21:42,538 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:22:42,151 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:22:42,605 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:23:42,148 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:23:42,650 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:24:42,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:24:42,717 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:25:42,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:25:42,788 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:26:42,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:26:42,852 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:27:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:27:42,888 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:28:42,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:28:42,956 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:29:42,150 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:29:43,005 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:30:42,143 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-08-20 11:30:43,096 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:31:42,136 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:31:43,136 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:32:42,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:32:43,211 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:33:42,150 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:33:43,248 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:34:42,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:34:43,322 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:35:42,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:35:43,381 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:36:42,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:36:43,455 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:37:42,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:37:43,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:38:42,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:38:43,554 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:39:42,139 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:39:43,604 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:40:42,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:40:43,697 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:41:42,138 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:41:43,722 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:42:22,266 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:42:43,149 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:42:43,825 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:43:13,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:43:43,862 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:44:14,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:44:43,970 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:45:15,147 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:45:44,039 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:46:16,136 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:46:44,115 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:47:17,148 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:47:44,159 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:48:18,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:48:44,229 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:49:19,142 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
+2026-08-20 11:49:44,277 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 20
