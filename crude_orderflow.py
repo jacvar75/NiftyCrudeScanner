@@ -1339,13 +1339,6 @@ def run_crude_orderflow_scan():
             market_regime = compute_market_regime(candles_15m, entry_atr, vwap)
             signal_quality = min(100, total_score)
 
-            # --- Log score distribution (only when score > 40 to keep file small) ---
-            if total_score > 40:
-                log_score_distribution(
-                    now, total_score, base_score, bonus, interaction_bonus, bias,
-                    futures_ltp, market_regime, dte,
-                    "Accepted" if total_score >= ENTRY_SCORE_THRESHOLD and bias != "NEUTRAL" else "Rejected"
-                )
 
             if total_score < ENTRY_SCORE_THRESHOLD or bias == "NEUTRAL":
                 print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < {ENTRY_SCORE_THRESHOLD}, Bias: {bias}")
@@ -1736,6 +1729,14 @@ def run_crude_orderflow_scan():
                     "daily_loss_cap": max_daily_loss,
                 }
                 safe_emit('crude_orderflow_signal', monitor_signal)
+
+            # --- Log score distribution (only when score > 40 to keep file small) ---
+            if total_score > 40:
+                log_score_distribution(
+                    now, total_score, base_score, bonus, interaction_bonus, bias,
+                    futures_ltp, market_regime, dte,
+                    "Accepted" if total_score >= ENTRY_SCORE_THRESHOLD and bias != "NEUTRAL" else "Rejected"
+                )
 
             # --- FALLBACK: emit NO TRADE if we reached the end without any trade ---
             if active_trade is None:
