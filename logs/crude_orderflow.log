@@ -1,0 +1,12 @@
+2026-08-20 10:24:40,394 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
+2026-08-20 10:24:40,455 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8064
+ * Running on http://192.168.1.202:8064
+2026-08-20 10:24:40,455 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-20 10:24:42,651 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:42] "[36mGET / HTTP/1.1[0m" 304 -
+2026-08-20 10:24:42,900 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:42] "GET /socket.io/?EIO=4&transport=polling&t=Q0TXNpr HTTP/1.1" 200 -
+2026-08-20 10:24:43,068 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:43] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-20 10:24:43,217 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:43] "POST /socket.io/?EIO=4&transport=polling&t=Q0TXNtM&sid=2J1uA8qxgrC6IpT6AAAA HTTP/1.1" 200 -
+2026-08-20 10:24:43,224 - INFO - 127.0.0.1 - - [20/Aug/2026 10:24:43] "GET /socket.io/?EIO=4&transport=polling&t=Q0TXNtO&sid=2J1uA8qxgrC6IpT6AAAA HTTP/1.1" 200 -
+2026-08-20 10:24:43,232 - INFO - EMIT crude_orderflow_signal: NO TRADE | Market Closed
