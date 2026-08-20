@@ -75,7 +75,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.14"
+STRATEGY_VERSION = "v2.15"
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -331,7 +331,7 @@ _score_lock = threading.Lock()
 
 
 # ======================== HIGH QUALITY SETUP FILTER ========================
-def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, feature_scores, bias, oi_class, entry_atr):
+def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, rsi_val, feature_scores, bias, oi_class, entry_atr, upper_wick_pct, lower_wick_pct, vwap_stretch):
     """
     Strict quality filter for Crude Oil order-flow.
     Kills mediocrity (low RVOL, choppy candles, conflicting OI) while keeping high-conviction moves.
@@ -358,6 +358,24 @@ def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, f
     # 4. Minimum Momentum Safety (Low ATR + Low ADX = Dead market)
     if entry_atr < 25 and adx_val < 25:
         return False, f"Dead consolidation (ATR {entry_atr:.1f} < 25 & ADX {adx_val:.1f} < 25)"
+
+    # 5. Momentum Exhaustion Filter (Wick + Stretch) - Replaces simple RSI rule
+    # This detects "blow-off tops" (long upper wick + overbought/stretched)
+    # and "blow-off bottoms" (long lower wick + oversold/stretched)
+    if bias == "CALL":
+        # Overbought if RSI > 75 OR price is stretched > 1.5 ATR above VWAP
+        is_overbought = (rsi_val > 75 or vwap_stretch > 1.5)
+        # A long upper wick (>50% of candle) shows rejection at the top
+        if is_overbought and upper_wick_pct > 0.5:
+            return False, f"Momentum exhaustion (RSI {rsi_val:.1f}, VWAP Stretch {vwap_stretch:.2f} ATR, Upper Wick {upper_wick_pct:.0%})"
+
+    if bias == "PUT":
+        # Oversold if RSI < 25 OR price is stretched > 1.5 ATR below VWAP
+        is_oversold = (rsi_val < 25 or vwap_stretch < -1.5)
+        # A long lower wick (>50% of candle) shows rejection at the bottom
+        if is_oversold and lower_wick_pct > 0.5:
+            return False, f"Momentum exhaustion (RSI {rsi_val:.1f}, VWAP Stretch {vwap_stretch:.2f} ATR, Lower Wick {lower_wick_pct:.0%})"
+
 
     # If we pass all, it is a genuinely high-quality setup
     return True, "High quality setup confirmed"
@@ -1072,9 +1090,9 @@ def run_crude_orderflow_scan():
 
                 # Only tighten when profit exceeds 3R (massive) AND MFE is large
                 if mfe >= risk * 3.0 and mfe >= base_trail * 2.5:
-                    trail_distance = max(12, base_trail * 0.5)  # Tight – lock in the monster
+                    trail_distance = max(8, base_trail * 0.5)  # Tight – lock in the monster ( was 12 )
                 elif mfe >= risk * 2.0 and mfe >= base_trail * 1.5:
-                    trail_distance = max(15, base_trail * 0.7)  # Moderately tight
+                    trail_distance = max(10, base_trail * 0.7)  # Moderately tight ( was 15 )
                 else:
                     trail_distance = base_trail  # Wide open – let it run
 
@@ -1513,6 +1531,23 @@ def run_crude_orderflow_scan():
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
 
+                # --- Calculate Exhaustion Metrics (Wick + VWAP Stretch) ---
+                upper_wick_pct = 0
+                lower_wick_pct = 0
+                vwap_stretch = 0
+                if not candles_15m.empty:
+                    candle_high = candles_15m['high'].iloc[-1]
+                    candle_low = candles_15m['low'].iloc[-1]
+                    candle_close = candles_15m['close'].iloc[-1]
+                    candle_open = candles_15m['open'].iloc[-1]
+                    candle_range = candle_high - candle_low
+                    if candle_range > 0:
+                        upper_wick_pct = (candle_high - max(candle_close, candle_open)) / candle_range
+                        lower_wick_pct = (min(candle_close, candle_open) - candle_low) / candle_range
+                    # Price distance from VWAP in ATR terms
+                    if entry_atr > 0:
+                        vwap_stretch = (futures_ltp - vwap) / entry_atr
+
                 # === ENTRY SCORE GATE + HIGH QUALITY FILTER (v2.13) ===
                 # First, run the quality check on this setup
                 quality_pass, quality_reason = is_high_quality_setup(
@@ -1520,10 +1555,14 @@ def run_crude_orderflow_scan():
                     base_score,
                     interaction_bonus,
                     adx_val,
+                    rsi_val,
                     feature_scores,
                     bias,
                     comp.get("oi_class"),
-                    entry_atr
+                    entry_atr,
+                    upper_wick_pct,
+                    lower_wick_pct,
+                    vwap_stretch
                 )
 
                 if total_score >= ENTRY_SCORE_THRESHOLD and quality_pass:
