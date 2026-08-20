@@ -76,7 +76,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 os.makedirs(LOG_DIR, exist_ok=True)
 
 STRATEGY_VERSION = "v2.15"
-ENTRY_COOLDOWN_SECONDS = 300
+ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 
