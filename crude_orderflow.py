@@ -75,7 +75,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.13"
+STRATEGY_VERSION = "v2.14"
 ENTRY_COOLDOWN_SECONDS = 300
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -1411,10 +1411,17 @@ def run_crude_orderflow_scan():
             # ADX-gated version. This will meaningfully cut trade volume — that's intentional. ===
             breakout_val = feature_scores.get("breakout_acceptance", {}).get("value", 0)
             if breakout_val == 1:
-                # Instead of rejecting, penalize the score heavily and let it through
-                total_score -= 15
-                logging.info(f"🔶 Breakout detected: Penalizing score by 15 (New total: {total_score})")
-                print(f"🔶 Breakout detected: Penalizing score by 15")
+                # Only penalize breakouts if ADX is WEAK (< 25)
+                # Strong trends (ADX >= 25) can sustain breakouts
+                if adx_val < 25:
+                    total_score -= 20  # Heavier penalty for weak breakouts
+                    logging.info(
+                        f"🔶 WEAK Breakout (ADX {adx_val:.1f}): Penalizing score by 20 (New total: {total_score})")
+                    print(f"🔶 WEAK Breakout: Penalizing score by 20")
+                else:
+                    # Strong trend breakout - NO penalty
+                    logging.info(f"✅ STRONG Breakout (ADX {adx_val:.1f}): No penalty applied")
+                    print(f"✅ STRONG Breakout: No penalty")
 
             ht_candles = get_higher_tf_candles(fut_token)
             if ht_candles.empty or len(ht_candles) < 8:
@@ -1432,11 +1439,20 @@ def run_crude_orderflow_scan():
 
             ht_bias = "CALL" if ht_candles['close'].iloc[-1] > ht_vwap else "PUT"
             if ht_bias != bias:
-                # Instead of hard rejecting, penalize the score and continue
-                total_score -= HTF_MISMATCH_PENALTY  # HTF_MISMATCH_PENALTY = 15 (defined at the top)
-                logging.info(
-                    f"🔶 HTF mismatch ({ht_bias} vs {bias}): Penalizing score by {HTF_MISMATCH_PENALTY} (New total: {total_score})")
-                print(f"🔶 HTF mismatch: Penalizing score by {HTF_MISMATCH_PENALTY}")
+                # Only penalize HTF mismatch if LOWER TIMEFRAME trend is WEAK (ADX < 30)
+                # If ADX >= 30, the 15-min momentum overrides the stale 1-Hour VWAP
+                if adx_val < 30:
+                    total_score -= HTF_MISMATCH_PENALTY  # 15 points
+                    logging.info(
+                        f"🔶 HTF mismatch ({ht_bias} vs {bias}) with ADX {adx_val:.1f}: Penalizing score by {HTF_MISMATCH_PENALTY} (New total: {total_score})")
+                    print(f"🔶 HTF mismatch: Penalizing score by {HTF_MISMATCH_PENALTY}")
+                    # DO NOT return here - let the score drop naturally.
+                    # If it drops below 55, it will be rejected by the entry gate.
+                else:
+                    # Strong 15-min trend overrides HTF VWAP - NO penalty
+                    logging.info(
+                        f"✅ Strong 15-min trend (ADX {adx_val:.1f}) overrides HTF mismatch ({ht_bias} vs {bias}). No penalty.")
+                    print(f"✅ HTF mismatch overridden by strong trend.")
 
                 current_signal = {
                     "decision": "NO TRADE",
@@ -1731,11 +1747,11 @@ def run_crude_orderflow_scan():
                 safe_emit('crude_orderflow_signal', monitor_signal)
 
             # --- Log score distribution (only when score > 40 to keep file small) ---
-            if total_score > 40:
+            if total_score > 40 or active_trade is not None:
+                reason = "Accepted" if active_trade is not None else f"Rejected - {current_signal.get('reason', 'post-penalty')}"
                 log_score_distribution(
                     now, total_score, base_score, bonus, interaction_bonus, bias,
-                    futures_ltp, market_regime, dte,
-                    "Accepted" if total_score >= ENTRY_SCORE_THRESHOLD and bias != "NEUTRAL" else "Rejected"
+                    futures_ltp, market_regime, dte, reason
                 )
 
             # --- FALLBACK: emit NO TRADE if we reached the end without any trade ---
