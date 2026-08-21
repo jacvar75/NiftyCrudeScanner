@@ -49,7 +49,7 @@ MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
 CRUDE_TRAIL_ACTIVATION = 15
-CRUDE_BREAKEVEN_MFE_PTS = 25
+CRUDE_BREAKEVEN_MFE_PTS = 18
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 20                      # wider floor to let trends breathe
 CRUDE_SL_PCT = 0.12                         # SL = 12% of entry premium (wider to breathe)
