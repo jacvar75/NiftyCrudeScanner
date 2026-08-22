@@ -1768,6 +1768,12 @@ def choose_trade(candidates):
     estimated_risk = option["estimated_rupee_risk"]
 
     signal_id = selected["signal_id"]
+
+    # --- Option SL risk cap ---
+    calc_sl = max(0.05, entry_premium - option["estimated_option_risk_points"])
+    floor_sl = entry_premium * 0.85
+    final_sl = max(calc_sl, floor_sl)
+
     trade = {
         "signal_id": signal_id,
         "symbol": selected["symbol"],
@@ -1789,27 +1795,12 @@ def choose_trade(candidates):
         "underlying_sl": selected["sl_underlying"],
         "underlying_target": selected["target_underlying"],
         "risk_points_underlying": selected["risk_points_underlying"],
-
-        # ACTUAL OPTION-PREMIUM EXIT LEVELS
         "option_risk_points": option["estimated_option_risk_points"],
-        "option_sl": max(
-            0.05,
-            entry_premium - option["estimated_option_risk_points"]
-        ),
-        "initial_option_sl": max(
-            0.05,
-            entry_premium - option["estimated_option_risk_points"]
-        ),
-        "current_option_sl": max(
-            0.05,
-            entry_premium - option["estimated_option_risk_points"]
-        ),
-        "option_target": (
-            entry_premium
-            + option["estimated_option_risk_points"] * TARGET_R_MULTIPLE
-        ),
+        "option_sl": final_sl,
+        "initial_option_sl": final_sl,
+        "current_option_sl": final_sl,
+        "option_target": (entry_premium + option["estimated_option_risk_points"] * TARGET_R_MULTIPLE),
         "profit_lock_stage": 0,
-
         "target_r_multiple": TARGET_R_MULTIPLE,
         "estimated_rupee_risk": estimated_risk,
         "mfe_underlying": underlying,
