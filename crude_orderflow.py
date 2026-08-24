@@ -1747,7 +1747,7 @@ def run_crude_orderflow_scan():
                         f"{bias} {candidate_strike}\n"
                         f"ADX: {entry_snapshot.get('adx', 0):.1f} | RSI: {entry_snapshot.get('rsi', 0):.1f}\n"
                         f"Time: {now.strftime('%Y-%m-%d %H:%M:%S')}"
-                    }
+                    )
 
                 elif total_score >= ENTRY_SCORE_THRESHOLD and not quality_pass:
                     # Reject with the specific quality reason
