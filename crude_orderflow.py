@@ -14,6 +14,7 @@ import os
 import calendar
 import pytz
 import uuid
+import requests
 from dotenv import load_dotenv
 from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, emit
@@ -43,6 +44,20 @@ ACCESS_TOKEN = os.getenv("OF_ACCESS_TOKEN")
 if not API_KEY or not ACCESS_TOKEN:
     print("❌ OF_API_KEY or OF_ACCESS_TOKEN not found in .env.orderflow")
     exit(1)
+
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
+def send_telegram_alert(message):
+    """Fire-and-forget Telegram alert. Never allowed to block or crash the trading loop."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        requests.post(url, data={"chat_id": TELEGRAM_CHAT_ID, "text": message}, timeout=5)
+    except Exception as e:
+        logging.warning(f"⚠️ Telegram alert failed: {e}")
+
 
 PORT = 8064
 MAX_LOTS = 2
@@ -793,6 +808,18 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "vix_value": trade_snap.get('vix_value', 0),
         "is_sim": is_sim
     })
+
+    send_telegram_alert(
+        f"🔴 CRUDE TRADE CLOSED\n"
+        f"{trade_snap.get('symbol', '')}\n"
+        f"{trade_snap.get('bias', '')} {trade_snap.get('strike', '')}\n"
+        f"{entry:.1f} → {exit_ltp:.1f}\n"
+        f"PnL: ₹{exit_pnl:.0f} | R: {r_multiple:.2f}\n"
+        f"Reason: {reason_tag}\n"
+        f"Held: {round((now_ist() - entry_time_snap).total_seconds() / 60, 1)} min\n"
+        f"Time: {now_ist().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"Daily PnL: ₹{daily_pnl_snap:.0f}"
+    )
 
     try:
         regime = trade_snap.get('market_regime', 'UNKNOWN')
@@ -1713,6 +1740,14 @@ def run_crude_orderflow_scan():
                     })
                     logging.info(
                         f"🔁 [SIM] CRUDE ENTRY: {option_symbol} @ {option_ltp} | Base: {base_score} | Total: {signal_quality} | ID: {signal_id}")
+
+                    send_telegram_alert(
+                        f"🟢 CRUDE TRADE OPENED\n"
+                        f"{option_symbol}\n"
+                        f"{bias} {candidate_strike}\n"
+                        f"ADX: {entry_snapshot.get('adx', 0):.1f} | RSI: {entry_snapshot.get('rsi', 0):.1f}\n"
+                        f"Time: {now.strftime('%Y-%m-%d %H:%M:%S')}"
+                    }
 
                 elif total_score >= ENTRY_SCORE_THRESHOLD and not quality_pass:
                     # Reject with the specific quality reason
