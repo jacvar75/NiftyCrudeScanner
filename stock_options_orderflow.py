@@ -1157,17 +1157,61 @@ def option_candidates(symbol, bias, spot):
         return []
 
     x["dte"] = x["expiry"].apply(trading_days_to)
-    x = x[(x["dte"] >= MIN_DTE) & (x["dte"] <= MAX_DTE)]
-    if AVOID_EXPIRY_DAY:
-        x = x[x["dte"] >= 2]
+
+    # -----------------------------------------------------------------------
+    # EXPIRY SELECTION
+    #
+    # Normal case:
+    #   Prefer the nearest expiry within MIN_DTE..MAX_DTE.
+    #
+    # Expiry-day / no normal-window expiry:
+    #   Do not use today's expiry.
+    #   Fall back to the next available expiry rather than returning
+    #   zero option contracts.
+    # -----------------------------------------------------------------------
 
     typ = "CE" if bias == "CALL" else "PE"
     x = x[x["instrument_type"] == typ]
+
     if x.empty:
         return []
 
-    expiry = x["expiry"].min()
-    x = x[x["expiry"] == expiry].copy()
+    # Never use an option that has already expired.
+    x = x[x["expiry"] >= today]
+
+    if x.empty:
+        return []
+
+    # Normal preferred expiry window.
+    preferred = x[
+        (x["dte"] >= MIN_DTE) &
+        (x["dte"] <= MAX_DTE)
+        ].copy()
+
+    if AVOID_EXPIRY_DAY:
+        preferred = preferred[preferred["dte"] >= 2]
+
+    if not preferred.empty:
+        # Use the nearest expiry inside the normal DTE window.
+        expiry = preferred["expiry"].min()
+        x = preferred[preferred["expiry"] == expiry].copy()
+
+    else:
+        # -------------------------------------------------------------------
+        # FALLBACK:
+        # No expiry exists inside the normal DTE window.
+        #
+        # Use the next available future expiry.
+        # This prevents expiry-calendar gaps from producing zero candidates.
+        # -------------------------------------------------------------------
+        future = x[x["dte"] > 0].copy()
+
+        if future.empty:
+            return []
+
+        expiry = future["expiry"].min()
+        x = future[future["expiry"] == expiry].copy()
+
 
     strikes_unique = sorted(x["strike"].unique())
     if len(strikes_unique) > 2:
