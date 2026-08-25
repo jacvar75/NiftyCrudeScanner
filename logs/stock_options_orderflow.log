@@ -132,3 +132,32 @@ Traceback (most recent call last):
     f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
        ~~~~~~~~~~~~^^^^^^^^^^
 TypeError: 'NoneType' object is not subscriptable
+2026-08-24 13:46:29,454 - INFO - F&O stock universe built: 208
+2026-08-24 13:46:29,485 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
+2026-08-24 13:46:29,534 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8065
+ * Running on http://192.168.1.202:8065
+2026-08-24 13:46:29,534 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-24 13:46:30,486 - INFO - F&O stock universe built: 208
+2026-08-24 13:46:42,340 - INFO - 127.0.0.1 - - [24/Aug/2026 13:46:42] "GET / HTTP/1.1" 200 -
+2026-08-24 13:46:42,621 - INFO - 127.0.0.1 - - [24/Aug/2026 13:46:42] "GET /socket.io/?EIO=4&transport=polling&t=Q0orzkF HTTP/1.1" 200 -
+2026-08-24 13:46:42,771 - INFO - 127.0.0.1 - - [24/Aug/2026 13:46:42] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-24 13:46:42,936 - INFO - 127.0.0.1 - - [24/Aug/2026 13:46:42] "POST /socket.io/?EIO=4&transport=polling&t=Q0orzo2&sid=WKjgOHuAd8c5BzGtAAAA HTTP/1.1" 200 -
+2026-08-24 13:46:42,936 - INFO - 127.0.0.1 - - [24/Aug/2026 13:46:42] "GET /socket.io/?EIO=4&transport=polling&t=Q0orzo4&sid=WKjgOHuAd8c5BzGtAAAA HTTP/1.1" 200 -
+2026-08-24 14:04:03,875 - INFO - F&O stock universe built: 208
+2026-08-24 14:21:29,234 - INFO - F&O stock universe built: 208
+2026-08-24 14:38:51,645 - INFO - F&O stock universe built: 208
+2026-08-24 17:50:27,689 - INFO - 127.0.0.1 - - [24/Aug/2026 17:50:27] "GET /socket.io/?EIO=4&transport=websocket&sid=WKjgOHuAd8c5BzGtAAAA HTTP/1.1" 200 -
+2026-08-25 09:57:49,196 - INFO - F&O stock universe built: 208
+2026-08-25 09:57:49,196 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
+2026-08-25 09:57:49,237 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8065
+ * Running on http://192.168.1.202:8065
+2026-08-25 09:57:49,237 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-25 09:57:50,001 - INFO - F&O stock universe built: 208
+2026-08-25 09:57:57,763 - INFO - 127.0.0.1 - - [25/Aug/2026 09:57:57] "[36mGET / HTTP/1.1[0m" 304 -
+2026-08-25 09:57:57,801 - INFO - 127.0.0.1 - - [25/Aug/2026 09:57:57] "GET /socket.io/?EIO=4&transport=polling&t=Q0tBClV HTTP/1.1" 200 -
+2026-08-25 09:57:57,994 - INFO - 127.0.0.1 - - [25/Aug/2026 09:57:57] "POST /socket.io/?EIO=4&transport=polling&t=Q0tBCmd&sid=6C9_XLBVG94baF-8AAAA HTTP/1.1" 200 -
+2026-08-25 09:57:58,181 - INFO - 127.0.0.1 - - [25/Aug/2026 09:57:58] "GET /socket.io/?EIO=4&transport=polling&t=Q0tBCme&sid=6C9_XLBVG94baF-8AAAA HTTP/1.1" 200 -
