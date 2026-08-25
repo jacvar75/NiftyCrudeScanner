@@ -914,7 +914,7 @@ def run_crude_orderflow_scan():
             if daily_reset_date is None:
                 daily_reset_date = now_ist().date()
 
-            market_open = now.replace(hour=11, minute=00, second=0, microsecond=0)
+            market_open = now.replace(hour=10, minute=00, second=0, microsecond=0)
             market_close = now.replace(hour=23, minute=30, second=0, microsecond=0)
             if not (market_open <= now <= market_close):
                 if active_trade:
