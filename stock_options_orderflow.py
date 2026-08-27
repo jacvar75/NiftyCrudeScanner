@@ -83,6 +83,7 @@ AVOID_EXPIRY_DAY = True
 # Risk / selection
 MAX_RISK_PER_TRADE = 2_000.0       # CHANGE BEFORE LIVE TRADING
 MAX_TRADES_PER_DAY = 3
+MAX_DAILY_RISK = 5_000.0           # ceiling on total ₹ risk deployed in a day, CHANGE BEFORE LIVE TRADING
 ONE_TRADE_PER_STOCK_PER_DAY = True
 MIN_RANK_SCORE = 68.0
 SECOND_TRADE_MIN_SCORE = 78.0
@@ -158,9 +159,9 @@ current_state = {
     "daily_pnl": 0.0,
 }
 
-active_trade = None
 daily_trades = 0
 daily_pnl = 0.0
+daily_risk_deployed = 0.0
 daily_reset_date = None
 traded_stocks_today = set()
 
@@ -294,12 +295,13 @@ def emit_state(force=False):
 
 
 def reset_day_if_needed():
-    global daily_reset_date, daily_trades, daily_pnl, traded_stocks_today
+    global daily_reset_date, daily_trades, daily_pnl, daily_risk_deployed, traded_stocks_today
     today = now_ist().date()
     if daily_reset_date != today:
         daily_reset_date = today
         daily_trades = 0
         daily_pnl = 0.0
+        daily_risk_deployed = 0.0
         traded_stocks_today = set()
         save_state()
 
@@ -318,6 +320,7 @@ def save_state():
         "date": daily_reset_date.isoformat() if daily_reset_date else None,
         "daily_trades": daily_trades,
         "daily_pnl": daily_pnl,
+        "daily_risk_deployed": daily_risk_deployed,
         "traded_stocks_today": list(traded_stocks_today),
         "active_trade": active_trade,
     }
@@ -329,7 +332,7 @@ def save_state():
 
 
 def load_state():
-    global daily_reset_date, daily_trades, daily_pnl, traded_stocks_today, active_trade
+    global daily_reset_date, daily_trades, daily_pnl, daily_risk_deployed, traded_stocks_today, active_trade
     if not os.path.exists(STATE_FILE):
         return
     try:
@@ -341,6 +344,7 @@ def load_state():
             daily_reset_date = now_ist().date()
             daily_trades = int(data.get("daily_trades", 0))
             daily_pnl = float(data.get("daily_pnl", 0))
+            daily_risk_deployed = float(data.get("daily_risk_deployed", 0))
             traded_stocks_today = set(data.get("traded_stocks_today", []))
             # Do not automatically resurrect a shadow trade after a restart,
             # but record that it happened so the dangling ENTRY row can be
@@ -1760,12 +1764,15 @@ def candidate_log_row(x, selected=False):
 # ---------------------------------------------------------------------------
 
 def choose_trade(candidates):
-    global active_trade, daily_trades
+    global active_trade, daily_trades, daily_risk_deployed
 
     if active_trade is not None:
         return None, "trade already active"
     if daily_trades >= MAX_TRADES_PER_DAY:
         return None, "daily trade limit reached"
+    if daily_risk_deployed >= MAX_DAILY_RISK:
+        return None, f"daily risk cap reached (₹{daily_risk_deployed:.0f} >= ₹{MAX_DAILY_RISK:.0f})"
+
     if not candidates:
         return None, "no qualified candidates"
 
@@ -1891,6 +1898,7 @@ def choose_trade(candidates):
 
     active_trade = trade
     daily_trades += 1
+    daily_risk_deployed += estimated_risk
     traded_stocks_today.add(selected["symbol"])
 
     append_csv(
@@ -2130,6 +2138,7 @@ def engine_tick():
     current_state["last_scan"] = now.strftime("%H:%M:%S")
     current_state["daily_trades"] = daily_trades
     current_state["daily_pnl"] = round(daily_pnl, 2)
+    current_state["daily_risk_deployed"] = round(daily_risk_deployed, 2)
     current_state["active_trade"] = active_trade
     current_state["shadow_mode"] = True
 
@@ -2189,6 +2198,7 @@ def engine_tick():
         current_state["active_trade"] = active_trade
         current_state["daily_trades"] = daily_trades
         current_state["daily_pnl"] = round(daily_pnl, 2)
+        current_state["daily_risk_deployed"] = round(daily_risk_deployed, 2)
         emit_state()
     except Exception as exc:
         logging.exception("Engine tick failed")
