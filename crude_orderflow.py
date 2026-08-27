@@ -1570,25 +1570,26 @@ def run_crude_orderflow_scan():
                     # 15m BB Mid-band (20 SMA) - Current 15m is fine (we trade on it)
                     bb_15_mid = candles_15m['close'].rolling(20).mean().iloc[-1]
                     close_15m = candles_15m['close'].iloc[-1]
+                    close_15m_prev = candles_15m['close'].iloc[-2]  # Previous 15m close
 
                     # --- 1-Hour Data: EXCLUDE the current/open candle ---
                     ht_closed = ht_candles.iloc[:-1]  # All fully closed 1H candles
                     bb_1h_mid = ht_closed['close'].rolling(20).mean().iloc[-1]
                     ht_close = ht_closed['close'].iloc[-1]
 
-
                     # Condition 1: Previous completed 1-Hour candle CLOSE was ABOVE its mid-band
                     macro_bullish = ht_close > bb_1h_mid
 
-                    # Condition 2: 15-minute candle CLOSE is ABOVE its mid-band (Pullback/Breakout)
-                    fifteen_bullish = close_15m > bb_15_mid
+                    # Condition 2: 15-minute candle just broke ABOVE its mid-band (Fresh Breakout)
+                    # Previous close was BELOW the mid-band, current close is ABOVE it
+                    fifteen_breakout = close_15m > bb_15_mid and close_15m_prev < bb_15_mid
 
                     # Condition 3: Trend is not completely dead (ADX > 20)
                     trend_alive = adx_val > 20
 
-                    if macro_bullish and fifteen_bullish and trend_alive and bias == "CALL":
+                    if macro_bullish and fifteen_breakout and trend_alive and bias == "CALL":
                         early_entry_trigger = True
-                        early_entry_reason = f"Early Entry (1H close above mid, 15m close above mid, ADX {adx_val:.1f})"
+                        early_entry_reason = f"Early Entry (1H close above mid, 15m fresh breakout, ADX {adx_val:.1f})"
                         # Override the score to pass the gate
                         total_score = max(total_score, ENTRY_SCORE_THRESHOLD)
                         logging.info(f"🔶 EARLY ENTRY TRIGGERED: {early_entry_reason}")
