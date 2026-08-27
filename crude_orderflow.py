@@ -90,7 +90,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.15"
+STRATEGY_VERSION = "v2.16"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -1517,7 +1517,7 @@ def run_crude_orderflow_scan():
                 distance_to_level_atr = round((futures_ltp - key_levels["PDL"]) / entry_atr, 2)
 
 
-            interval = 50
+            interval = 100
             atm = round(futures_ltp / interval) * interval
 
             candidate_strike = atm if (bias == "CALL" and futures_ltp >= atm - 50) or (bias == "PUT" and futures_ltp <= atm + 50) else (atm + interval if bias == "CALL" else atm - interval)
@@ -1557,6 +1557,43 @@ def run_crude_orderflow_scan():
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
+
+                # --- EARLY ENTRY OVERRIDE (v2.16 - BB Mid-band Strategy) ---
+                early_entry_trigger = False
+                early_entry_reason = ""
+
+                # Calculate BB Mid-bands (20 SMA)
+                # CRITICAL: Use only FULLY CLOSED 1-Hour candles (iloc[:-1])
+                # This prevents look-ahead bias (repainting signals)
+
+                if len(candles_15m) >= 20 and len(ht_candles) >= 21:  # Need 21 rows to have 20 closed + current
+                    # 15m BB Mid-band (20 SMA) - Current 15m is fine (we trade on it)
+                    bb_15_mid = candles_15m['close'].rolling(20).mean().iloc[-1]
+                    close_15m = candles_15m['close'].iloc[-1]
+
+                    # --- 1-Hour Data: EXCLUDE the current/open candle ---
+                    ht_closed = ht_candles.iloc[:-1]  # All fully closed 1H candles
+                    bb_1h_mid = ht_closed['close'].rolling(20).mean().iloc[-1]
+                    ht_close = ht_closed['close'].iloc[-1]
+
+
+                    # Condition 1: Previous completed 1-Hour candle CLOSE was ABOVE its mid-band
+                    macro_bullish = ht_close > bb_1h_mid
+
+                    # Condition 2: 15-minute candle CLOSE is ABOVE its mid-band (Pullback/Breakout)
+                    fifteen_bullish = close_15m > bb_15_mid
+
+                    # Condition 3: Trend is not completely dead (ADX > 20)
+                    trend_alive = adx_val > 20
+
+                    if macro_bullish and fifteen_bullish and trend_alive and bias == "CALL":
+                        early_entry_trigger = True
+                        early_entry_reason = f"Early Entry (1H close above mid, 15m close above mid, ADX {adx_val:.1f})"
+                        # Override the score to pass the gate
+                        total_score = max(total_score, ENTRY_SCORE_THRESHOLD)
+                        logging.info(f"🔶 EARLY ENTRY TRIGGERED: {early_entry_reason}")
+                        print(f"🔶 EARLY ENTRY TRIGGERED: {early_entry_reason}")
+
 
                 # --- Calculate Exhaustion Metrics (Wick + VWAP Stretch) ---
                 upper_wick_pct = 0
