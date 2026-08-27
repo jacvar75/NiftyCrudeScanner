@@ -1969,52 +1969,52 @@ def monitor_active_trade():
         t["mfe_underlying"] = min(t.get("mfe_underlying", t["entry_underlying"]), underlying)
         t["mae_underlying"] = max(t.get("mae_underlying", t["entry_underlying"]), underlying)
 
-        exit_reason = None
+    exit_reason = None
 
-        # ---------------------------------------------------------
-        # FAST BREAKOUT FAILURE PROTECTION
-        # ---------------------------------------------------------
-        # v1 fired on ANY raw-tick breach of the trigger, with zero buffer,
-        # zero confirmation, and no grace period. Shadow log 8/21-8/27:
-        # 7/8 completed trades died this way, breaches averaging ~10% of
-        # the real structural risk distance (HINDZINC: 0.10pt breach vs a
-        # 1.67pt SL). Fixed below with a buffer, consecutive-poll
-        # confirmation, an entry grace window, and an MFE gate.
+    # ---------------------------------------------------------
+    # FAST BREAKOUT FAILURE PROTECTION
+    # ---------------------------------------------------------
+    # v1 fired on ANY raw-tick breach of the trigger, with zero buffer,
+    # zero confirmation, and no grace period. Shadow log 8/21-8/27:
+    # 7/8 completed trades died this way, breaches averaging ~10% of
+    # the real structural risk distance (HINDZINC: 0.10pt breach vs a
+    # 1.67pt SL). Fixed below with a buffer, consecutive-poll
+    # confirmation, an entry grace window, and an MFE gate.
 
-        trigger = float(t.get("trigger", 0) or 0)
-        entry_dt = dt.datetime.fromisoformat(t["entry_time"])
-        seconds_since_entry = (now_ist() - entry_dt).total_seconds()
-        atr_at_entry = float(t.get("atr_at_entry", 0) or 0)
-        buffer_pts = BREAKOUT_FAILURE_BUFFER_ATR * atr_at_entry
+    trigger = float(t.get("trigger", 0) or 0)
+    entry_dt = dt.datetime.fromisoformat(t["entry_time"])
+    seconds_since_entry = (now_ist() - entry_dt).total_seconds()
+    atr_at_entry = float(t.get("atr_at_entry", 0) or 0)
+    buffer_pts = BREAKOUT_FAILURE_BUFFER_ATR * atr_at_entry
 
-        # Has the trade already earned enough favorable excursion that we
-        # should trust the real structural SL/target instead of this rule?
-        risk_pts = float(t.get("risk_points_underlying", 0) or 0)
-        mfe_r_underlying = 0.0
-        if risk_pts > 0:
-            if t["bias"] == "CALL":
-                mfe_r_underlying = (t["mfe_underlying"] - t["entry_underlying"]) / risk_pts
-            else:
-                mfe_r_underlying = (t["entry_underlying"] - t["mfe_underlying"]) / risk_pts
-
-        breakout_failed_this_tick = False
-        if trigger > 0 and buffer_pts > 0:
-            if t["bias"] == "CALL":
-                breakout_failed_this_tick = underlying < (trigger - buffer_pts)
-            else:
-                breakout_failed_this_tick = underlying > (trigger + buffer_pts)
-
-        if breakout_failed_this_tick:
-            t["breakout_failure_polls"] = t.get("breakout_failure_polls", 0) + 1
+    # Has the trade already earned enough favorable excursion that we
+    # should trust the real structural SL/target instead of this rule?
+    risk_pts = float(t.get("risk_points_underlying", 0) or 0)
+    mfe_r_underlying = 0.0
+    if risk_pts > 0:
+        if t["bias"] == "CALL":
+            mfe_r_underlying = (t["mfe_underlying"] - t["entry_underlying"]) / risk_pts
         else:
-            t["breakout_failure_polls"] = 0
+            mfe_r_underlying = (t["entry_underlying"] - t["mfe_underlying"]) / risk_pts
 
-        confirmed = t["breakout_failure_polls"] >= BREAKOUT_FAILURE_CONFIRM_POLLS
-        past_grace = seconds_since_entry >= BREAKOUT_FAILURE_GRACE_SECONDS
-        already_proved_itself = mfe_r_underlying >= BREAKOUT_FAILURE_MFE_GATE_R
+    breakout_failed_this_tick = False
+    if trigger > 0 and buffer_pts > 0:
+        if t["bias"] == "CALL":
+            breakout_failed_this_tick = underlying < (trigger - buffer_pts)
+        else:
+            breakout_failed_this_tick = underlying > (trigger + buffer_pts)
 
-        if confirmed and past_grace and not already_proved_itself:
-            exit_reason = "BREAKOUT_FAILURE"
+    if breakout_failed_this_tick:
+        t["breakout_failure_polls"] = t.get("breakout_failure_polls", 0) + 1
+    else:
+        t["breakout_failure_polls"] = 0
+
+    confirmed = t["breakout_failure_polls"] >= BREAKOUT_FAILURE_CONFIRM_POLLS
+    past_grace = seconds_since_entry >= BREAKOUT_FAILURE_GRACE_SECONDS
+    already_proved_itself = mfe_r_underlying >= BREAKOUT_FAILURE_MFE_GATE_R
+
+    if confirmed and past_grace and not already_proved_itself:
+        exit_reason = "BREAKOUT_FAILURE"
 
     # ---------------------------------------------------------
     # DYNAMIC OPTION-PREMIUM PROFIT PROTECTION
