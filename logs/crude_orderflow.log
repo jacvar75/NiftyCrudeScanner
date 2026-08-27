@@ -11,3 +11,27 @@
 2026-08-27 10:39:51,603 - INFO - 127.0.0.1 - - [27/Aug/2026 10:39:51] "GET /socket.io/?EIO=4&transport=polling&t=Q11dzuf&sid=WjiIF1tBKcdpwfDXAAAA HTTP/1.1" 200 -
 2026-08-27 10:39:51,619 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
 2026-08-27 10:40:21,504 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:40:39,045 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:40:51,240 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:40:54,545 - INFO - 127.0.0.1 - - [27/Aug/2026 10:40:54] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2026-08-27 10:41:21,228 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:41:39,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-08-27 10:41:51,498 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-08-27 10:42:21,502 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-08-27 10:42:39,169 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-08-27 10:42:51,509 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-08-27 10:43:21,492 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-08-27 10:43:39,260 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:43:51,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:44:21,492 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:44:39,341 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:44:51,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:45:21,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:45:39,449 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:45:51,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:46:21,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:46:39,508 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:46:51,493 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:47:21,495 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:47:39,599 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
+2026-08-27 10:47:51,494 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 25
