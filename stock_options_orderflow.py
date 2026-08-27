@@ -159,6 +159,7 @@ current_state = {
     "daily_pnl": 0.0,
 }
 
+active_trade = None
 daily_trades = 0
 daily_pnl = 0.0
 daily_risk_deployed = 0.0
