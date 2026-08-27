@@ -94,7 +94,19 @@ PROFIT_LOCK_1_R = 1.00       # activate first protection at +1R
 PROFIT_LOCK_1_LOCK_R = 0.25 # protect +0.25R
 
 PROFIT_LOCK_2_R = 1.50       # stronger protection at +1.5R
-PROFIT_LOCK_2_LOCK_R = 0.75 # protect +0.75R
+PROFIT_LOCK_2_LOCK_R = 0.75  # protect +0.75R
+
+# Breakout-failure protection was firing on raw tick noise 2-21% of
+# real structural risk away from entry (see 8/21-8/27 shadow log:
+# 7 of 8 trades killed this way, 0% win rate). These three constants
+# fix that: buffer the trigger, require sustained confirmation instead
+# of a single tick, and give the trade a grace window before the rule
+# can apply at all.
+BREAKOUT_FAILURE_BUFFER_ATR = 0.15      # tolerance past trigger, in ATR
+BREAKOUT_FAILURE_CONFIRM_POLLS = 2      # consecutive polls beyond buffer required
+BREAKOUT_FAILURE_GRACE_SECONDS = 75     # no failure exit inside this window post-entry
+BREAKOUT_FAILURE_MFE_GATE_R = 0.30      # once underlying MFE >= this many R, trust structural SL/target only
+
 
 MAX_ENTRY_EXTENSION_ATR = 0.30
 PULLBACK_RETEST_ATR = 0.20
@@ -1830,7 +1842,9 @@ def choose_trade(candidates):
         "entry_time": now.isoformat(),
         "entry_underlying": underlying,
         "trigger": float(selected["trigger"]),
+        "atr_at_entry": float(selected["atr"]),
         "entry_premium": entry_premium,
+        "breakout_failure_polls": 0,
         "bid_at_entry": bid,
         "ask_at_entry": ask,
         "spread_pct": spread,
@@ -1938,29 +1952,69 @@ def monitor_active_trade():
 
     t["current_option"] = executable_exit
     t["current_underlying"] = underlying
+
+    # Option premium excursion is direction-agnostic (a long option's
+    # favorable direction is always "up" regardless of underlying bias).
     t["mfe_option"] = max(t.get("mfe_option", t["entry_premium"]), option_ltp)
     t["mae_option"] = min(t.get("mae_option", t["entry_premium"]), option_ltp)
 
-    # Track underlying excursion independently from option excursion.
-    t["mfe_underlying"] = max(t.get("mfe_underlying", t["entry_underlying"]),underlying)
+    # Underlying excursion IS direction-dependent. For a PUT, favorable
+    # movement is downward, so "MFE" must track the lowest price seen,
+    # not the highest. The old code used max()/min() unconditionally,
+    # which silently inverted MFE/MAE for every PUT trade.
+    if t["bias"] == "CALL":
+        t["mfe_underlying"] = max(t.get("mfe_underlying", t["entry_underlying"]), underlying)
+        t["mae_underlying"] = min(t.get("mae_underlying", t["entry_underlying"]), underlying)
+    else:
+        t["mfe_underlying"] = min(t.get("mfe_underlying", t["entry_underlying"]), underlying)
+        t["mae_underlying"] = max(t.get("mae_underlying", t["entry_underlying"]), underlying)
 
-    t["mae_underlying"] = min(t.get("mae_underlying", t["entry_underlying"]), underlying)
+        exit_reason = None
 
-    exit_reason = None
+        # ---------------------------------------------------------
+        # FAST BREAKOUT FAILURE PROTECTION
+        # ---------------------------------------------------------
+        # v1 fired on ANY raw-tick breach of the trigger, with zero buffer,
+        # zero confirmation, and no grace period. Shadow log 8/21-8/27:
+        # 7/8 completed trades died this way, breaches averaging ~10% of
+        # the real structural risk distance (HINDZINC: 0.10pt breach vs a
+        # 1.67pt SL). Fixed below with a buffer, consecutive-poll
+        # confirmation, an entry grace window, and an MFE gate.
 
-    # ---------------------------------------------------------
-    # FAST BREAKOUT FAILURE PROTECTION
-    # ---------------------------------------------------------
+        trigger = float(t.get("trigger", 0) or 0)
+        entry_dt = dt.datetime.fromisoformat(t["entry_time"])
+        seconds_since_entry = (now_ist() - entry_dt).total_seconds()
+        atr_at_entry = float(t.get("atr_at_entry", 0) or 0)
+        buffer_pts = BREAKOUT_FAILURE_BUFFER_ATR * atr_at_entry
 
-    trigger = float(t.get("trigger", 0) or 0)
+        # Has the trade already earned enough favorable excursion that we
+        # should trust the real structural SL/target instead of this rule?
+        risk_pts = float(t.get("risk_points_underlying", 0) or 0)
+        mfe_r_underlying = 0.0
+        if risk_pts > 0:
+            if t["bias"] == "CALL":
+                mfe_r_underlying = (t["mfe_underlying"] - t["entry_underlying"]) / risk_pts
+            else:
+                mfe_r_underlying = (t["entry_underlying"] - t["mfe_underlying"]) / risk_pts
 
-    if trigger > 0:
-        if t["bias"] == "CALL":
-            if underlying < trigger:
-                exit_reason = "BREAKOUT_FAILURE"
+        breakout_failed_this_tick = False
+        if trigger > 0 and buffer_pts > 0:
+            if t["bias"] == "CALL":
+                breakout_failed_this_tick = underlying < (trigger - buffer_pts)
+            else:
+                breakout_failed_this_tick = underlying > (trigger + buffer_pts)
+
+        if breakout_failed_this_tick:
+            t["breakout_failure_polls"] = t.get("breakout_failure_polls", 0) + 1
         else:
-            if underlying > trigger:
-                exit_reason = "BREAKOUT_FAILURE"
+            t["breakout_failure_polls"] = 0
+
+        confirmed = t["breakout_failure_polls"] >= BREAKOUT_FAILURE_CONFIRM_POLLS
+        past_grace = seconds_since_entry >= BREAKOUT_FAILURE_GRACE_SECONDS
+        already_proved_itself = mfe_r_underlying >= BREAKOUT_FAILURE_MFE_GATE_R
+
+        if confirmed and past_grace and not already_proved_itself:
+            exit_reason = "BREAKOUT_FAILURE"
 
     # ---------------------------------------------------------
     # DYNAMIC OPTION-PREMIUM PROFIT PROTECTION
