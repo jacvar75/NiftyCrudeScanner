@@ -1745,6 +1745,8 @@ def run_crude_orderflow_scan():
                         f"🟢 CRUDE TRADE OPENED\n"
                         f"{option_symbol}\n"
                         f"{bias} {candidate_strike}\n"
+                        f"Entry: ₹{option_ltp:.1f}\n"
+                        f"SL: ₹{sl_price:.1f}\n"
                         f"ADX: {entry_snapshot.get('adx', 0):.1f} | RSI: {entry_snapshot.get('rsi', 0):.1f}\n"
                         f"Time: {now.strftime('%Y-%m-%d %H:%M:%S')}"
                     )
