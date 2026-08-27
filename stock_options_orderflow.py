@@ -45,7 +45,7 @@ if not API_KEY or not ACCESS_TOKEN:
     raise SystemExit("OF_API_KEY or OF_ACCESS_TOKEN not found in .env.orderflow")
 
 PORT = 8065
-STRATEGY_VERSION = "stock-options-v1.0-shadow"
+STRATEGY_VERSION = "stock-options-v2.0-no-breakout-shadow"
 
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -97,22 +97,7 @@ PROFIT_LOCK_1_LOCK_R = 0.25 # protect +0.25R
 PROFIT_LOCK_2_R = 1.50       # stronger protection at +1.5R
 PROFIT_LOCK_2_LOCK_R = 0.75  # protect +0.75R
 
-# Breakout-failure protection was firing on raw tick noise 2-21% of
-# real structural risk away from entry (see 8/21-8/27 shadow log:
-# 7 of 8 trades killed this way, 0% win rate). These three constants
-# fix that: buffer the trigger, require sustained confirmation instead
-# of a single tick, and give the trade a grace window before the rule
-# can apply at all.
-BREAKOUT_FAILURE_BUFFER_ATR = 0.15      # tolerance past trigger, in ATR
-BREAKOUT_FAILURE_CONFIRM_POLLS = 2      # consecutive polls beyond buffer required
-BREAKOUT_FAILURE_GRACE_SECONDS = 75     # no failure exit inside this window post-entry
-BREAKOUT_FAILURE_MFE_GATE_R = 0.30      # once underlying MFE >= this many R, trust structural SL/target only
-
-
 MAX_ENTRY_EXTENSION_ATR = 0.30
-PULLBACK_RETEST_ATR = 0.20
-MAX_PULLBACK_ARM_EXTENSION_ATR = 0.80
-PULLBACK_MAX_WAIT_MINUTES = 30
 
 MAX_SL_ATR = 1.50
 MIN_SL_ATR = 0.15
@@ -784,92 +769,22 @@ def detect_setup(symbol, meta, market):
     last = df.iloc[-1]
     prev = df.iloc[-2]
 
-    # -----------------------------------------------------------------------
-    # PULLBACK RE-ENTRY
-    # If a valid breakout became extended, wait for a controlled retest of
-    # the breakout trigger and a fresh reclaim before allowing entry.
-    # -----------------------------------------------------------------------
-    pending = pending_pullbacks.get(symbol)
-    pullback_reentry = False
-
-    if pending:
-        try:
-            armed_at = dt.datetime.fromisoformat(pending["armed_at"])
-            age_minutes = (now_ist() - armed_at).total_seconds() / 60.0
-        except Exception:
-            age_minutes = 999.0
-
-        if age_minutes > PULLBACK_MAX_WAIT_MINUTES:
-            pending_pullbacks.pop(symbol, None)
-            pending = None
-
-    if pending:
-        pending_bias = pending["bias"]
-        pending_trigger = float(pending["trigger"])
-        retest_distance = PULLBACK_RETEST_ATR * a
-
-        if pending_bias == "CALL":
-            pullback_touched = (
-                    float(prev["low"]) <= pending_trigger + retest_distance
-            )
-            reclaim = (
-                    price > pending_trigger
-                    and last["close"] > last["open"]
-                    and last["close"] > prev["high"]
-            )
-            if pullback_touched and reclaim:
-                bias = "CALL"
-                trigger = pending_trigger
-                pullback_reentry = True
-
-        else:
-            pullback_touched = (
-                    float(prev["high"]) >= pending_trigger - retest_distance
-            )
-            reclaim = (
-                    price < pending_trigger
-                    and last["close"] < last["open"]
-                    and last["close"] < prev["low"]
-            )
-            if pullback_touched and reclaim:
-                bias = "PUT"
-                trigger = pending_trigger
-                pullback_reentry = True
-
-        if pullback_reentry:
-            pending_pullbacks.pop(symbol, None)
-
     bull_break = price > swing_high and last["close"] > last["open"]
     bear_break = price < swing_low and last["close"] < last["open"]
 
     if pullback_reentry:
-        # Already assigned from the pending pullback state.
-        pass
-    elif bull_break:
-        bias = "CALL"
-        trigger = swing_high
-    elif bear_break:
-        bias = "PUT"
-        trigger = swing_low
+        bias = pending["bias"]
     else:
-        bull_cont = (
-            price > svwap
-            and ema9 > ema21
-            and prev["close"] <= svwap
-            and price > prev["high"]
-        )
-        bear_cont = (
-            price < svwap
-            and ema9 < ema21
-            and prev["close"] >= svwap
-            and price < prev["low"]
-        )
-        if bull_cont:
-            bias, trigger = "CALL", float(svwap)
-        elif bear_cont:
-            bias, trigger = "PUT", float(svwap)
+        bullish_structure = (price > svwap and ema9 > ema21 and price > prev["close"])
+        bearish_structure = (price < svwap and ema9 < ema21 and price < prev["close"])
+
+        if bullish_structure:
+            bias = "CALL"
+        elif bearish_structure:
+            bias = "PUT"
         else:
-            return None, "no fresh breakout/continuation trigger"
+            return None, "no directional trend/structure"
+    trigger = price
 
 
 
@@ -890,17 +805,14 @@ def detect_setup(symbol, meta, market):
     components["trend_structure"] = trend
     score += trend
 
-    breakout = 0
-    candle_range = max(float(last["high"] - last["low"]), 1e-9)
-
     # ---------------------------------------------------------
-    # BREAKOUT EXPANSION
-    # ---------------------------------------------------------
-    # Measure whether the current breakout candle is expanding
-    # in range and volume compared with the recent candles.
+    # V2 PARTICIPATION / CANDLE QUALITY
     #
-    # This is a SCORE BONUS only.
-    # It does NOT reject a trade when expansion is weak.
+    # Breakout quality is no longer part of the alpha score.
+    # Range and volume expansion are retained as diagnostics only.
+    # ---------------------------------------------------------
+
+    candle_range = max(float(last["high"] - last["low"]), 1e-9)
 
     recent_ranges = (
         (prior["high"] - prior["low"])
@@ -944,36 +856,10 @@ def detect_setup(symbol, meta, market):
         else (last["high"] - last["close"]) / candle_range
     )
 
-    if pullback_reentry:
-        breakout += 7
-    elif (bias == "CALL" and bull_break) or (bias == "PUT" and bear_break):
-        breakout += 7
-
-    if close_location >= 0.65:
-        breakout += 4
-    if abs(price - trigger) <= 0.30 * a:
-        breakout += 4
-    # ---------------------------------------------------------
-    # EXPANSION BONUS
-    # ---------------------------------------------------------
-    # Reward stronger breakouts without making expansion
-    # a mandatory requirement.
-
-    if range_expansion >= 1.50:
-        breakout += 4
-    elif range_expansion >= 1.20:
-        breakout += 2
-
-    if volume_expansion >= 1.50:
-        breakout += 4
-    elif volume_expansion >= 1.20:
-        breakout += 2
-
-    components["breakout_quality"] = breakout
+    components["breakout_quality"] = 0
     components["range_expansion"] = round(range_expansion, 2)
     components["volume_expansion"] = round(volume_expansion, 2)
-
-    score += breakout
+    components["close_location"] = round(close_location, 2)
 
     participation = 0
     if rvol >= 1.0: participation += 7
@@ -1073,12 +959,17 @@ def detect_setup(symbol, meta, market):
         sl = structural_sl - buffer
         risk_points = price - sl
         target = price + TARGET_R_MULTIPLE * risk_points
-        extension = max(0, price - trigger) / a
     else:
         sl = structural_sl + buffer
         risk_points = sl - price
         target = price - TARGET_R_MULTIPLE * risk_points
-        extension = max(0, trigger - price) / a
+
+    # V2: anti-chase protection is based on distance from EMA9,
+    # not distance from a breakout trigger.
+    if bias == "CALL":
+        extension = max(0, price - ema9) / a
+    else:
+        extension = max(0, ema9 - price) / a
 
     if risk_points <= 0:
         return None, "invalid structural risk"
@@ -1087,22 +978,7 @@ def detect_setup(symbol, meta, market):
     if risk_points > MAX_SL_ATR * a:
         return None, f"SL too wide ({risk_points/a:.2f} ATR)"
     if extension > MAX_ENTRY_EXTENSION_ATR:
-        # Do not chase an already-extended move.
-        # Arm it for a controlled pullback + reclaim entry instead.
-        if extension <= MAX_PULLBACK_ARM_EXTENSION_ATR:
-            pending_pullbacks[symbol] = {
-                "symbol": symbol,
-                "bias": bias,
-                "trigger": float(trigger),
-                "armed_at": now_ist().isoformat(),
-                "armed_price": float(price),
-                "armed_extension_atr": float(extension),
-            }
-            return None, (
-                f"pullback armed {extension:.2f} ATR — "
-                f"waiting for trigger retest/reclaim"
-            )
-        return None, f"entry too extended {extension:.2f} ATR"
+        return None, f"entry too extended from EMA9 ({extension:.2f} ATR)"
 
     if rvol < MIN_RVOL:
         return None, f"RVOL {rvol:.2f} below {MIN_RVOL}"
@@ -1795,19 +1671,7 @@ def choose_trade(candidates):
 
     underlying = float(uq.get("last_price", selected["price"]) or selected["price"])
 
-    # Final trigger-direction validation.
-    # Never enter a setup that has already lost its breakout/continuation trigger.
-    if selected["bias"] == "CALL" and underlying <= selected["trigger"]:
-        return None, (
-            f"CALL trigger lost: underlying {underlying:.2f} "
-            f"<= trigger {selected['trigger']:.2f}"
-        )
 
-    if selected["bias"] == "PUT" and underlying >= selected["trigger"]:
-        return None, (
-            f"PUT trigger lost: underlying {underlying:.2f} "
-            f">= trigger {selected['trigger']:.2f}"
-        )
 
     depth = oq.get("depth", {}) or {}
 
@@ -1820,13 +1684,20 @@ def choose_trade(candidates):
     if spread > MAX_OPTION_SPREAD_PCT:
         return None, f"entry spread widened to {spread:.2f}%"
 
+    # V2: anti-chase check is measured from EMA9,
+    # not from a breakout trigger.
+    ema9 = float(selected.get("ema9", underlying) or underlying)
+    atr_at_entry = float(selected["atr"])
+
     if selected["bias"] == "CALL":
-        extension = max(0, underlying - selected["trigger"]) / selected["atr"]
+        extension = max(0, underlying - ema9) / atr_at_entry
     else:
-        extension = max(0, selected["trigger"] - underlying) / selected["atr"]
+        extension = max(0, ema9 - underlying) / atr_at_entry
 
     if extension > MAX_ENTRY_EXTENSION_ATR:
-        return None, f"entry moved {extension:.2f} ATR beyond trigger"
+        return None, (
+            f"entry moved {extension:.2f} ATR beyond EMA9"
+        )
 
     entry_premium = ask
     estimated_risk = option["estimated_rupee_risk"]
@@ -1980,50 +1851,7 @@ def monitor_active_trade():
 
     exit_reason = None
 
-    # ---------------------------------------------------------
-    # FAST BREAKOUT FAILURE PROTECTION
-    # ---------------------------------------------------------
-    # v1 fired on ANY raw-tick breach of the trigger, with zero buffer,
-    # zero confirmation, and no grace period. Shadow log 8/21-8/27:
-    # 7/8 completed trades died this way, breaches averaging ~10% of
-    # the real structural risk distance (HINDZINC: 0.10pt breach vs a
-    # 1.67pt SL). Fixed below with a buffer, consecutive-poll
-    # confirmation, an entry grace window, and an MFE gate.
 
-    trigger = float(t.get("trigger", 0) or 0)
-    entry_dt = dt.datetime.fromisoformat(t["entry_time"])
-    seconds_since_entry = (now_ist() - entry_dt).total_seconds()
-    atr_at_entry = float(t.get("atr_at_entry", 0) or 0)
-    buffer_pts = BREAKOUT_FAILURE_BUFFER_ATR * atr_at_entry
-
-    # Has the trade already earned enough favorable excursion that we
-    # should trust the real structural SL/target instead of this rule?
-    risk_pts = float(t.get("risk_points_underlying", 0) or 0)
-    mfe_r_underlying = 0.0
-    if risk_pts > 0:
-        if t["bias"] == "CALL":
-            mfe_r_underlying = (t["mfe_underlying"] - t["entry_underlying"]) / risk_pts
-        else:
-            mfe_r_underlying = (t["entry_underlying"] - t["mfe_underlying"]) / risk_pts
-
-    breakout_failed_this_tick = False
-    if trigger > 0 and buffer_pts > 0:
-        if t["bias"] == "CALL":
-            breakout_failed_this_tick = underlying < (trigger - buffer_pts)
-        else:
-            breakout_failed_this_tick = underlying > (trigger + buffer_pts)
-
-    if breakout_failed_this_tick:
-        t["breakout_failure_polls"] = t.get("breakout_failure_polls", 0) + 1
-    else:
-        t["breakout_failure_polls"] = 0
-
-    confirmed = t["breakout_failure_polls"] >= BREAKOUT_FAILURE_CONFIRM_POLLS
-    past_grace = seconds_since_entry >= BREAKOUT_FAILURE_GRACE_SECONDS
-    already_proved_itself = mfe_r_underlying >= BREAKOUT_FAILURE_MFE_GATE_R
-
-    if confirmed and past_grace and not already_proved_itself:
-        exit_reason = "BREAKOUT_FAILURE"
 
     # ---------------------------------------------------------
     # DYNAMIC OPTION-PREMIUM PROFIT PROTECTION

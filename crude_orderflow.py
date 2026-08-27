@@ -1491,23 +1491,20 @@ def run_crude_orderflow_scan():
                     logging.info(
                         f"🔶 HTF mismatch ({ht_bias} vs {bias}) with ADX {adx_val:.1f}: Penalizing score by {HTF_MISMATCH_PENALTY} (New total: {total_score})")
                     print(f"🔶 HTF mismatch: Penalizing score by {HTF_MISMATCH_PENALTY}")
-                    # DO NOT return here - let the score drop naturally.
-                    # If it drops below 55, it will be rejected by the entry gate.
+                    current_signal = {
+                        "decision": "NO TRADE",
+                        "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
+                        "last_scan": now.strftime("%H:%M:%S"),
+                        "dte": dte,
+                        "expiry_date": expiry_date_str,
+                    }
+                    safe_emit('crude_orderflow_signal', current_signal)
+                    return
                 else:
                     # Strong 15-min trend overrides HTF VWAP - NO penalty
                     logging.info(
                         f"✅ Strong 15-min trend (ADX {adx_val:.1f}) overrides HTF mismatch ({ht_bias} vs {bias}). No penalty.")
                     print(f"✅ HTF mismatch overridden by strong trend.")
-
-                current_signal = {
-                    "decision": "NO TRADE",
-                    "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
-                    "last_scan": now.strftime("%H:%M:%S"),
-                    "dte": dte,
-                    "expiry_date": expiry_date_str,
-                }
-                safe_emit('crude_orderflow_signal', current_signal)
-                return
 
             # --- LOG: distance to opposing PDH/PDL (no gating) ---
             distance_to_level_atr = None
@@ -1566,11 +1563,12 @@ def run_crude_orderflow_scan():
                 # CRITICAL: Use only FULLY CLOSED 1-Hour candles (iloc[:-1])
                 # This prevents look-ahead bias (repainting signals)
 
-                if len(candles_15m) >= 20 and len(ht_candles) >= 21:  # Need 21 rows to have 20 closed + current
-                    # 15m BB Mid-band (20 SMA) - Current 15m is fine (we trade on it)
-                    bb_15_mid = candles_15m['close'].rolling(20).mean().iloc[-1]
-                    close_15m = candles_15m['close'].iloc[-1]
-                    close_15m_prev = candles_15m['close'].iloc[-2]  # Previous 15m close
+                if len(candles_15m) >= 21 and len(ht_candles) >= 21:  # Need 21 rows to have 20 closed + current
+                    # --- 15-Minute Data: EXCLUDE the current/open candle (confirmed close only) ---
+                    candles_15m_closed = candles_15m.iloc[:-1]  # All fully closed 15m candles
+                    bb_15_mid = candles_15m_closed['close'].rolling(20).mean().iloc[-1]
+                    close_15m = candles_15m_closed['close'].iloc[-1]
+                    close_15m_prev = candles_15m_closed['close'].iloc[-2]  # Previous confirmed 15m close
 
                     # --- 1-Hour Data: EXCLUDE the current/open candle ---
                     ht_closed = ht_candles.iloc[:-1]  # All fully closed 1H candles
