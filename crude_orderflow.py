@@ -90,7 +90,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.16"
+STRATEGY_VERSION = "v2.17"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -906,7 +906,10 @@ def load_state():
 
 # ======================== MAIN SCAN ========================
 def run_crude_orderflow_scan():
-    global current_signal, trade_entry_time, entry_option_ltp, active_trade, daily_pnl, daily_reset_date, cached_candles
+    global current_signal, trade_entry_time, entry_option_ltp, active_trade, daily_pnl, daily_reset_date, cached_candles, _last_logged_signature
+    if '_last_logged_signature' not in globals():
+        _last_logged_signature = None
+
     print(f"🔍 Crude scan running at {now_ist().strftime('%H:%M:%S')}")
     with state_lock:
         try:
@@ -1555,45 +1558,6 @@ def run_crude_orderflow_scan():
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
 
-                # --- EARLY ENTRY OVERRIDE (v2.16 - BB Mid-band Strategy) ---
-                early_entry_trigger = False
-                early_entry_reason = ""
-
-                # Calculate BB Mid-bands (20 SMA)
-                # CRITICAL: Use only FULLY CLOSED 1-Hour candles (iloc[:-1])
-                # This prevents look-ahead bias (repainting signals)
-
-                if len(candles_15m) >= 21 and len(ht_candles) >= 21:  # Need 21 rows to have 20 closed + current
-                    # --- 15-Minute Data: EXCLUDE the current/open candle (confirmed close only) ---
-                    candles_15m_closed = candles_15m.iloc[:-1]  # All fully closed 15m candles
-                    bb_15_mid = candles_15m_closed['close'].rolling(20).mean().iloc[-1]
-                    close_15m = candles_15m_closed['close'].iloc[-1]
-                    close_15m_prev = candles_15m_closed['close'].iloc[-2]  # Previous confirmed 15m close
-
-                    # --- 1-Hour Data: EXCLUDE the current/open candle ---
-                    ht_closed = ht_candles.iloc[:-1]  # All fully closed 1H candles
-                    bb_1h_mid = ht_closed['close'].rolling(20).mean().iloc[-1]
-                    ht_close = ht_closed['close'].iloc[-1]
-
-                    # Condition 1: Previous completed 1-Hour candle CLOSE was ABOVE its mid-band
-                    macro_bullish = ht_close > bb_1h_mid
-
-                    # Condition 2: 15-minute candle just broke ABOVE its mid-band (Fresh Breakout)
-                    # Previous close was BELOW the mid-band, current close is ABOVE it
-                    fifteen_breakout = close_15m > bb_15_mid and close_15m_prev < bb_15_mid
-
-                    # Condition 3: Trend is not completely dead (ADX > 20)
-                    trend_alive = adx_val > 20
-
-                    if macro_bullish and fifteen_breakout and trend_alive and bias == "CALL":
-                        early_entry_trigger = True
-                        early_entry_reason = f"Early Entry (1H close above mid, 15m fresh breakout, ADX {adx_val:.1f})"
-                        # Override the score to pass the gate
-                        total_score = max(total_score, ENTRY_SCORE_THRESHOLD)
-                        logging.info(f"🔶 EARLY ENTRY TRIGGERED: {early_entry_reason}")
-                        print(f"🔶 EARLY ENTRY TRIGGERED: {early_entry_reason}")
-
-
                 # --- Calculate Exhaustion Metrics (Wick + VWAP Stretch) ---
                 upper_wick_pct = 0
                 lower_wick_pct = 0
@@ -1860,11 +1824,19 @@ def run_crude_orderflow_scan():
 
             # --- Log score distribution (only when score > 40 to keep file small) ---
             if total_score > 40 or active_trade is not None:
-                reason = "Accepted" if active_trade is not None else f"Rejected - {current_signal.get('reason', 'post-penalty')}"
-                log_score_distribution(
-                    now, total_score, base_score, bonus, interaction_bonus, bias,
-                    futures_ltp, market_regime, dte, reason
+                # Build a unique signature for this exact state
+                current_signature = (
+                    f"{active_trade is not None}_{total_score}_{current_signal.get('decision')}_{current_signal.get('reason', '')}"
                 )
+
+                # Only log if the state has changed from the last scan
+                if current_signature != _last_logged_signature:
+                    reason = "Accepted" if active_trade is not None else f"Rejected - {current_signal.get('reason', 'post-penalty')}"
+                    log_score_distribution(
+                        now, total_score, base_score, bonus, interaction_bonus, bias,
+                        futures_ltp, market_regime, dte, reason
+                    )
+                    _last_logged_signature = current_signature
 
             # --- FALLBACK: emit NO TRADE if we reached the end without any trade ---
             if active_trade is None:
