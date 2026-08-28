@@ -97,7 +97,7 @@ PROFIT_LOCK_1_LOCK_R = 0.25 # protect +0.25R
 PROFIT_LOCK_2_R = 1.50       # stronger protection at +1.5R
 PROFIT_LOCK_2_LOCK_R = 0.75  # protect +0.75R
 
-MAX_ENTRY_EXTENSION_ATR = 0.30
+MAX_ENTRY_EXTENSION_ATR = 0.60
 
 MAX_SL_ATR = 1.50
 MIN_SL_ATR = 0.15
