@@ -766,24 +766,36 @@ def detect_setup(symbol, meta, market):
 
     swing_high = float(prior["high"].max())
     swing_low = float(prior["low"].min())
+
     last = df.iloc[-1]
     prev = df.iloc[-2]
 
+    # V2: breakout is diagnostic only.
+    # It is NOT required for entry.
     bull_break = price > swing_high and last["close"] > last["open"]
     bear_break = price < swing_low and last["close"] < last["open"]
 
-    if pullback_reentry:
-        bias = pending["bias"]
-    else:
-        bullish_structure = (price > svwap and ema9 > ema21 and price > prev["close"])
-        bearish_structure = (price < svwap and ema9 < ema21 and price < prev["close"])
+    # V2: determine direction directly from the underlying setup.
+    bullish_structure = (
+            price > svwap
+            and ema9 > ema21
+            and price > prev["close"]
+    )
 
-        if bullish_structure:
-            bias = "CALL"
-        elif bearish_structure:
-            bias = "PUT"
-        else:
-            return None, "no directional trend/structure"
+    bearish_structure = (
+            price < svwap
+            and ema9 < ema21
+            and price < prev["close"]
+    )
+
+    if bullish_structure:
+        bias = "CALL"
+    elif bearish_structure:
+        bias = "PUT"
+    else:
+        return None, "no directional trend/structure"
+
+    # Breakout is retained only for diagnostics.
     trigger = price
 
 
@@ -946,13 +958,16 @@ def detect_setup(symbol, meta, market):
     score -= penalties
 
     if bias == "CALL":
-        structural_sl = min(float(recent["low"].iloc[-2]), float(last["low"]))
-        if prev_low and trigger <= prev_low:
-            structural_sl = min(structural_sl, prev_low)
+        structural_sl = min(
+            float(recent["low"].iloc[-2]),
+            float(last["low"])
+        )
+
     else:
-        structural_sl = max(float(recent["high"].iloc[-2]), float(last["high"]))
-        if prev_high and trigger >= prev_high:
-            structural_sl = max(structural_sl, prev_high)
+        structural_sl = max(
+            float(recent["high"].iloc[-2]),
+            float(last["high"])
+        )
 
     buffer = 0.10 * a
     if bias == "CALL":
