@@ -60,9 +60,9 @@ MAX_ATR_PCT = 6.00
 MAX_UNIVERSE_SIZE = 40
 
 # Intraday
-SCAN_START = dt.time(9, 35)
+SCAN_START = dt.time(9, 30)
 ENTRY_START = dt.time(10, 0)
-ENTRY_CUTOFF = dt.time(14, 45)
+ENTRY_CUTOFF = dt.time(15, 00)
 HARD_EXIT = dt.time(15, 15)
 
 MIN_RVOL = 1.00

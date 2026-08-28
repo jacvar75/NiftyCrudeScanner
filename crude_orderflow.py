@@ -1712,7 +1712,7 @@ def run_crude_orderflow_scan():
                             "sl_price": sl_price,
                             "entry_risk_points": option_ltp - sl_price,
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                            "trail_distance": max(15, min(60, int(entry_atr * 1.0))),  # Tighter base (1.0x ATR)
+                            "trail_distance": max(15, min(60, int(entry_atr * 1.2))),  # Slightly wider (1.2x ATR)
                             "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(80, int(entry_atr * 0.5)))),
                             "entry_atr": round(entry_atr, 2),
                             "distance_to_level_atr": distance_to_level_atr,
