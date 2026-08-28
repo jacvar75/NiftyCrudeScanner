@@ -1,12 +1,26 @@
-2026-08-27 10:39:39,845 - INFO - F&O stock universe built: 210
-2026-08-27 10:39:39,861 - INFO - Stock Options Ranker started | stock-options-v1.0-shadow
-2026-08-27 10:39:39,896 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2026-08-28 10:37:22,035 - INFO - F&O stock universe built: 210
+2026-08-28 10:37:22,051 - INFO - Stock Options Ranker started | stock-options-v2.0-no-breakout-shadow
+2026-08-28 10:37:22,131 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:8065
  * Running on http://192.168.1.202:8065
-2026-08-27 10:39:39,896 - INFO - [33mPress CTRL+C to quit[0m
-2026-08-27 10:39:40,417 - INFO - F&O stock universe built: 210
-2026-08-27 10:40:17,836 - INFO - 127.0.0.1 - - [27/Aug/2026 10:40:17] "[36mGET / HTTP/1.1[0m" 304 -
-2026-08-27 10:40:17,865 - INFO - 127.0.0.1 - - [27/Aug/2026 10:40:17] "GET /socket.io/?EIO=4&transport=polling&t=Q11e4O7 HTTP/1.1" 200 -
-2026-08-27 10:40:18,056 - INFO - 127.0.0.1 - - [27/Aug/2026 10:40:18] "POST /socket.io/?EIO=4&transport=polling&t=Q11e4P6&sid=iCK3qHtdcramFE8kAAAA HTTP/1.1" 200 -
-2026-08-27 10:40:18,235 - INFO - 127.0.0.1 - - [27/Aug/2026 10:40:18] "GET /socket.io/?EIO=4&transport=polling&t=Q11e4P7&sid=iCK3qHtdcramFE8kAAAA HTTP/1.1" 200 -
+2026-08-28 10:37:22,131 - INFO - [33mPress CTRL+C to quit[0m
+2026-08-28 10:37:22,672 - INFO - F&O stock universe built: 210
+2026-08-28 10:37:26,124 - INFO - 127.0.0.1 - - [28/Aug/2026 10:37:26] "GET /socket.io/?EIO=4&transport=polling&t=Q16n07j HTTP/1.1" 200 -
+2026-08-28 10:37:26,373 - INFO - 127.0.0.1 - - [28/Aug/2026 10:37:26] "POST /socket.io/?EIO=4&transport=polling&t=Q16n0Co&sid=HsoDqPb79RThVzveAAAA HTTP/1.1" 200 -
+2026-08-28 10:37:26,439 - INFO - 127.0.0.1 - - [28/Aug/2026 10:37:26] "GET /socket.io/?EIO=4&transport=polling&t=Q16n0Cp&sid=HsoDqPb79RThVzveAAAA HTTP/1.1" 200 -
+2026-08-28 10:37:26,446 - INFO - 127.0.0.1 - - [28/Aug/2026 10:37:26] "GET /socket.io/?EIO=4&transport=polling&t=Q16n0Hi&sid=HsoDqPb79RThVzveAAAA HTTP/1.1" 200 -
+2026-08-28 10:55:00,133 - INFO - F&O stock universe built: 210
+2026-08-28 11:12:31,712 - INFO - F&O stock universe built: 210
+2026-08-28 11:30:08,821 - INFO - F&O stock universe built: 210
+2026-08-28 11:47:54,526 - INFO - F&O stock universe built: 210
+2026-08-28 12:05:39,782 - INFO - F&O stock universe built: 210
+2026-08-28 12:23:24,379 - INFO - F&O stock universe built: 210
+2026-08-28 12:41:01,537 - INFO - F&O stock universe built: 210
+2026-08-28 12:58:37,925 - INFO - F&O stock universe built: 210
+2026-08-28 13:16:15,386 - INFO - F&O stock universe built: 210
+2026-08-28 13:33:45,960 - INFO - F&O stock universe built: 210
+2026-08-28 13:51:20,246 - INFO - F&O stock universe built: 210
+2026-08-28 14:09:01,980 - INFO - F&O stock universe built: 210
+2026-08-28 14:26:40,615 - INFO - F&O stock universe built: 210
+2026-08-28 14:44:20,490 - INFO - F&O stock universe built: 210
