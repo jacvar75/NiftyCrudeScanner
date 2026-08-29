@@ -51,17 +51,17 @@ MAX_LOTS = 2
 NIFTY_LOT_SIZE = 65
 STATE_FILE = "nifty_orderflow_state.json"
 NIFTY_TRAIL_ACTIVATION = 8
-NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry premium
-NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
-NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
-NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
+NIFTY_BREAKEVEN_PCT = 0.15          # lock breakeven once profit hits 15% of entry premium
+NIFTY_TRAIL_FLOOR = 6               # tightest the trail can ratchet down to
+NIFTY_SL_PCT = 0.30                 # SL = 30% of entry premium (replaces fixed ₹30 SL)
+NIFTY_DEAD_TRADE_MINUTES = 18       # exit if trail never activates within this many minutes (cuts slow-bleed losers)
 NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
-NIFTY_EARLY_BAIL_ENABLED = True
+NIFTY_EARLY_BAIL_ENABLED = False
 NIFTY_EARLY_BAIL_CHECK_MIN = 4
 NIFTY_EARLY_BAIL_MFE_FLOOR = 150
 NIFTY_TRAIL_MIN_RETAIN_PCT = 0.55
 MAX_SPREAD_PCT = 5.0
-HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
+HTF_MISMATCH_PENALTY = 15           # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
