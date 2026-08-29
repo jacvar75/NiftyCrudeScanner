@@ -51,21 +51,23 @@ MAX_LOTS = 2
 NIFTY_LOT_SIZE = 65
 STATE_FILE = "nifty_orderflow_state.json"
 NIFTY_TRAIL_ACTIVATION = 8
-NIFTY_BREAKEVEN_PCT = 0.15          # lock breakeven once profit hits 15% of entry premium
-NIFTY_TRAIL_FLOOR = 6               # tightest the trail can ratchet down to
-NIFTY_SL_PCT = 0.30                 # SL = 30% of entry premium (replaces fixed ₹30 SL)
-NIFTY_DEAD_TRADE_MINUTES = 18       # exit if trail never activates within this many minutes (cuts slow-bleed losers)
-NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
+NIFTY_BREAKEVEN_PCT = 0.15              # lock breakeven once profit hits 15% of entry premium
+NIFTY_TRAIL_FLOOR = 6                   # tightest the trail can ratchet down to
+NIFTY_SL_PCT = 0.30                     # SL = 30% of entry premium (replaces fixed ₹30 SL)
+NIFTY_DEAD_TRADE_MINUTES = 18           # exit if trail never activates within this many minutes (cuts slow-bleed losers)
+NIFTY_DEAD_TRADE_MINUTES_ATM = 10       # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
 NIFTY_EARLY_BAIL_ENABLED = False
 NIFTY_EARLY_BAIL_CHECK_MIN = 4
 NIFTY_EARLY_BAIL_MFE_FLOOR = 150
 NIFTY_TRAIL_MIN_RETAIN_PCT = 0.55
+NIFTY_PROFIT_FLOOR_TRIGGER = 20         # once a trade has ever been up this many premium points...
+NIFTY_PROFIT_FLOOR_MIN_RETAIN = 10    # ...it may never close below this many points of profit — unconditional, independent of trail/breakeven state
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15           # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.12"
+STRATEGY_VERSION = "v2.13"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -990,34 +992,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "is_sim": is_sim
     })
 
-    try:
-        regime = trade_snap.get('market_regime', 'UNKNOWN')
-        regime_file = os.path.join(LOG_DIR, "nifty_regime_performance.csv")
 
-        regime_exists = os.path.exists(regime_file) and os.path.getsize(regime_file) > 0
-        if regime_exists:
-            df_reg = pd.read_csv(regime_file)
-        else:
-            df_reg = pd.DataFrame(columns=["regime", "trades", "wins", "win_rate", "avg_pnl"])
-        if regime in df_reg['regime'].values:
-            idx = df_reg[df_reg['regime'] == regime].index[0]
-            df_reg.loc[idx, 'trades'] += 1
-            if exit_pnl > 0:
-                df_reg.loc[idx, 'wins'] += 1
-            df_reg.loc[idx, 'win_rate'] = df_reg.loc[idx, 'wins'] / df_reg.loc[idx, 'trades']
-            avg_pnl = (df_reg.loc[idx, 'avg_pnl'] * (df_reg.loc[idx, 'trades'] - 1) + exit_pnl) / df_reg.loc[idx, 'trades']
-            df_reg.loc[idx, 'avg_pnl'] = avg_pnl
-        else:
-            new_row = {"regime": regime, "trades": 1, "wins": 1 if exit_pnl > 0 else 0,
-                       "win_rate": 1 if exit_pnl > 0 else 0, "avg_pnl": exit_pnl}
-            if df_reg.empty:
-                df_reg = pd.DataFrame([new_row])
-            else:
-                df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
-
-        df_reg.to_csv(regime_file, index=False)
-    except Exception as e:
-        logging.warning(f"Regime stats update failed: {e}")
 
     last_exit_time = now_ist()
     save_state()
@@ -1186,6 +1161,24 @@ def run_nifty_orderflow_scan():
                     highest_premium = current_premium
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
+
+                # --- PROFIT FLOOR: unconditional backstop, independent of trail_active/breakeven state ---
+                # Once this trade has EVER been up NIFTY_PROFIT_FLOOR_TRIGGER points, it may never
+                # close below NIFTY_PROFIT_FLOOR_MIN_RETAIN points of profit — no matter what the
+                # trailing-stop or breakeven-lock logic is doing. Pure safety net; does not replace
+                # or interact with the existing trail mechanism.
+
+                if (highest_premium - entry_option_ltp) >= NIFTY_PROFIT_FLOOR_TRIGGER:
+                    profit_floor_price = entry_option_ltp + NIFTY_PROFIT_FLOOR_MIN_RETAIN
+
+                    if current_premium <= profit_floor_price:
+                        exit_pnl = force_close_trade(
+                            f"PROFIT FLOOR (peak {round(highest_premium, 2)}, floor {round(profit_floor_price, 2)})",
+                            "PROFIT FLOOR", active_trade.get('underlying_ltp'), is_sim=True)
+                        current_signal = {"decision": "EXIT — PROFIT FLOOR","reason": f"Locked min +{NIFTY_PROFIT_FLOOR_MIN_RETAIN}pts after peak {round(highest_premium, 2)} | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        throttled_emit_signal(current_signal, active_trade)
+                        return
 
                 lots_now = active_trade.get('lots', 1)
                 held_minutes_now = (now - trade_entry_time).total_seconds() / 60
@@ -1582,7 +1575,7 @@ def run_nifty_orderflow_scan():
             signal_quality = min(100, total_score)
 
             # --- Log score distribution (only when score > 40 to keep file small) ---
-            if total_score > 40:
+            if total_score > 15:
                 log_score_distribution(
                     now, total_score, base_score, bonus, interaction_bonus, bias,
                     spot_ltp, market_regime, dte,
