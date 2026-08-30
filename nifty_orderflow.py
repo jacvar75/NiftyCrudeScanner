@@ -61,9 +61,10 @@ NIFTY_EARLY_BAIL_CHECK_MIN = 4
 NIFTY_EARLY_BAIL_MFE_FLOOR = 150
 NIFTY_TRAIL_MIN_RETAIN_PCT = 0.55
 NIFTY_PROFIT_FLOOR_TRIGGER = 20         # once a trade has ever been up this many premium points...
-NIFTY_PROFIT_FLOOR_MIN_RETAIN = 10    # ...it may never close below this many points of profit — unconditional, independent of trail/breakeven state
+NIFTY_PROFIT_FLOOR_MIN_RETAIN = 10      # ...it may never close below this many points of profit — unconditional, independent of trail/breakeven state
 MAX_SPREAD_PCT = 5.0
-HTF_MISMATCH_PENALTY = 15           # points deducted when 1H VWAP disagrees with entry bias
+NIFTY_WALL_SCORE_ENABLED = True         # bias-aware call/put wall scoring — new, untested, easy to flip off if it hurts
+HTF_MISMATCH_PENALTY = 15               # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -391,24 +392,39 @@ def compute_strike_rotation(chain_df, spot):
     reason = f"Strike rotation {rotation}" if abs(rotation) >= 50 else "No significant rotation"
     return {"value": rotation, "score": score, "reason": reason}
 
-def compute_option_wall(chain_df, option_type, spot_price, atr):
+def compute_option_wall(chain_df, option_type, spot_price, atr, bias=None):
     if chain_df.empty:
-        return {"strike": None, "oi": 0, "score": 0, "reason": "no chain"}
+        return {"strike": None, "oi": 0, "score": 0, "reason": "no chain", "relevance": "n/a"}
     wall_df = chain_df[chain_df['instrument_type'] == option_type]
     if wall_df.empty:
-        return {"strike": None, "oi": 0, "score": 0, "reason": "no options"}
+        return {"strike": None, "oi": 0, "score": 0, "reason": "no options", "relevance": "n/a"}
     max_oi_row = wall_df.loc[wall_df['oi'].idxmax()]
     strike = max_oi_row['strike']
     oi = max_oi_row['oi']
     distance_atr = abs(spot_price - strike) / atr if atr > 0 else 999
-    if distance_atr <= 1.0:
-        score = 5
-        reason = f"Option wall at {strike} ({distance_atr:.2f}x ATR away)"
-    else:
-        score = 0
-        reason = f"Option wall at {strike} too far ({distance_atr:.2f}x ATR)"
+    is_near = distance_atr <= 1.0
+    is_above = strike > spot_price
+    is_below = strike < spot_price
 
-    return {"strike": strike, "oi": oi, "score": score, "reason": reason}
+    score = 0
+    relevance = "not near / not directionally relevant"
+    if is_near:
+        if option_type == "CE" and is_above:
+            if bias == "CALL":
+                score = -5
+                relevance = "resistance ahead — against CALL"
+            elif bias == "PUT":
+                score = 5
+                relevance = "resistance ahead — supports PUT"
+        elif option_type == "PE" and is_below:
+            if bias == "CALL":
+                score = 5
+                relevance = "support below — supports CALL"
+            elif bias == "PUT":
+                score = -5
+                relevance = "support below — against PUT"
+    reason = f"{option_type} wall at {strike} ({distance_atr:.2f}x ATR) — {relevance}"
+    return {"strike": strike, "oi": oi, "score": score, "reason": reason, "relevance": relevance}
 
 def compute_breakout_acceptance(candles, key_levels, bias=None):
     if candles.empty or len(candles) < 2:
@@ -1536,12 +1552,15 @@ def run_nifty_orderflow_scan():
             oi_acc = compute_oi_acceleration(dq)
             va = compute_value_area(candles_5m_vol)
             strike_rot = compute_strike_rotation(chain_df, spot_ltp)
-            call_wall = compute_option_wall(chain_df, "CE", spot_ltp, entry_atr)
-            put_wall = compute_option_wall(chain_df, "PE", spot_ltp, entry_atr)
+
 
             comp = composite_score(candles_15m, price_chg, oi_chg, key_levels, volume_candles=candles_15m_vol)
             base_score = comp["score"]
             bias = comp["bias"]
+
+            # needs bias to know whether a nearby wall is friend or enemy
+            call_wall = compute_option_wall(chain_df, "CE", spot_ltp, entry_atr, bias=bias)
+            put_wall = compute_option_wall(chain_df, "PE", spot_ltp, entry_atr, bias=bias)
 
             breakout = compute_breakout_acceptance(candles_5m, key_levels, bias=bias)
 
@@ -1563,7 +1582,9 @@ def run_nifty_orderflow_scan():
 
             bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
-            total_score = base_score + bonus + interaction_bonus + breakout["score"]
+            wall_score = (call_wall["score"] + put_wall["score"]) if NIFTY_WALL_SCORE_ENABLED else 0
+            total_score = base_score + bonus + interaction_bonus + breakout["score"] + wall_score
+            
 
             # --- LOGGING ONLY: would a weak-trend/no-breakout penalty have fired? ---
             # Not applied to total_score yet — n=2 so far, tracking before deciding.
