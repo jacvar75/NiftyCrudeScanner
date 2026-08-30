@@ -64,6 +64,7 @@ NIFTY_PROFIT_FLOOR_TRIGGER = 20         # once a trade has ever been up this man
 NIFTY_PROFIT_FLOOR_MIN_RETAIN = 10      # ...it may never close below this many points of profit — unconditional, independent of trail/breakeven state
 MAX_SPREAD_PCT = 5.0
 NIFTY_WALL_SCORE_ENABLED = True         # bias-aware call/put wall scoring — new, untested, easy to flip off if it hurts
+NIFTY_MIN_VIX = 13                      # entries blocked below this. VIX 11-13: 30 trades, -₹3,666, 33% win. VIX 13-15: 59 trades, +₹6,208, 54% win. (full 97-trade baseline)
 HTF_MISMATCH_PENALTY = 15               # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -1756,14 +1757,13 @@ def run_nifty_orderflow_scan():
                 distance_to_level_atr = round((spot_ltp - key_levels["PDL"]) / entry_atr, 2)
 
             rvol_value = feature_scores.get("rvol", {}).get("value", 0)
-            if total_score < 52 or bias == "NEUTRAL":
-                # Specific rejection reason for RVOL
-                if rvol_value < 0.5:
+            if total_score < 52 or bias == "NEUTRAL" or vix_ltp < NIFTY_MIN_VIX:
+                if vix_ltp < NIFTY_MIN_VIX:
+                    reject_reason = f"VIX {vix_ltp:.2f} below {NIFTY_MIN_VIX} floor"
+                    print(f"🔴 REJECTED: {reject_reason}")
+                elif rvol_value < 0.5:
                     reject_reason = f"RVOL {rvol_value:.2f} below 0.5 floor"
                     print(f"🔴 REJECTED: {reject_reason}")
-                else:
-                    reject_reason = f"Entry Score {round(total_score, 1)}"
-                    print(f"🔴 REJECTED: {reject_reason}, Bias: {bias}")
 
                 current_signal = {
                 "decision": "NO TRADE",
