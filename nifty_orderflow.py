@@ -1002,6 +1002,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "entry_atr": trade_snap.get('entry_atr', 0),
         "vix_value": trade_snap.get('vix_value', 0),
         "feature_scores": trade_snap.get('feature_scores'),
+        "feature_snapshot": trade_snap.get('feature_snapshot'),
         "dte": trade_snap.get('dte'),
         "dead_trade_minutes": trade_snap.get('dead_trade_minutes'),
         "adx": trade_snap.get('adx'),
@@ -1584,7 +1585,7 @@ def run_nifty_orderflow_scan():
             interaction_bonus = compute_interaction_bonus(feature_scores)
             wall_score = (call_wall["score"] + put_wall["score"]) if NIFTY_WALL_SCORE_ENABLED else 0
             total_score = base_score + bonus + interaction_bonus + breakout["score"] + wall_score
-            
+
 
             # --- LOGGING ONLY: would a weak-trend/no-breakout penalty have fired? ---
             # Not applied to total_score yet — n=2 so far, tracking before deciding.
