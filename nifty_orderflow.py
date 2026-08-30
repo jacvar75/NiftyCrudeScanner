@@ -51,21 +51,28 @@ MAX_LOTS = 2
 NIFTY_LOT_SIZE = 65
 STATE_FILE = "nifty_orderflow_state.json"
 NIFTY_TRAIL_ACTIVATION = 8
-NIFTY_BREAKEVEN_PCT = 0.15   # lock breakeven once profit hits 15% of entry premium
-NIFTY_TRAIL_FLOOR = 6        # tightest the trail can ratchet down to
-NIFTY_SL_PCT = 0.30          # SL = 30% of entry premium (replaces fixed ₹30 SL)
-NIFTY_DEAD_TRADE_MINUTES = 12   # exit if trail never activates within this many minutes (cuts slow-bleed losers)
-NIFTY_DEAD_TRADE_MINUTES_ATM = 10   # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
-NIFTY_EARLY_BAIL_ENABLED = True
+NIFTY_BREAKEVEN_PCT = 0.15              # lock breakeven once profit hits 15% of entry premium
+NIFTY_TRAIL_FLOOR = 6                   # tightest the trail can ratchet down to
+NIFTY_SL_PCT = 0.30                     # SL = 30% of entry premium (replaces fixed ₹30 SL)
+NIFTY_DEAD_TRADE_MINUTES = 18           # exit if trail never activates within this many minutes (cuts slow-bleed losers)
+NIFTY_DEAD_TRADE_MINUTES_ATM = 10       # tighter leash for DTE<=2 ATM trades — faster theta bleed, no OTM buffer
+NIFTY_EARLY_BAIL_ENABLED = False
 NIFTY_EARLY_BAIL_CHECK_MIN = 4
 NIFTY_EARLY_BAIL_MFE_FLOOR = 150
 NIFTY_TRAIL_MIN_RETAIN_PCT = 0.55
+NIFTY_PROFIT_FLOOR_TRIGGER = 20         # once a trade has ever been up this many premium points...
+NIFTY_PROFIT_FLOOR_MIN_RETAIN = 10      # ...it may never close below this many points of profit — unconditional, independent of trail/breakeven state
 MAX_SPREAD_PCT = 5.0
-HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
+NIFTY_WALL_SCORE_ENABLED = True         # bias-aware call/put wall scoring — new, untested, easy to flip off if it hurts
+
+NIFTY_LOW_VIX_THRESHOLD = 13            # below this VIX, demand a stricter score instead of blocking entirely
+NIFTY_LOW_VIX_SCORE_GATE = 60           # stricter gate applied when VIX < NIFTY_LOW_VIX_THRESHOLD; normal gate stays 52
+
+HTF_MISMATCH_PENALTY = 15               # points deducted when 1H VWAP disagrees with entry bias
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.12"
+STRATEGY_VERSION = "v2.13"
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
@@ -389,24 +396,39 @@ def compute_strike_rotation(chain_df, spot):
     reason = f"Strike rotation {rotation}" if abs(rotation) >= 50 else "No significant rotation"
     return {"value": rotation, "score": score, "reason": reason}
 
-def compute_option_wall(chain_df, option_type, spot_price, atr):
+def compute_option_wall(chain_df, option_type, spot_price, atr, bias=None):
     if chain_df.empty:
-        return {"strike": None, "oi": 0, "score": 0, "reason": "no chain"}
+        return {"strike": None, "oi": 0, "score": 0, "reason": "no chain", "relevance": "n/a"}
     wall_df = chain_df[chain_df['instrument_type'] == option_type]
     if wall_df.empty:
-        return {"strike": None, "oi": 0, "score": 0, "reason": "no options"}
+        return {"strike": None, "oi": 0, "score": 0, "reason": "no options", "relevance": "n/a"}
     max_oi_row = wall_df.loc[wall_df['oi'].idxmax()]
     strike = max_oi_row['strike']
     oi = max_oi_row['oi']
     distance_atr = abs(spot_price - strike) / atr if atr > 0 else 999
-    if distance_atr <= 1.0:
-        score = 5
-        reason = f"Option wall at {strike} ({distance_atr:.2f}x ATR away)"
-    else:
-        score = 0
-        reason = f"Option wall at {strike} too far ({distance_atr:.2f}x ATR)"
+    is_near = distance_atr <= 1.0
+    is_above = strike > spot_price
+    is_below = strike < spot_price
 
-    return {"strike": strike, "oi": oi, "score": score, "reason": reason}
+    score = 0
+    relevance = "not near / not directionally relevant"
+    if is_near:
+        if option_type == "CE" and is_above:
+            if bias == "CALL":
+                score = -5
+                relevance = "resistance ahead — against CALL"
+            elif bias == "PUT":
+                score = 5
+                relevance = "resistance ahead — supports PUT"
+        elif option_type == "PE" and is_below:
+            if bias == "CALL":
+                score = 5
+                relevance = "support below — supports CALL"
+            elif bias == "PUT":
+                score = -5
+                relevance = "support below — against PUT"
+    reason = f"{option_type} wall at {strike} ({distance_atr:.2f}x ATR) — {relevance}"
+    return {"strike": strike, "oi": oi, "score": score, "reason": reason, "relevance": relevance}
 
 def compute_breakout_acceptance(candles, key_levels, bias=None):
     if candles.empty or len(candles) < 2:
@@ -984,40 +1006,14 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "entry_atr": trade_snap.get('entry_atr', 0),
         "vix_value": trade_snap.get('vix_value', 0),
         "feature_scores": trade_snap.get('feature_scores'),
+        "feature_snapshot": trade_snap.get('feature_snapshot'),
         "dte": trade_snap.get('dte'),
         "dead_trade_minutes": trade_snap.get('dead_trade_minutes'),
         "adx": trade_snap.get('adx'),
         "is_sim": is_sim
     })
 
-    try:
-        regime = trade_snap.get('market_regime', 'UNKNOWN')
-        regime_file = os.path.join(LOG_DIR, "nifty_regime_performance.csv")
 
-        regime_exists = os.path.exists(regime_file) and os.path.getsize(regime_file) > 0
-        if regime_exists:
-            df_reg = pd.read_csv(regime_file)
-        else:
-            df_reg = pd.DataFrame(columns=["regime", "trades", "wins", "win_rate", "avg_pnl"])
-        if regime in df_reg['regime'].values:
-            idx = df_reg[df_reg['regime'] == regime].index[0]
-            df_reg.loc[idx, 'trades'] += 1
-            if exit_pnl > 0:
-                df_reg.loc[idx, 'wins'] += 1
-            df_reg.loc[idx, 'win_rate'] = df_reg.loc[idx, 'wins'] / df_reg.loc[idx, 'trades']
-            avg_pnl = (df_reg.loc[idx, 'avg_pnl'] * (df_reg.loc[idx, 'trades'] - 1) + exit_pnl) / df_reg.loc[idx, 'trades']
-            df_reg.loc[idx, 'avg_pnl'] = avg_pnl
-        else:
-            new_row = {"regime": regime, "trades": 1, "wins": 1 if exit_pnl > 0 else 0,
-                       "win_rate": 1 if exit_pnl > 0 else 0, "avg_pnl": exit_pnl}
-            if df_reg.empty:
-                df_reg = pd.DataFrame([new_row])
-            else:
-                df_reg = pd.concat([df_reg, pd.DataFrame([new_row])], ignore_index=True)
-
-        df_reg.to_csv(regime_file, index=False)
-    except Exception as e:
-        logging.warning(f"Regime stats update failed: {e}")
 
     last_exit_time = now_ist()
     save_state()
@@ -1186,6 +1182,24 @@ def run_nifty_orderflow_scan():
                     highest_premium = current_premium
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
+
+                # --- PROFIT FLOOR: unconditional backstop, independent of trail_active/breakeven state ---
+                # Once this trade has EVER been up NIFTY_PROFIT_FLOOR_TRIGGER points, it may never
+                # close below NIFTY_PROFIT_FLOOR_MIN_RETAIN points of profit — no matter what the
+                # trailing-stop or breakeven-lock logic is doing. Pure safety net; does not replace
+                # or interact with the existing trail mechanism.
+
+                if (highest_premium - entry_option_ltp) >= NIFTY_PROFIT_FLOOR_TRIGGER:
+                    profit_floor_price = entry_option_ltp + NIFTY_PROFIT_FLOOR_MIN_RETAIN
+
+                    if current_premium <= profit_floor_price:
+                        exit_pnl = force_close_trade(
+                            f"PROFIT FLOOR (peak {round(highest_premium, 2)}, floor {round(profit_floor_price, 2)})",
+                            "PROFIT FLOOR", active_trade.get('underlying_ltp'), is_sim=True)
+                        current_signal = {"decision": "EXIT — PROFIT FLOOR","reason": f"Locked min +{NIFTY_PROFIT_FLOOR_MIN_RETAIN}pts after peak {round(highest_premium, 2)} | PnL: ₹{exit_pnl:.0f}"}
+                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
+                        throttled_emit_signal(current_signal, active_trade)
+                        return
 
                 lots_now = active_trade.get('lots', 1)
                 held_minutes_now = (now - trade_entry_time).total_seconds() / 60
@@ -1543,12 +1557,15 @@ def run_nifty_orderflow_scan():
             oi_acc = compute_oi_acceleration(dq)
             va = compute_value_area(candles_5m_vol)
             strike_rot = compute_strike_rotation(chain_df, spot_ltp)
-            call_wall = compute_option_wall(chain_df, "CE", spot_ltp, entry_atr)
-            put_wall = compute_option_wall(chain_df, "PE", spot_ltp, entry_atr)
+
 
             comp = composite_score(candles_15m, price_chg, oi_chg, key_levels, volume_candles=candles_15m_vol)
             base_score = comp["score"]
             bias = comp["bias"]
+
+            # needs bias to know whether a nearby wall is friend or enemy
+            call_wall = compute_option_wall(chain_df, "CE", spot_ltp, entry_atr, bias=bias)
+            put_wall = compute_option_wall(chain_df, "PE", spot_ltp, entry_atr, bias=bias)
 
             breakout = compute_breakout_acceptance(candles_5m, key_levels, bias=bias)
 
@@ -1570,7 +1587,13 @@ def run_nifty_orderflow_scan():
 
             bonus = 0
             interaction_bonus = compute_interaction_bonus(feature_scores)
-            total_score = base_score + bonus + interaction_bonus + breakout["score"]
+            wall_score = (call_wall["score"] + put_wall["score"]) if NIFTY_WALL_SCORE_ENABLED else 0
+            total_score = base_score + bonus + interaction_bonus + breakout["score"] + wall_score
+
+            # Dynamic entry gate: VIX 11-13 lost -₹3,666/30 trades (33% win) vs VIX 13-15's
+            # +₹6,208/59 trades (54% win) in the 97-trade baseline. Rather than blocking low-VIX
+            # entirely (VIX has been near record lows for months), demand more conviction instead.
+            effective_score_gate = NIFTY_LOW_VIX_SCORE_GATE if vix_ltp < NIFTY_LOW_VIX_THRESHOLD else 52
 
             # --- LOGGING ONLY: would a weak-trend/no-breakout penalty have fired? ---
             # Not applied to total_score yet — n=2 so far, tracking before deciding.
@@ -1582,11 +1605,11 @@ def run_nifty_orderflow_scan():
             signal_quality = min(100, total_score)
 
             # --- Log score distribution (only when score > 40 to keep file small) ---
-            if total_score > 40:
+            if total_score > 15:
                 log_score_distribution(
                     now, total_score, base_score, bonus, interaction_bonus, bias,
                     spot_ltp, market_regime, dte,
-                    "Accepted" if total_score >= 52 and bias != "NEUTRAL" else "Rejected"
+                    "Accepted" if total_score >= effective_score_gate and bias != "NEUTRAL" else "Rejected"
                 )
 
             # Compute ADX for logging
@@ -1741,13 +1764,13 @@ def run_nifty_orderflow_scan():
                 distance_to_level_atr = round((spot_ltp - key_levels["PDL"]) / entry_atr, 2)
 
             rvol_value = feature_scores.get("rvol", {}).get("value", 0)
-            if total_score < 52 or bias == "NEUTRAL":
+            if total_score < effective_score_gate or bias == "NEUTRAL":
                 # Specific rejection reason for RVOL
                 if rvol_value < 0.5:
                     reject_reason = f"RVOL {rvol_value:.2f} below 0.5 floor"
                     print(f"🔴 REJECTED: {reject_reason}")
                 else:
-                    reject_reason = f"Entry Score {round(total_score, 1)}"
+                    reject_reason = f"Entry Score {round(total_score, 1)} (gate {effective_score_gate}, VIX {vix_ltp:.2f})"
                     print(f"🔴 REJECTED: {reject_reason}, Bias: {bias}")
 
                 current_signal = {
