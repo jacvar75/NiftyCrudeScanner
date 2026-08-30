@@ -74,8 +74,6 @@ CRUDE_DEAD_TRADE_CUTOFF_NEAR_EXPIRY = 45    # minutes, DTE <= 2 — UNVALIDATED:
                                             # Revisit once you have real DTE<=2 samples.
 
 CRUDE_HARD_LOSS_CAP_PTS = 60
-CRUDE_EARLY_FAIL_MINUTES = 60
-CRUDE_EARLY_FAIL_MFE_PTS = 15
 
 # New constants for adaptive SL & TP
 ATR_STOP_MULTIPLIER = 1.5
@@ -90,7 +88,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.17"
+STRATEGY_VERSION = "v2.18"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -785,6 +783,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "pnl": exit_pnl,
         "r_multiple": round(r_multiple, 2),
         "mfe_pts": round(mfe_pts, 2),
+        "giveback_pct": round((mfe_pts - exit_pnl) / mfe_pts * 100, 1) if mfe_pts > 0 else 0,
         "mae_pts": round(mae_pts, 2),
         "holding_minutes": round((now_ist() - entry_time_snap).total_seconds() / 60, 1),
         "exit_reason": reason_tag,
@@ -792,7 +791,6 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "market_regime": trade_snap.get('market_regime', ''),
         "signal_quality": trade_snap.get('signal_quality', 0),
         "breakeven_locked": trade_snap.get('breakeven_locked', False),
-        "early_fail_shadow_flag": trade_snap.get('early_fail_logged', False),
         "exit_state": exit_state,
         "exit_fill_source": exit_fill_source,
         "seconds_since_last_quote": seconds_since_last_quote,
@@ -1093,25 +1091,6 @@ def run_crude_orderflow_scan():
                             safe_emit('crude_orderflow_signal', current_signal)
                             return
 
-                # --- EARLY-FAILURE EXIT: Exits after 60 min if MFE < 15 pts (relaxed safety net) ---
-                # Built from 12 real losses (5 original + 7 v2.11 week) that all matched this
-                # exact signature: MFE never exceeded ~10pts. Zero winners can structurally
-                # match this by definition of how near-miss/trail exits work — but we cannot
-                # yet rule out a slow-starting trade crossing 10pts in its final minutes
-                # (e.g. ff166741: final MFE 13pt at 33.5min). Shadow mode exists specifically
-                # to test that before this is ever allowed to force a real exit.
-                if not active_trade.get('trail_active', False) and not active_trade.get('early_fail_logged', False):
-                    minutes_elapsed_ef = (now - trade_entry_time).total_seconds() / 60
-                    mfe_now_ef = highest_premium - entry_option_ltp
-                    if minutes_elapsed_ef >= CRUDE_EARLY_FAIL_MINUTES and mfe_now_ef < CRUDE_EARLY_FAIL_MFE_PTS:
-                        active_trade['early_fail_logged'] = True
-                        exit_pnl = force_close_trade("EARLY FAILURE EXIT", "EARLY FAILURE", underlying_ltp, is_sim=True)
-                        current_signal = {"decision": "EXIT — EARLY FAILURE",
-                                          "reason": f"MFE < {CRUDE_EARLY_FAIL_MFE_PTS} after {CRUDE_EARLY_FAIL_MINUTES}m | PnL: ₹{exit_pnl:.0f}"}
-                        current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                        safe_emit('crude_orderflow_signal', current_signal)
-                        return
-
                 # --- ASYMMETRIC TRAIL: Wide leash, tightens only for monster winners ---
                 stored_atr = active_trade.get('entry_atr', 20)
                 base_trail = active_trade.get('trail_distance', int(stored_atr * 1.5))
@@ -1129,7 +1108,7 @@ def run_crude_orderflow_scan():
                 active_trade['trail_distance'] = trail_distance
 
                 # DYNAMIC THRESHOLD: 4% of entry premium, min 15 pts
-                activation_threshold = max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04))
+                activation_threshold = active_trade.get('activation_threshold', CRUDE_TRAIL_ACTIVATION)
 
                 if not active_trade.get('trail_active', False):
                     if current_premium >= entry_option_ltp + activation_threshold:
@@ -1677,7 +1656,7 @@ def run_crude_orderflow_scan():
                             "entry_risk_points": option_ltp - sl_price,
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
                             "trail_distance": max(15, min(60, int(entry_atr * 1.2))),  # Slightly wider (1.2x ATR)
-                            "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, max(20, min(80, int(entry_atr * 0.5)))),
+                            "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04)),
                             "entry_atr": round(entry_atr, 2),
                             "distance_to_level_atr": distance_to_level_atr,
                             "last_quote_time": now,
