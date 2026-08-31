@@ -88,7 +88,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.19"
+STRATEGY_VERSION = "v2.20"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -118,6 +118,7 @@ current_signal = {"decision": "NO TRADE", "reason": "Initializing..."}
 trade_entry_time = None
 entry_option_ltp = None
 active_trade = None
+post_exit_watchlist = []  # tracks price action for 30 min after TRAILING STOP / NEAR-MISS exits
 last_exit_time = None
 daily_pnl = 0
 max_daily_loss = -5000
@@ -807,6 +808,17 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "is_sim": is_sim
     })
 
+    if reason_tag in ("TRAILING STOP", "NEAR-MISS REVERSAL"):
+        post_exit_watchlist.append({
+            "signal_id": trade_snap.get('signal_id'),
+            "symbol": trade_snap.get('symbol'),
+            "bias": trade_snap.get('bias'),
+            "exit_price": exit_ltp,
+            "exit_reason": reason_tag,
+            "best_price_since": exit_ltp,
+            "watch_until": now_ist() + datetime.timedelta(minutes=30),
+        })
+
     send_telegram_alert(
         f"🔴 CRUDE TRADE CLOSED\n"
         f"{trade_snap.get('symbol', '')}\n"
@@ -850,6 +862,34 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     last_exit_time = now_ist()
     save_state()
     return exit_pnl
+
+    def check_post_exit_watches():
+        still_watching = []
+        for w in post_exit_watchlist:
+            try:
+                q = kite_call_with_timeout(kite.quote, [f"MCX:{w['symbol']}"])
+                ltp = q.get(f"MCX:{w['symbol']}", {}).get('last_price', 0) if q else 0
+                if ltp:
+                    if w['bias'] == "CALL":
+                        w['best_price_since'] = max(w['best_price_since'], ltp)
+                    else:
+                        w['best_price_since'] = min(w['best_price_since'], ltp)
+            except Exception:
+                pass
+
+            if now_ist() >= w['watch_until']:
+                pts_missed = (w['best_price_since'] - w['exit_price']) if w['bias'] == "CALL" \
+                    else (w['exit_price'] - w['best_price_since'])
+                log_json("POST_EXIT_TRACKING", {
+                    "signal_id": w['signal_id'],
+                    "exit_reason": w['exit_reason'],
+                    "exit_price": w['exit_price'],
+                    "best_price_after_exit": w['best_price_since'],
+                    "pts_missed": round(pts_missed, 2),
+                })
+            else:
+                still_watching.append(w)
+        post_exit_watchlist[:] = still_watching
 
 # ======================== SAVE/LOAD STATE ========================
 def save_state():
@@ -909,6 +949,7 @@ def run_crude_orderflow_scan():
         _last_logged_signature = None
 
     print(f"🔍 Crude scan running at {now_ist().strftime('%H:%M:%S')}")
+    check_post_exit_watches()
     with state_lock:
         try:
             now = now_ist()
