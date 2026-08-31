@@ -863,33 +863,33 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
     save_state()
     return exit_pnl
 
-    def check_post_exit_watches():
-        still_watching = []
-        for w in post_exit_watchlist:
-            try:
-                q = kite_call_with_timeout(kite.quote, [f"MCX:{w['symbol']}"])
-                ltp = q.get(f"MCX:{w['symbol']}", {}).get('last_price', 0) if q else 0
-                if ltp:
-                    if w['bias'] == "CALL":
-                        w['best_price_since'] = max(w['best_price_since'], ltp)
-                    else:
-                        w['best_price_since'] = min(w['best_price_since'], ltp)
-            except Exception:
-                pass
+def check_post_exit_watches():
+    still_watching = []
+    for w in post_exit_watchlist:
+        try:
+            q = kite_call_with_timeout(kite.quote, [f"MCX:{w['symbol']}"])
+            ltp = q.get(f"MCX:{w['symbol']}", {}).get('last_price', 0) if q else 0
+            if ltp:
+                if w['bias'] == "CALL":
+                    w['best_price_since'] = max(w['best_price_since'], ltp)
+                else:
+                    w['best_price_since'] = min(w['best_price_since'], ltp)
+        except Exception:
+            pass
 
-            if now_ist() >= w['watch_until']:
-                pts_missed = (w['best_price_since'] - w['exit_price']) if w['bias'] == "CALL" \
-                    else (w['exit_price'] - w['best_price_since'])
-                log_json("POST_EXIT_TRACKING", {
-                    "signal_id": w['signal_id'],
-                    "exit_reason": w['exit_reason'],
-                    "exit_price": w['exit_price'],
-                    "best_price_after_exit": w['best_price_since'],
-                    "pts_missed": round(pts_missed, 2),
-                })
-            else:
-                still_watching.append(w)
-        post_exit_watchlist[:] = still_watching
+        if now_ist() >= w['watch_until']:
+            pts_missed = (w['best_price_since'] - w['exit_price']) if w['bias'] == "CALL" \
+                else (w['exit_price'] - w['best_price_since'])
+            log_json("POST_EXIT_TRACKING", {
+                "signal_id": w['signal_id'],
+                "exit_reason": w['exit_reason'],
+                "exit_price": w['exit_price'],
+                "best_price_after_exit": w['best_price_since'],
+                "pts_missed": round(pts_missed, 2),
+            })
+        else:
+            still_watching.append(w)
+    post_exit_watchlist[:] = still_watching
 
 # ======================== SAVE/LOAD STATE ========================
 def save_state():
