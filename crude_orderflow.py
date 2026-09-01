@@ -88,7 +88,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.20"
+STRATEGY_VERSION = "v2.21"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -1138,11 +1138,11 @@ def run_crude_orderflow_scan():
                 mfe = highest_premium - entry_option_ltp
                 risk = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
 
-                # Only tighten when profit exceeds 3R (massive) AND MFE is large
-                if mfe >= risk * 3.0 and mfe >= base_trail * 2.5:
-                    trail_distance = max(8, base_trail * 0.5)  # Tight – lock in the monster ( was 12 )
-                elif mfe >= risk * 2.0 and mfe >= base_trail * 1.5:
-                    trail_distance = max(10, base_trail * 0.7)  # Moderately tight ( was 15 )
+                # Tighten EARLY to catch medium runners (Balanced Approach)
+                if mfe >= risk * 1.5 and mfe >= base_trail * 1.5:
+                    trail_distance = max(10, base_trail * 0.5)  # Aggressive on big moves
+                elif mfe >= risk * 1.0 and mfe >= base_trail * 1.0:
+                    trail_distance = max(12, base_trail * 0.6)  # Moderate on 1R moves
                 else:
                     trail_distance = base_trail  # Wide open – let it run
 
