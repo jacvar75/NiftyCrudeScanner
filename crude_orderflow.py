@@ -88,7 +88,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.21"
+STRATEGY_VERSION = "v2.23"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -369,7 +369,7 @@ def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, r
         if adx_val < 30:
             return False, f"OI conflict: Fresh Longs vs PUT (ADX {adx_val:.1f} < 30)"
 
-    # 4. Minimum Momentum Safety (Low ATR + Low ADX = Dead market)
+    # 4. Minimum Volume Safety. (Low ATR + Low ADX = Dead market)
     if entry_atr < 25 and adx_val < 25:
         return False, f"Dead consolidation (ATR {entry_atr:.1f} < 25 & ADX {adx_val:.1f} < 25)"
 
