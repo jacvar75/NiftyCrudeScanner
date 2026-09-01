@@ -373,6 +373,12 @@ def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, r
     if entry_atr < 25 and adx_val < 25:
         return False, f"Dead consolidation (ATR {entry_atr:.1f} < 25 & ADX {adx_val:.1f} < 25)"
 
+    # 4a. Minimum Momentum Safety (Low ATR + Low ADX = Dead market)
+    rvol_val = feature_scores.get("rvol", {}).get("value", 1)
+    if rvol_val < 0.5:
+        return False, f"Low volume breakout (RVOL {rvol_val:.2f} < 0.5) - dead market"
+
+
     # 5. Momentum Exhaustion Filter (Wick + Stretch) - Replaces simple RSI rule
     # This detects "blow-off tops" (long upper wick + overbought/stretched)
     # and "blow-off bottoms" (long lower wick + oversold/stretched)
