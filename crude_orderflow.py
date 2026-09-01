@@ -1139,10 +1139,10 @@ def run_crude_orderflow_scan():
                 risk = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
 
                 # Tighten EARLY to catch medium runners (Balanced Approach)
-                if mfe >= risk * 1.5 and mfe >= base_trail * 1.5:
-                    trail_distance = max(10, base_trail * 0.5)  # Aggressive on big moves
-                elif mfe >= risk * 1.0 and mfe >= base_trail * 1.0:
-                    trail_distance = max(12, base_trail * 0.6)  # Moderate on 1R moves
+                if mfe >= risk * 3.0 and mfe >= base_trail * 2.5:
+                    trail_distance = max(8, base_trail * 0.5)  # Tight
+                elif mfe >= risk * 2.0 and mfe >= base_trail * 1.5:
+                    trail_distance = max(10, base_trail * 0.7)  # Moderate
                 else:
                     trail_distance = base_trail  # Wide open – let it run
 
