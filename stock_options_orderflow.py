@@ -2003,13 +2003,18 @@ def engine_tick():
 
     if active_trade is not None:
         monitor_active_trade()
+
+        # monitor_active_trade() may have exited the trade
+        # and set active_trade = None.
         current_state["decision"] = "SHADOW TRADE ACTIVE"
-        current_state["reason"] = (
-            f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
-        )
-        current_state["active_trade"] = active_trade
-        emit_state()
-        return
+        if active_trade is not None:
+            current_state["decision"] = "SHADOW TRADE ACTIVE"
+            current_state["reason"] = (
+                f"{active_trade['symbol']} {active_trade['bias']} — fixed 2R target"
+            )
+            current_state["active_trade"] = active_trade
+            emit_state()
+            return
 
     if now.time() > ENTRY_CUTOFF:
         current_state["decision"] = "NO TRADE"
