@@ -351,8 +351,8 @@ def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, r
     Kills mediocrity (low RVOL, choppy candles, conflicting OI) while keeping high-conviction moves.
     Returns: (bool, reason_string)
     """
-    # 1. Confluence or Strong Trend (ADX > 28)
-    if interaction_bonus == 0 and adx_val < 28:
+    # 1. Strong Trend (ADX > 28)
+    if adx_val < 28:
         return False, f"No confluence (bonus=0, adx={adx_val:.1f} < 28)"
 
     # 2. Volatility Expansion (Candle must be at least 80% of average range)
