@@ -353,7 +353,7 @@ def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, r
     """
     # 1. Strong Trend (ADX > 28)
     if adx_val < 28:
-        return False, f"No confluence (bonus=0, adx={adx_val:.1f} < 28)"
+        return False, f"Weak trend (ADX {adx_val:.1f} < 28) - quality filter rejects"
 
     # 2. Volatility Expansion (Candle must be at least 80% of average range)
     rel_range = feature_scores.get("relative_range", {}).get("value", 0)
