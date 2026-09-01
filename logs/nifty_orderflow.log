@@ -914,3 +914,399 @@
 2026-09-01 12:50:59,849 - INFO - \U0001f534 HTF mismatch (CALL vs PUT). Hard reject — no entry.
 2026-09-01 12:50:59,852 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs PUT) — hard reject
 2026-09-01 12:51:00,635 - INFO - 127.0.0.1 - - [01/Sep/2026 12:51:00] "GET /socket.io/?EIO=4&transport=websocket&sid=-Dcodc5Ad1n2EGtKAAAA HTTP/1.1" 200 -
+2026-09-01 13:04:27,567 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8063
+ * Running on http://192.168.1.202:8063
+2026-09-01 13:04:27,567 - INFO - [33mPress CTRL+C to quit[0m
+2026-09-01 13:04:29,090 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:04:29,096 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:04:29,210 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21596575
+2026-09-01 13:04:29,213 - INFO - \U0001f534 HTF mismatch (CALL vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:04:29,213 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:04:31,078 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:31] "GET / HTTP/1.1" 200 -
+2026-09-01 13:04:31,133 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:31] "GET /socket.io/?EIO=4&transport=polling&t=Q1Rv1lB HTTP/1.1" 200 -
+2026-09-01 13:04:31,306 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:31] "POST /socket.io/?EIO=4&transport=polling&t=Q1Rv1o5&sid=OPI5qSRCUPoPHVQ6AAAA HTTP/1.1" 200 -
+2026-09-01 13:04:31,624 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:31] "GET /socket.io/?EIO=4&transport=polling&t=Q1Rv1o7&sid=OPI5qSRCUPoPHVQ6AAAA HTTP/1.1" 200 -
+2026-09-01 13:04:31,642 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:04:31,645 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:05:01,143 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:05:29,342 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:05:29,342 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:05:29,373 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21596575
+2026-09-01 13:05:29,373 - INFO - \U0001f534 HTF mismatch (CALL vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:05:29,373 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:05:31,138 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:06:01,141 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:06:29,576 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:06:29,581 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:06:29,639 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21596575
+2026-09-01 13:06:29,641 - INFO - \U0001f534 HTF mismatch (CALL vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:06:29,642 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:06:31,185 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:07:01,131 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:07:29,844 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:07:29,848 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:07:29,911 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21616660
+2026-09-01 13:07:29,914 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:07:29,915 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:07:31,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:08:01,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:08:30,109 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:08:30,117 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:08:30,187 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21616660
+2026-09-01 13:08:30,189 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:08:30,191 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:08:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:09:30,356 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:09:30,360 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:09:30,403 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21616660
+2026-09-01 13:09:30,405 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 45 (gate 60, VIX 10.76)
+2026-09-01 13:09:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 45 (gate 60, VIX 10.76)
+2026-09-01 13:10:30,588 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:10:30,594 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:10:30,685 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21628490
+2026-09-01 13:10:30,688 - INFO - \U0001f534 HTF mismatch (CALL vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:10:30,689 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:10:50,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:11:30,812 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:11:30,819 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:11:30,842 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21628490
+2026-09-01 13:11:30,846 - INFO - \U0001f534 HTF mismatch (CALL vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:11:30,847 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:11:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs NEUTRAL) — hard reject
+2026-09-01 13:12:31,027 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:12:31,033 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:12:31,094 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21628490
+2026-09-01 13:12:31,096 - INFO - \U0001f534 HTF mismatch (CALL vs PUT). Hard reject — no entry.
+2026-09-01 13:12:31,097 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs PUT) — hard reject
+2026-09-01 13:12:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (CALL vs PUT) — hard reject
+2026-09-01 13:13:31,212 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:13:31,218 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:13:31,271 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21684650
+2026-09-01 13:13:31,273 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.82)
+2026-09-01 13:13:50,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.82)
+2026-09-01 13:14:31,489 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:14:31,492 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:14:31,577 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21684650
+2026-09-01 13:14:31,580 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.82)
+2026-09-01 13:14:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.82)
+2026-09-01 13:15:31,700 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:15:31,707 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:15:31,728 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21684650
+2026-09-01 13:15:31,730 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:15:31,731 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:15:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:16:31,919 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:16:31,922 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:16:31,987 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=25, rvol=0.93
+2026-09-01 13:16:32,028 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21726250
+2026-09-01 13:16:32,029 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:16:32,031 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:16:50,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:17:32,150 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:17:32,157 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:17:32,172 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=25, rvol=4.95
+2026-09-01 13:17:32,177 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21726250
+2026-09-01 13:17:32,179 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:17:32,181 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:17:50,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:18:32,396 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:18:32,402 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:18:32,463 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=25, rvol=10.77
+2026-09-01 13:18:32,470 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21726250
+2026-09-01 13:18:32,471 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:18:32,472 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:18:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:19:32,630 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:19:32,633 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:19:32,670 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=28, rvol=15.52
+2026-09-01 13:19:32,708 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21744645
+2026-09-01 13:19:32,710 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:19:32,712 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:19:50,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:20:32,930 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:20:32,934 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:20:32,994 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=40, rvol=0
+2026-09-01 13:20:32,998 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21744645
+2026-09-01 13:20:33,000 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.09 below 0.5 floor
+2026-09-01 13:20:50,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.09 below 0.5 floor
+2026-09-01 13:21:33,113 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:21:33,119 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:21:33,136 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=40, rvol=0
+2026-09-01 13:21:33,141 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21744645
+2026-09-01 13:21:33,143 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.14 below 0.5 floor
+2026-09-01 13:21:50,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.14 below 0.5 floor
+2026-09-01 13:22:33,561 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:22:33,567 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:22:33,622 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=50, rvol=0
+2026-09-01 13:22:33,657 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21761610
+2026-09-01 13:22:33,659 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:22:33,661 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:22:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:23:33,772 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:23:33,778 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:23:33,794 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=50, rvol=0
+2026-09-01 13:23:33,800 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21761610
+2026-09-01 13:23:33,802 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:23:33,804 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:23:50,137 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:24:34,025 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:24:34,030 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:24:34,108 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=50, rvol=0
+2026-09-01 13:24:34,115 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21761610
+2026-09-01 13:24:34,118 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:24:34,119 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:24:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:25:18,961 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:25:31,120 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:25:34,254 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:25:34,263 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:25:34,291 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=50, rvol=0
+2026-09-01 13:25:34,329 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21771620
+2026-09-01 13:25:34,332 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:25:34,334 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:26:01,119 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:26:31,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:26:34,566 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:26:34,576 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:26:34,657 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=50, rvol=0
+2026-09-01 13:26:34,670 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21771620
+2026-09-01 13:26:34,672 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:26:34,674 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:27:01,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:27:31,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:27:34,797 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:27:34,801 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:27:34,816 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=50, rvol=0
+2026-09-01 13:27:34,821 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21771620
+2026-09-01 13:27:34,825 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:27:34,826 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:28:01,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:28:35,005 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:28:35,009 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:28:35,081 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=40, rvol=0
+2026-09-01 13:28:35,113 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21785660
+2026-09-01 13:28:35,116 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.34 below 0.5 floor
+2026-09-01 13:28:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.34 below 0.5 floor
+2026-09-01 13:29:35,267 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:29:35,270 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:29:35,311 - INFO - \u2691 weak_trend_flag would fire: adx=21.7, score=40, rvol=0
+2026-09-01 13:29:35,317 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21785660
+2026-09-01 13:29:35,320 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.79)
+2026-09-01 13:29:50,148 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.79)
+2026-09-01 13:30:35,522 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:30:35,527 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:30:35,581 - INFO - \u2691 weak_trend_flag would fire: adx=20.6, score=40, rvol=0
+2026-09-01 13:30:35,586 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21785660
+2026-09-01 13:30:35,587 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:30:35,589 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:30:50,145 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:31:35,716 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:31:35,722 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:31:35,736 - INFO - \u2691 weak_trend_flag would fire: adx=20.6, score=40, rvol=0
+2026-09-01 13:31:35,774 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21797555
+2026-09-01 13:31:35,776 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:31:35,778 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:31:50,141 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:32:11,788 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:32:31,147 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:32:35,971 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:32:35,987 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:32:36,047 - INFO - \u2691 weak_trend_flag would fire: adx=20.5, score=40, rvol=0
+2026-09-01 13:32:36,052 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21797555
+2026-09-01 13:32:36,054 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:32:36,055 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:33:01,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:33:31,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:33:36,169 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:33:36,174 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:33:36,190 - INFO - \u2691 weak_trend_flag would fire: adx=20.5, score=40, rvol=0
+2026-09-01 13:33:36,195 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21797555
+2026-09-01 13:33:36,197 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:33:36,198 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:34:01,142 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:34:36,640 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:34:36,644 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:34:36,721 - INFO - \u2691 weak_trend_flag would fire: adx=20.5, score=40, rvol=0
+2026-09-01 13:34:36,752 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21810750
+2026-09-01 13:34:36,754 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:34:36,756 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:34:50,137 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:35:36,894 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:35:36,898 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:35:36,913 - INFO - \u2691 weak_trend_flag would fire: adx=20.5, score=40, rvol=0
+2026-09-01 13:35:36,919 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21810750
+2026-09-01 13:35:36,920 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:35:36,922 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:35:50,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:36:37,108 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:36:37,114 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:36:37,169 - INFO - \u2691 weak_trend_flag would fire: adx=20.4, score=40, rvol=0
+2026-09-01 13:36:37,173 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21810750
+2026-09-01 13:36:37,176 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:36:37,177 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:36:50,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:37:37,294 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:37:37,302 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:37:37,317 - INFO - \u2691 weak_trend_flag would fire: adx=20.4, score=40, rvol=0
+2026-09-01 13:37:37,349 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21833630
+2026-09-01 13:37:37,352 - INFO - \U0001f534 HTF mismatch (PUT vs CALL). Hard reject — no entry.
+2026-09-01 13:37:37,353 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:37:50,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs CALL) — hard reject
+2026-09-01 13:38:37,537 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:38:37,543 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:38:37,594 - INFO - \u2691 weak_trend_flag would fire: adx=20.4, score=40, rvol=10.71
+2026-09-01 13:38:37,600 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21833630
+2026-09-01 13:38:37,603 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.89)
+2026-09-01 13:38:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.89)
+2026-09-01 13:39:13,131 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.89)
+2026-09-01 13:39:31,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.89)
+2026-09-01 13:39:37,751 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:39:37,757 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:39:37,800 - INFO - \u2691 weak_trend_flag would fire: adx=20.4, score=43, rvol=17.41
+2026-09-01 13:39:37,806 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21833630
+2026-09-01 13:39:37,808 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 43 (gate 60, VIX 10.88)
+2026-09-01 13:40:01,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 43 (gate 60, VIX 10.88)
+2026-09-01 13:40:38,019 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:40:38,026 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:40:38,084 - INFO - \u2691 weak_trend_flag would fire: adx=21.0, score=40, rvol=0
+2026-09-01 13:40:38,117 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21879065
+2026-09-01 13:40:38,119 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.26 below 0.5 floor
+2026-09-01 13:40:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.26 below 0.5 floor
+2026-09-01 13:41:38,240 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:41:38,244 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:41:38,262 - INFO - \u2691 weak_trend_flag would fire: adx=21.0, score=48, rvol=20
+2026-09-01 13:41:38,268 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21879065
+2026-09-01 13:41:38,271 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.92)
+2026-09-01 13:41:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.92)
+2026-09-01 13:42:38,442 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:42:38,449 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:42:38,505 - INFO - \u2691 weak_trend_flag would fire: adx=21.3, score=48, rvol=20
+2026-09-01 13:42:38,511 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=21879065
+2026-09-01 13:42:38,514 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.94)
+2026-09-01 13:42:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.94)
+2026-09-01 13:43:38,639 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:43:38,646 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:43:38,663 - INFO - \u2691 weak_trend_flag would fire: adx=21.3, score=48, rvol=20
+2026-09-01 13:43:38,691 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22001395
+2026-09-01 13:43:38,693 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.94)
+2026-09-01 13:43:50,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.94)
+2026-09-01 13:44:38,906 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:44:38,910 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:44:39,022 - INFO - \u2691 weak_trend_flag would fire: adx=21.3, score=48, rvol=20
+2026-09-01 13:44:39,028 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22001395
+2026-09-01 13:44:39,030 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.93)
+2026-09-01 13:44:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 10.93)
+2026-09-01 13:45:39,155 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:45:39,161 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:45:39,177 - INFO - \u2691 weak_trend_flag would fire: adx=21.3, score=40, rvol=0
+2026-09-01 13:45:39,182 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22001395
+2026-09-01 13:45:39,185 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.14 below 0.5 floor
+2026-09-01 13:45:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.14 below 0.5 floor
+2026-09-01 13:46:39,377 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:46:39,380 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:46:39,434 - INFO - \u2691 weak_trend_flag would fire: adx=20.9, score=40, rvol=0
+2026-09-01 13:46:39,467 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22048650
+2026-09-01 13:46:39,469 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.99)
+2026-09-01 13:46:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.99)
+2026-09-01 13:47:01,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.99)
+2026-09-01 13:47:31,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.99)
+2026-09-01 13:47:39,584 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:47:39,587 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:47:39,604 - INFO - \u2691 weak_trend_flag would fire: adx=20.9, score=40, rvol=1.01
+2026-09-01 13:47:39,608 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22048650
+2026-09-01 13:47:39,610 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.96)
+2026-09-01 13:48:32,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.96)
+2026-09-01 13:48:39,839 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:48:39,845 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:48:39,898 - INFO - \u2691 weak_trend_flag would fire: adx=21.1, score=40, rvol=11.81
+2026-09-01 13:48:39,904 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22048650
+2026-09-01 13:48:39,906 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.97)
+2026-09-01 13:49:33,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 40 (gate 60, VIX 10.97)
+2026-09-01 13:49:40,048 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:49:40,054 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:49:40,096 - INFO - \u2691 weak_trend_flag would fire: adx=21.1, score=43, rvol=17.12
+2026-09-01 13:49:40,138 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22092005
+2026-09-01 13:49:40,141 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 43 (gate 60, VIX 10.99)
+2026-09-01 13:50:34,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 43 (gate 60, VIX 10.99)
+2026-09-01 13:50:40,340 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:50:40,344 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:50:40,399 - INFO - \u2691 weak_trend_flag would fire: adx=21.2, score=35, rvol=0
+2026-09-01 13:50:40,404 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22092005
+2026-09-01 13:50:40,406 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.34 below 0.5 floor
+2026-09-01 13:51:35,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.34 below 0.5 floor
+2026-09-01 13:51:40,542 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:51:40,547 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:51:40,564 - INFO - \u2691 weak_trend_flag would fire: adx=21.2, score=48, rvol=20
+2026-09-01 13:51:40,568 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22092005
+2026-09-01 13:51:40,570 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.18)
+2026-09-01 13:52:36,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.18)
+2026-09-01 13:52:40,998 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:52:41,002 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:52:41,098 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=48, rvol=20
+2026-09-01 13:52:41,137 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22263995
+2026-09-01 13:52:41,140 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.15)
+2026-09-01 13:53:37,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.15)
+2026-09-01 13:53:41,268 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:53:41,273 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:53:41,290 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=48, rvol=20
+2026-09-01 13:53:41,296 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22263995
+2026-09-01 13:53:41,298 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.20)
+2026-09-01 13:54:38,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.20)
+2026-09-01 13:54:41,526 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:54:41,531 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:54:41,612 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=48, rvol=20
+2026-09-01 13:54:41,618 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22263995
+2026-09-01 13:54:41,621 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.22)
+2026-09-01 13:55:39,133 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 48 (gate 60, VIX 11.22)
+2026-09-01 13:55:41,749 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:55:41,753 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:55:41,771 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=40, rvol=0
+2026-09-01 13:55:41,804 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22351485
+2026-09-01 13:55:41,807 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.15 below 0.5 floor
+2026-09-01 13:56:40,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | RVOL 0.15 below 0.5 floor
+2026-09-01 13:56:41,987 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:56:41,996 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:56:42,054 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=25, rvol=0
+2026-09-01 13:56:42,060 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22351485
+2026-09-01 13:56:42,062 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:56:42,066 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:57:41,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:57:42,209 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:57:42,215 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:57:42,233 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=25, rvol=0
+2026-09-01 13:57:42,239 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22351485
+2026-09-01 13:57:42,240 - INFO - \U0001f534 HTF mismatch (PUT vs NEUTRAL). Hard reject — no entry.
+2026-09-01 13:57:42,241 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:58:13,136 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:58:31,132 - INFO - EMIT nifty_orderflow_signal: NO TRADE | HTF mismatch (PUT vs NEUTRAL) — hard reject
+2026-09-01 13:58:42,432 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:58:42,436 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:58:42,491 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=35, rvol=0
+2026-09-01 13:58:42,526 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22395815
+2026-09-01 13:58:42,530 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 35 (gate 60, VIX 11.43)
+2026-09-01 13:59:01,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 35 (gate 60, VIX 11.43)
+2026-09-01 13:59:42,674 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 13:59:42,677 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 13:59:42,719 - INFO - \u2691 weak_trend_flag would fire: adx=21.8, score=35, rvol=0
+2026-09-01 13:59:42,726 - INFO - HTF sanity check: fut_instrument=NIFTY26SEPFUT, ht_candles_volume_sum=22395815
+2026-09-01 13:59:42,727 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 35 (gate 60, VIX 11.41)
+2026-09-01 13:59:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | Entry Score 35 (gate 60, VIX 11.41)
+2026-09-01 14:00:42,910 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 14:00:42,916 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 14:00:42,917 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:00:50,134 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:01:43,040 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 14:01:43,044 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 14:01:43,044 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:01:50,136 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:02:43,231 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 14:02:43,239 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 14:02:43,239 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:02:50,135 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:03:17,098 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00
+2026-09-01 14:03:23,358 - INFO - 127.0.0.1 - - [01/Sep/2026 14:03:23] "GET /socket.io/?EIO=4&transport=websocket&sid=OPI5qSRCUPoPHVQ6AAAA HTTP/1.1" 200 -
+2026-09-01 14:03:43,370 - WARNING - \u26a0\ufe0f Nifty spot/futures candle length mismatch — VWAP/key-levels falling back to spot candles (volume likely zero)
+2026-09-01 14:03:43,374 - INFO - \u2705 [SIM] Resolved expiry: 2026-09-01
+2026-09-01 14:03:43,374 - INFO - EMIT nifty_orderflow_signal: NO TRADE | No entries on DTE 0 after 14:00

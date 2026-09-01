@@ -285,3 +285,272 @@
 2026-09-01 12:20:44,669 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
 2026-09-01 12:20:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
 2026-09-01 12:21:22,078 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:21:44,801 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:21:52,076 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:22:22,078 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:22:44,885 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:22:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:23:22,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:23:45,018 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:23:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:24:22,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:24:45,094 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:24:52,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:25:45,181 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:25:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:26:45,234 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:26:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:27:45,327 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:27:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:28:45,375 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:28:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:29:45,498 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:29:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:30:45,560 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:30:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:31:45,693 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:31:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:32:45,738 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:32:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:33:45,822 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:33:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:34:45,897 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:34:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:35:45,983 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:35:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:36:46,037 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:36:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:37:46,144 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:37:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:38:46,198 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:38:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:39:46,312 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:39:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:40:46,372 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:40:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:40:56,797 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:41:22,078 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:41:46,458 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:41:52,081 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:42:22,081 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:42:46,535 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:42:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:43:22,079 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:43:46,648 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:43:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:44:22,079 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:44:46,742 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:44:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:45:22,080 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:45:46,850 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:45:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:46:22,080 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:46:46,913 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:46:52,080 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:47:22,080 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:47:47,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:47:52,080 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:48:22,078 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:48:47,151 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:48:52,079 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:49:22,079 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 12:49:47,392 - INFO - \U0001f536 WEAK Breakout (ADX 17.0): Penalizing score by 20 (New total: 35)
+2026-09-01 12:49:47,463 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:49:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:50:22,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:50:47,510 - INFO - \U0001f536 WEAK Breakout (ADX 17.0): Penalizing score by 20 (New total: 35)
+2026-09-01 12:50:47,510 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:50:52,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:51:22,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:51:47,681 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=17.1 < 28) (Score: 60)
+2026-09-01 12:51:52,138 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=17.1 < 28) (Score: 60)
+2026-09-01 12:52:22,140 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=17.1 < 28) (Score: 60)
+2026-09-01 12:52:47,774 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=17.1 < 28) (Score: 60)
+2026-09-01 12:53:23,143 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=17.1 < 28) (Score: 60)
+2026-09-01 12:53:47,875 - INFO - \U0001f536 WEAK Breakout (ADX 17.1): Penalizing score by 20 (New total: 35)
+2026-09-01 12:53:47,881 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:53:52,144 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:54:22,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:54:47,960 - INFO - \U0001f536 WEAK Breakout (ADX 17.1): Penalizing score by 20 (New total: 35)
+2026-09-01 12:54:47,967 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:55:23,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 12:55:48,062 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:56:24,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:56:48,111 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:57:25,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:57:48,194 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:58:26,141 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:58:48,247 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:59:27,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 12:59:48,361 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 13:00:28,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 13:00:48,410 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 13:01:29,139 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 50
+2026-09-01 13:01:48,488 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:02:30,147 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:02:48,543 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:03:31,141 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:03:48,652 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:03:52,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:04:22,123 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:04:28,364 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:28] "[36mGET / HTTP/1.1[0m" 304 -
+2026-09-01 13:04:28,592 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:28] "GET /socket.io/?EIO=4&transport=polling&t=Q1Rv14b HTTP/1.1" 200 -
+2026-09-01 13:04:28,709 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:28] "POST /socket.io/?EIO=4&transport=polling&t=Q1Rv17p&sid=XNw44XkYiP3npE4QAAAE HTTP/1.1" 200 -
+2026-09-01 13:04:28,901 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:28] "GET /socket.io/?EIO=4&transport=polling&t=Q1Rv17r&sid=XNw44XkYiP3npE4QAAAE HTTP/1.1" 200 -
+2026-09-01 13:04:29,221 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:29] "POST /socket.io/?EIO=4&transport=polling&t=Q1Rv1Cg&sid=XNw44XkYiP3npE4QAAAE HTTP/1.1" 200 -
+2026-09-01 13:04:29,221 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:04:29,222 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:29] "GET /socket.io/?EIO=4&transport=polling&t=Q1Rv1Ce&sid=XNw44XkYiP3npE4QAAAE HTTP/1.1" 200 -
+2026-09-01 13:04:48,723 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:04:48,724 - INFO - 127.0.0.1 - - [01/Sep/2026 13:04:48] "GET /socket.io/?EIO=4&transport=polling&t=Q1Rv1Hg&sid=XNw44XkYiP3npE4QAAAE HTTP/1.1" 200 -
+2026-09-01 13:04:52,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:05:22,137 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:05:48,809 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:05:52,143 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:06:48,866 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:06:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:07:26,603 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:07:49,019 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:07:52,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:08:22,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:08:49,088 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:09:23,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:09:49,200 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:10:24,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:10:49,247 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:11:25,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:11:49,347 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:12:26,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:12:49,404 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:13:27,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:13:49,495 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:14:28,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:14:49,570 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:15:29,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:15:49,658 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:16:30,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:16:49,708 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:17:31,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:17:49,794 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 35)
+2026-09-01 13:17:49,835 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:18:32,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:18:49,881 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 35)
+2026-09-01 13:18:49,886 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:19:33,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:19:49,997 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:20:34,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:20:50,077 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:21:35,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:21:50,163 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 45)
+2026-09-01 13:21:50,167 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:22:36,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:22:50,221 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 45)
+2026-09-01 13:22:50,225 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:23:37,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:23:50,310 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 35)
+2026-09-01 13:23:50,347 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:24:38,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:24:50,428 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 35)
+2026-09-01 13:24:50,435 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:25:21,738 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 35 < 55
+2026-09-01 13:25:50,546 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 45)
+2026-09-01 13:25:50,550 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:25:52,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:26:22,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:26:50,601 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 45)
+2026-09-01 13:26:50,638 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:26:52,078 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:27:22,131 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:27:50,723 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 45)
+2026-09-01 13:27:50,726 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:27:52,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:28:22,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:28:50,772 - INFO - \U0001f536 WEAK Breakout (ADX 18.0): Penalizing score by 20 (New total: 45)
+2026-09-01 13:28:50,777 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:28:52,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:29:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Stop hunt vs Breakout clash (above) rejected
+2026-09-01 13:29:50,940 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:30:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:30:50,992 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:31:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Mediocre Setup: No confluence (bonus=0, adx=18.0 < 28) (Score: 60)
+2026-09-01 13:31:51,098 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:32:09,145 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:32:22,138 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:32:51,141 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:32:52,146 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:33:22,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:33:51,249 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:33:52,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:34:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:34:51,330 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:35:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 30
+2026-09-01 13:35:51,419 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 40
+2026-09-01 13:36:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 40
+2026-09-01 13:36:51,468 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 40
+2026-09-01 13:37:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 40
+2026-09-01 13:37:51,555 - INFO - \U0001f536 WEAK Breakout (ADX 19.4): Penalizing score by 20 (New total: 38)
+2026-09-01 13:37:51,590 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:38:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:38:51,638 - INFO - \U0001f536 WEAK Breakout (ADX 19.4): Penalizing score by 20 (New total: 38)
+2026-09-01 13:38:51,643 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:39:11,030 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:39:22,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:39:51,757 - INFO - \U0001f536 WEAK Breakout (ADX 19.4): Penalizing score by 20 (New total: 38)
+2026-09-01 13:39:51,762 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:39:52,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:40:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:40:51,810 - INFO - \U0001f536 WEAK Breakout (ADX 19.4): Penalizing score by 20 (New total: 38)
+2026-09-01 13:40:51,846 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:41:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:41:51,930 - INFO - \U0001f536 WEAK Breakout (ADX 19.5): Penalizing score by 20 (New total: 38)
+2026-09-01 13:41:51,932 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:42:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:42:51,992 - INFO - \U0001f536 WEAK Breakout (ADX 19.5): Penalizing score by 20 (New total: 38)
+2026-09-01 13:42:51,996 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:43:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:43:52,107 - INFO - \U0001f536 WEAK Breakout (ADX 19.5): Penalizing score by 20 (New total: 38)
+2026-09-01 13:43:52,147 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:44:50,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:44:52,222 - INFO - \U0001f536 WEAK Breakout (ADX 19.5): Penalizing score by 20 (New total: 38)
+2026-09-01 13:44:52,226 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:45:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry score 38 < 55
+2026-09-01 13:45:52,324 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:46:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:46:52,372 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:46:55,520 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:47:22,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:47:52,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:47:52,458 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:48:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:48:52,507 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:49:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:49:52,631 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:50:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:50:52,685 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:51:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:51:52,780 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:52:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:52:52,843 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:53:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:53:52,946 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:54:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:54:53,032 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:55:50,133 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:55:53,120 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:56:50,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:56:53,166 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:57:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:57:53,275 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:58:16,535 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:58:22,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:58:52,132 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:58:53,326 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:59:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 13:59:53,446 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:00:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:00:53,491 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:01:50,135 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:01:53,590 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:02:50,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:02:53,645 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:03:15,124 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
+2026-09-01 14:03:22,134 - INFO - EMIT crude_orderflow_signal: NO TRADE | Entry Score 35
