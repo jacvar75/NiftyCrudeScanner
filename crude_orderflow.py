@@ -88,7 +88,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.23"
+STRATEGY_VERSION = "v2.24"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -1702,7 +1702,7 @@ def run_crude_orderflow_scan():
                             "sl_price": sl_price,
                             "entry_risk_points": option_ltp - sl_price,
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                            "trail_distance": max(15, min(60, int(entry_atr * 1.0))), # Tightened after 5/5 unanimous giveback pattern (was 1.2x)
+                            "trail_distance": max(15, min(60, int(entry_atr * 0.75))), # DISCRETIONARY BET — tightened further on judgment, not data. Watch for early stop-outs on trending trades.
                             "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04)),
                             "entry_atr": round(entry_atr, 2),
                             "distance_to_level_atr": distance_to_level_atr,
