@@ -906,7 +906,9 @@ def save_state():
         "daily_pnl": daily_pnl,
         "last_exit_time": last_exit_time.isoformat() if last_exit_time else None,
         "daily_reset_date": daily_reset_date.isoformat() if daily_reset_date else None,
-        "post_exit_watchlist": [{**w, "watch_until": w["watch_until"].isoformat()} for w in post_exit_watchlist]
+        "post_exit_watchlist": [
+            {**w, "watch_until": w["watch_until"].isoformat()} for w in post_exit_watchlist
+        ]
     }
     try:
         tmp_path = STATE_FILE + ".tmp"
