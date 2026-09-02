@@ -63,8 +63,8 @@ PORT = 8064
 MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
-CRUDE_TRAIL_ACTIVATION = 10                 # was 15
-CRUDE_BREAKEVEN_MFE_PTS = 12                # was 18 (optional)
+CRUDE_TRAIL_ACTIVATION = 15                 # was 15
+CRUDE_BREAKEVEN_MFE_PTS = 18                # was 18 (optional)
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 20                      # wider floor to let trends breathe
 CRUDE_SL_PCT = 0.12                         # SL = 12% of entry premium (wider to breathe)
@@ -84,11 +84,11 @@ LOG_DIR = "logs"
 # --- NEW RULE CONSTANTS ---
 BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this ADX
 NEAR_MISS_MFE_PCT = 0.6        # require 60% of trail threshold before considering
-NEAR_MISS_GIVEBACK_PCT = 0.35  # only exit if 85% of peak gain is given back
+NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.24"
+STRATEGY_VERSION = "v2.25"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -1703,8 +1703,7 @@ def run_crude_orderflow_scan():
                             "entry_risk_points": option_ltp - sl_price,
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
                             "trail_distance": max(15, min(60, int(entry_atr * 0.75))), # DISCRETIONARY BET — tightened further on judgment, not data. Watch for early stop-outs on trending trades.
-                            # "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04)),
-                            "activation_threshold": CRUDE_TRAIL_ACTIVATION,
+                            "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04)),
                             "entry_atr": round(entry_atr, 2),
                             "distance_to_level_atr": distance_to_level_atr,
                             "last_quote_time": now,
