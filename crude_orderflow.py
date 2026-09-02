@@ -905,7 +905,8 @@ def save_state():
         "active_trade": active_trade,
         "daily_pnl": daily_pnl,
         "last_exit_time": last_exit_time.isoformat() if last_exit_time else None,
-        "daily_reset_date": daily_reset_date.isoformat() if daily_reset_date else None
+        "daily_reset_date": daily_reset_date.isoformat() if daily_reset_date else None,
+        "post_exit_watchlist": [{**w, "watch_until": w["watch_until"].isoformat()} for w in post_exit_watchlist]
     }
     try:
         tmp_path = STATE_FILE + ".tmp"
@@ -916,11 +917,15 @@ def save_state():
         logging.error(f"🚨 save_state FAILED — active_trade may not persist across restart: {e}")
 
 def load_state():
-    global trade_entry_time, entry_option_ltp, active_trade, daily_pnl, daily_reset_date, last_exit_time
+    global trade_entry_time, entry_option_ltp, active_trade, daily_pnl, daily_reset_date, last_exit_time, post_exit_watchlist
     try:
         with open(STATE_FILE, 'r') as f:
             state = json.load(f)
-        if state.get("trade_entry_time"):
+        post_exit_watchlist[:] = [
+            {**w, "watch_until": datetime.datetime.fromisoformat(w["watch_until"])}
+            for w in state.get("post_exit_watchlist", [])
+        ]
+
             trade_entry_time = datetime.datetime.fromisoformat(state["trade_entry_time"])
         entry_option_ltp = state.get("entry_option_ltp")
         active_trade = state.get("active_trade")
