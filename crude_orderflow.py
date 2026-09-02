@@ -928,6 +928,7 @@ def load_state():
             for w in state.get("post_exit_watchlist", [])
         ]
 
+        if state.get("trade_entry_time"):
             trade_entry_time = datetime.datetime.fromisoformat(state["trade_entry_time"])
         entry_option_ltp = state.get("entry_option_ltp")
         active_trade = state.get("active_trade")
