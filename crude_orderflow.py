@@ -63,7 +63,7 @@ PORT = 8064
 MAX_LOTS = 2
 CRUDE_LOT_SIZE = 100
 STATE_FILE = "crude_orderflow_state.json"
-CRUDE_TRAIL_ACTIVATION = 8                  # was 15
+CRUDE_TRAIL_ACTIVATION = 10                 # was 15
 CRUDE_BREAKEVEN_MFE_PTS = 12                # was 18 (optional)
 CRUDE_BREAKEVEN_PCT = 0.12                  # lock breakeven once profit hits 12% of entry premium
 CRUDE_TRAIL_FLOOR = 20                      # wider floor to let trends breathe
@@ -1704,7 +1704,7 @@ def run_crude_orderflow_scan():
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
                             "trail_distance": max(15, min(60, int(entry_atr * 0.75))), # DISCRETIONARY BET — tightened further on judgment, not data. Watch for early stop-outs on trending trades.
                             # "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04)),
-                            "activation_threshold": 8,
+                            "activation_threshold": CRUDE_TRAIL_ACTIVATION,
                             "entry_atr": round(entry_atr, 2),
                             "distance_to_level_atr": distance_to_level_atr,
                             "last_quote_time": now,
