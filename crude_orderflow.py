@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import math
 from scipy.stats import norm, pearsonr
+from collections import Counter
 import concurrent.futures
 
 
@@ -119,6 +120,7 @@ trade_entry_time = None
 entry_option_ltp = None
 active_trade = None
 post_exit_watchlist = []  # tracks price action for 30 min after TRAILING STOP / NEAR-MISS exits
+rejection_counter = Counter()  # tallies which rule/threshold is rejecting signals, and how often
 last_exit_time = None
 daily_pnl = 0
 max_daily_loss = -5000
@@ -1427,6 +1429,8 @@ def run_crude_orderflow_scan():
 
             if total_score < ENTRY_SCORE_THRESHOLD or bias == "NEUTRAL":
                 print(f"🔴 REJECTED: Entry Score {round(total_score, 1)} < {ENTRY_SCORE_THRESHOLD}, Bias: {bias}")
+                rejection_counter["Entry Score below threshold"] += 1
+                logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
                 current_signal = {"decision": "NO TRADE", "reason": f"Entry Score {round(total_score, 1)}"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 current_signal["score_breakdown"] = {
@@ -1628,6 +1632,10 @@ def run_crude_orderflow_scan():
                     lower_wick_pct,
                     vwap_stretch
                 )
+
+                if not quality_pass:
+                    rejection_counter[quality_reason.split("(")[0].strip()] += 1
+                    logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
 
                 if total_score >= ENTRY_SCORE_THRESHOLD and quality_pass:
                     try:
