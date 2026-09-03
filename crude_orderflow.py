@@ -371,11 +371,7 @@ def is_high_quality_setup(total_score, base_score, interaction_bonus, adx_val, r
         if adx_val < 30:
             return False, f"OI conflict: Fresh Longs vs PUT (ADX {adx_val:.1f} < 30)"
 
-    # 4. Minimum Volume Safety. (Low ATR + Low ADX = Dead market)
-    if entry_atr < 25 and adx_val < 25:
-        return False, f"Dead consolidation (ATR {entry_atr:.1f} < 25 & ADX {adx_val:.1f} < 25)"
-
-    # 4a. Minimum Momentum Safety (Low ATR + Low ADX = Dead market)
+    # 4. Minimum Momentum Safety (Low ATR + Low ADX = Dead market)
     rvol_val = feature_scores.get("rvol", {}).get("value", 1)
     if rvol_val < 0.5:
         return False, f"Low volume breakout (RVOL {rvol_val:.2f} < 0.5) - dead market"
