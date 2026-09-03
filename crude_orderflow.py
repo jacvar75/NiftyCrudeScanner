@@ -1417,7 +1417,10 @@ def run_crude_orderflow_scan():
                 rs = 999999 if loss == 0 else gain / loss
                 rsi_val = 100 - (100 / (1 + rs))
 
-
+            logging.info(
+                f"SCAN SNAPSHOT | Score {round(total_score, 1)} | ADX {round(adx_val, 2)} | RSI {round(rsi_val, 2)} | "
+                f"Features: {feature_scores}"
+            )
             market_regime = compute_market_regime(candles_15m, entry_atr, vwap)
             signal_quality = min(100, total_score)
 
