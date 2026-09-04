@@ -233,7 +233,11 @@ def compute_rvol(candles, period=5):
     avg_vol = candles['volume'].iloc[-period-1:-1].mean()
     if avg_vol == 0:
         return {"value": 1.0, "score": 0, "reason": "zero avg volume"}
-    rvol = candles['volume'].iloc[-1] / avg_vol
+
+    elapsed_fraction = seconds_into_current_candle / (15 * 60)  # you'll need to pass this in
+    projected_volume = candles['volume'].iloc[-1] / max(elapsed_fraction, 0.05)  # avoid divide-by-tiny
+    rvol = projected_volume / avg_vol
+    
     # Continuous scoring: starts contributing from RVOL 0.3, caps at 20
     score = min(20, max(0, (rvol - 0.3) * 30))
     return {"value": rvol, "score": round(score, 2), "reason": f"RVOL {rvol:.2f}"}
