@@ -89,7 +89,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.26"
+STRATEGY_VERSION = "v2.27"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -276,10 +276,17 @@ def compute_relative_range(candles, period=10):
     avg_range = (candles['high'].iloc[-period-1:-1] - candles['low'].iloc[-period-1:-1]).mean()
     if avg_range == 0:
         return {"value": 1.0, "score": 0, "reason": "zero avg range"}
-    rel = current_range / avg_range
+
+    current_candle_start = candles['date'].iloc[-1].tz_localize(None)
+    elapsed_seconds = (now_ist() - current_candle_start).total_seconds()
+    elapsed_fraction = elapsed_seconds / (15 * 60)
+    projected_range = current_range / max(elapsed_fraction, 0.05) ** 0.5  # sqrt-time projection, range grows slower than linear
+
+    rel = projected_range / avg_range
     # Continuous scoring: starts contributing from 0.5, caps at 15
     score = min(15, max(0, (rel - 0.5) * 25))
     return {"value": rel, "score": round(score, 2), "reason": f"RelRange {rel:.2f}"}
+    print(f"elapsed_fraction={elapsed_fraction:.3f}, rel={rel:.3f}")
 
 def compute_breakout_acceptance(candles, key_levels):
     if candles.empty or len(candles) < 2:
