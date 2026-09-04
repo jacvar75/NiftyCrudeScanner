@@ -285,8 +285,8 @@ def compute_relative_range(candles, period=10):
     rel = projected_range / avg_range
     # Continuous scoring: starts contributing from 0.5, caps at 15
     score = min(15, max(0, (rel - 0.5) * 25))
-    return {"value": rel, "score": round(score, 2), "reason": f"RelRange {rel:.2f}"}
     print(f"elapsed_fraction={elapsed_fraction:.3f}, rel={rel:.3f}")
+    return {"value": rel, "score": round(score, 2), "reason": f"RelRange {rel:.2f}"}
 
 def compute_breakout_acceptance(candles, key_levels):
     if candles.empty or len(candles) < 2:
