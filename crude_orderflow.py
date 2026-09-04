@@ -234,10 +234,14 @@ def compute_rvol(candles, period=5):
     if avg_vol == 0:
         return {"value": 1.0, "score": 0, "reason": "zero avg volume"}
 
-    elapsed_fraction = seconds_into_current_candle / (15 * 60)  # you'll need to pass this in
-    projected_volume = candles['volume'].iloc[-1] / max(elapsed_fraction, 0.05)  # avoid divide-by-tiny
+    current_candle_start = candles['date'].iloc[-1].tz_localize(None)  # strip tz to match now_ist()
+    elapsed_seconds = (now_ist() - current_candle_start).total_seconds()
+    elapsed_fraction = elapsed_seconds / (15 * 60)
+    projected_volume = candles['volume'].iloc[-1] / max(elapsed_fraction, 0.05)  # avoid divide-by-near-zero in first ~45s
     rvol = projected_volume / avg_vol
-    
+
+    print(f"elapsed_seconds={elapsed_seconds}, elapsed_fraction={elapsed_fraction:.3f}, rvol={rvol:.3f}")
+
     # Continuous scoring: starts contributing from RVOL 0.3, caps at 20
     score = min(20, max(0, (rvol - 0.3) * 30))
     return {"value": rvol, "score": round(score, 2), "reason": f"RVOL {rvol:.2f}"}
@@ -1317,8 +1321,8 @@ def run_crude_orderflow_scan():
                 safe_emit('crude_orderflow_signal', current_signal)
                 return
 
-
             candles_15m = get_candles(fut_token, "15minute", 5)
+
             candles_day = get_candles(fut_token, "day", 10)
 
             # --- LOGGING ONLY: identify the exact 15-minute candle used for the signal ---
