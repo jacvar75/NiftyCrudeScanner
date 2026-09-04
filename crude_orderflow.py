@@ -89,7 +89,7 @@ NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.25"
+STRATEGY_VERSION = "v2.26"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -239,8 +239,6 @@ def compute_rvol(candles, period=5):
     elapsed_fraction = elapsed_seconds / (15 * 60)
     projected_volume = candles['volume'].iloc[-1] / max(elapsed_fraction, 0.05)  # avoid divide-by-near-zero in first ~45s
     rvol = projected_volume / avg_vol
-
-    print(f"elapsed_seconds={elapsed_seconds}, elapsed_fraction={elapsed_fraction:.3f}, rvol={rvol:.3f}")
 
     # Continuous scoring: starts contributing from RVOL 0.3, caps at 20
     score = min(20, max(0, (rvol - 0.3) * 30))
