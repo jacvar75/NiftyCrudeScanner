@@ -82,14 +82,11 @@ TAKE_PROFIT_RISK_RATIO = 2.0    # was 2.0 (hardcoded)
 ENTRY_SCORE_THRESHOLD = 55      # was 45
 
 LOG_DIR = "logs"
-# --- NEW RULE CONSTANTS ---
 BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this ADX
-NEAR_MISS_MFE_PCT = 0.6        # require 60% of trail threshold before considering
-NEAR_MISS_GIVEBACK_PCT = 0.85  # only exit if 85% of peak gain is given back
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.27"
+STRATEGY_VERSION = "v2.28"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
@@ -824,7 +821,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "is_sim": is_sim
     })
 
-    if reason_tag in ("TRAILING STOP", "NEAR-MISS REVERSAL"):
+    if reason_tag == "TRAILING STOP":
         post_exit_watchlist.append({
             "signal_id": trade_snap.get('signal_id'),
             "symbol": trade_snap.get('symbol'),
@@ -1139,22 +1136,6 @@ def run_crude_orderflow_scan():
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
-
-                # --- NEAR-MISS REVERSAL EXIT: catches trades that got close to trail activation, then reversed ---
-                if not active_trade.get('trail_active', False):
-                    activation_threshold_preview = active_trade.get('activation_threshold', CRUDE_TRAIL_ACTIVATION)
-                    mfe_now = highest_premium - entry_option_ltp
-                    if mfe_now >= NEAR_MISS_MFE_PCT * activation_threshold_preview:
-                        giveback = mfe_now - (current_premium - entry_option_ltp)
-                        if giveback >= NEAR_MISS_GIVEBACK_PCT * mfe_now:
-                            exit_pnl = force_close_trade(
-                                f"NEAR-MISS REVERSAL (MFE {mfe_now:.0f}pt, gave back {giveback:.0f}pt)",
-                                "NEAR-MISS REVERSAL", underlying_ltp, is_sim=True)
-                            current_signal = {"decision": "EXIT — NEAR-MISS REVERSAL",
-                                              "reason": f"Gave back peak gain | PnL: ₹{exit_pnl:.0f}"}
-                            current_signal["last_scan"] = now.strftime("%H:%M:%S")
-                            safe_emit('crude_orderflow_signal', current_signal)
-                            return
 
                 # --- ASYMMETRIC TRAIL: Wide leash, tightens only for monster winners ---
                 stored_atr = active_trade.get('entry_atr', 20)
