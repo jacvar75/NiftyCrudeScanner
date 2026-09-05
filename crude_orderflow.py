@@ -1503,6 +1503,8 @@ def run_crude_orderflow_scan():
 
             ht_candles = get_higher_tf_candles(fut_token)
             if ht_candles.empty or len(ht_candles) < 8:
+                rejection_counter["HTF data unavailable"] += 1
+                logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
                 current_signal = {"decision": "NO TRADE", "reason": "HTF data unavailable — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 safe_emit('crude_orderflow_signal', current_signal)
@@ -1510,6 +1512,8 @@ def run_crude_orderflow_scan():
 
             ht_vwap = calculate_vwap(ht_candles.tail(20))
             if ht_vwap <= 0:
+                rejection_counter["HTF VWAP invalid"] += 1
+                logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
                 current_signal = {"decision": "NO TRADE", "reason": "HTF VWAP invalid — failing closed"}
                 current_signal["last_scan"] = now.strftime("%H:%M:%S")
                 safe_emit('crude_orderflow_signal', current_signal)
@@ -1524,6 +1528,8 @@ def run_crude_orderflow_scan():
                     logging.info(
                         f"🔶 HTF mismatch ({ht_bias} vs {bias}) with ADX {adx_val:.1f}: Penalizing score by {HTF_MISMATCH_PENALTY} (New total: {total_score})")
                     print(f"🔶 HTF mismatch: Penalizing score by {HTF_MISMATCH_PENALTY}")
+                    rejection_counter["HTF mismatch"] += 1
+                    logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
                     current_signal = {
                         "decision": "NO TRADE",
                         "reason": f"HTF mismatch ({ht_bias} vs {bias}) — hard reject",
@@ -1578,11 +1584,15 @@ def run_crude_orderflow_scan():
                 score_reasons = comp["reasons"]  # ensure we have the list of reasons
                 breakout_val = feature_scores.get("breakout_acceptance", {}).get("value", 0)
                 if breakout_val == 1 and "Stop hunt above" in score_reasons:
+                    rejection_counter["Stop hunt vs Breakout clash"] += 1
+                    logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
                     current_signal = {"decision": "NO TRADE", "reason": "Stop hunt vs Breakout clash (above) rejected"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     safe_emit('crude_orderflow_signal', current_signal)
                     return
                 if breakout_val == 1 and "Stop hunt below" in score_reasons:
+                    rejection_counter["Stop hunt vs Breakout clash"] += 1
+                    logging.info(f"REJECTION TALLY: {dict(rejection_counter)}")
                     current_signal = {"decision": "NO TRADE", "reason": "Stop hunt vs Breakout clash (below) rejected"}
                     current_signal["last_scan"] = now.strftime("%H:%M:%S")
                     safe_emit('crude_orderflow_signal', current_signal)
