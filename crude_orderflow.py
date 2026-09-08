@@ -440,6 +440,7 @@ def log_score_distribution(now, total_score, base_score, bonus, interaction_bonu
 # ======================== COMPOSITE SCORE ========================
 def composite_score(candles, price_chg, oi_chg, key_levels):
     reasons = []
+    breakdown = {}
     score = 0
     bias = "NEUTRAL"
     vwap = key_levels.get("VWAP")
@@ -448,10 +449,12 @@ def composite_score(candles, price_chg, oi_chg, key_levels):
         price = candles['close'].iloc[-1]
         if price > vwap:
             score += 20
+            breakdown["vwap"] = 20
             bias = "CALL" if bias == "NEUTRAL" else bias
             reasons.append("Price above VWAP")
         else:
             score += 10
+            breakdown["vwap"] = 10
             bias = "PUT" if bias == "NEUTRAL" else bias
             reasons.append("Price below VWAP")
     oi_class = "NEUTRAL"
@@ -459,21 +462,25 @@ def composite_score(candles, price_chg, oi_chg, key_levels):
         if price_chg > 0 and oi_chg > 0:
             oi_class = "FRESH_LONGS"
             score += 20
+            breakdown["oi_class"] = 20
             bias = "CALL" if bias != "PUT" else bias
             reasons.append("Fresh longs building")
         elif price_chg > 0 and oi_chg < 0:
             oi_class = "SHORT_COVERING"
             score += 15
+            breakdown["oi_class"] = 15
             bias = "CALL" if bias != "PUT" else bias
             reasons.append("Short covering")
         elif price_chg < 0 and oi_chg > 0:
             oi_class = "FRESH_SHORTS"
             score += 20
+            breakdown["oi_class"] = 20
             bias = "PUT" if bias != "CALL" else bias
             reasons.append("Fresh shorts building")
         elif price_chg < 0 and oi_chg < 0:
             oi_class = "LONG_UNWINDING"
             score += 15
+            breakdown["oi_class"] = 15
             bias = "PUT" if bias != "CALL" else bias
             reasons.append("Long unwinding")
     if not candles.empty and len(candles) >= 20:
@@ -485,9 +492,11 @@ def composite_score(candles, price_chg, oi_chg, key_levels):
             price = candles['close'].iloc[-1]
             if price > poc * 0.995:
                 score += 15
+                breakdown["poc"] = 15
                 reasons.append("Price near POC")
             else:
                 score += 5
+                breakdown["poc"] = 5
     if len(candles) >= 5:
         high = candles['high'].iloc[-1]
         close = candles['close'].iloc[-1]
@@ -495,15 +504,18 @@ def composite_score(candles, price_chg, oi_chg, key_levels):
         avg_vol = candles['volume'].iloc[-5:].mean()
         if high > prev_high and candles['volume'].iloc[-1] > avg_vol * 1.2 and close < prev_high:
             score -= 10
+            breakdown["bull_trap"] = -10
             reasons.append("Bull trap detected")
     if len(candles) >= 10:
         swing_high = candles['high'].iloc[-10:-1].max()
         swing_low = candles['low'].iloc[-10:-1].min()
         if candles['high'].iloc[-1] > swing_high and candles['close'].iloc[-1] < swing_high:
             score += 10
+            breakdown["stop_hunt"] = breakdown.get("stop_hunt", 0) + 10
             reasons.append("Stop hunt above")
         if candles['low'].iloc[-1] < swing_low and candles['close'].iloc[-1] > swing_low:
             score += 10
+            breakdown["stop_hunt"] = breakdown.get("stop_hunt", 0) + 10
             reasons.append("Stop hunt below")
     if len(candles) >= 14:
         high, low, close = candles['high'], candles['low'], candles['close']
@@ -524,14 +536,16 @@ def composite_score(candles, price_chg, oi_chg, key_levels):
         rsi = 100 - (100 / (1 + rs))
         if adx > 25 and ((bias == "CALL" and rsi > 50) or (bias == "PUT" and rsi < 50)):
             score += 10
+            breakdown["trend_momentum"] = 10
             reasons.append("Trend momentum confirms bias")
         elif adx < 20:
             score -= 5
+            breakdown["trend_momentum"] = -5
             reasons.append("Weak trend – cautious")
     score = max(0, min(100, score))
     if bias == "NEUTRAL":
         bias = "CALL" if score > 50 else "PUT" if score > 40 else "NEUTRAL"
-    return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons}
+    return {"score": score, "bias": bias, "oi_class": oi_class, "reasons": reasons, "breakdown": breakdown}
 
 # ======================== CRUDE HELPERS ========================
 
@@ -1765,6 +1779,7 @@ def run_crude_orderflow_scan():
                         "base_score": base_score,
                         "oi_class": comp.get("oi_class"),
                         "score_reasons": comp.get("reasons"),
+                        "score_breakdown": comp.get("breakdown"),
                         "signal_quality": signal_quality,
                         "market_regime": market_regime,
                         "feature_scores": entry_snapshot['feature_scores'],
