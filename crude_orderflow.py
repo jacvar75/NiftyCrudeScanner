@@ -811,7 +811,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "pnl": exit_pnl,
         "r_multiple": round(r_multiple, 2),
         "mfe_pts": round(mfe_pts, 2),
-        "giveback_pct": round((mfe_pts - exit_pnl) / mfe_pts * 100, 1) if mfe_pts >= 500 else None,
+        "giveback_pct": round((mfe_pts - exit_pnl) / mfe_pts * 100, 1) if mfe_pts >= 500 else None
+        "giveback_note": "suppressed_small_mfe" if mfe_pts < 500 else None,
         # unreliable below ₹500 MFE (~5pts)
         "mae_pts": round(mae_pts, 2),
         "holding_minutes": round((now_ist() - entry_time_snap).total_seconds() / 60, 1),
@@ -1735,9 +1736,17 @@ def run_crude_orderflow_scan():
                             "sl_price": sl_price,
                             "entry_risk_points": option_ltp - sl_price,
                             "feature_scores": convert_numpy({k: v['score'] for k, v in feature_scores.items()}),
-                            "trail_distance": max(15, min(60, int(entry_atr * 0.75))), # DISCRETIONARY BET — tightened further on judgment, not data. Watch for early stop-outs on trending trades.
+                            "trail_distance": max(15, min(60, int(entry_atr * 0.75))),
+                            # DISCRETIONARY BET — tightened further on judgment, not data. Watch for early stop-outs on trending trades.
                             "activation_threshold": max(CRUDE_TRAIL_ACTIVATION, int(entry_option_ltp * 0.04)),
                             "entry_atr": round(entry_atr, 2),
+                            "oi_conflict_shadow": bias == "CALL" and comp.get("oi_class") == "LONG_UNWINDING",
+                            "oi_conflict_shadow_type": "LONG_UNWINDING_vs_CALL" if (bias == "CALL" and comp.get("oi_class") == "LONG_UNWINDING")
+                                                        else "SHORT_COVERING_vs_PUT" if (bias == "PUT" and comp.get("oi_class") == "SHORT_COVERING")
+                                                        else None,
+                            # Shadow trail widths — logged only, not used for the real exit
+                            "shadow_trail_0.5x": max(15, min(60, int(entry_atr * 0.5))),
+                            "shadow_trail_1.0x": max(15, min(60, int(entry_atr * 1.0))),
                             "distance_to_level_atr": distance_to_level_atr,
                             "last_quote_time": now,
                             "feature_snapshot": convert_numpy(
