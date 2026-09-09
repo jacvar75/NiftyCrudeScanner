@@ -811,7 +811,7 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "pnl": exit_pnl,
         "r_multiple": round(r_multiple, 2),
         "mfe_pts": round(mfe_pts, 2),
-        "giveback_pct": round((mfe_pts - exit_pnl) / mfe_pts * 100, 1) if mfe_pts >= 500 else None
+        "giveback_pct": round((mfe_pts - exit_pnl) / mfe_pts * 100, 1) if mfe_pts >= 500 else None,
         "giveback_note": "suppressed_small_mfe" if mfe_pts < 500 else None,
         # unreliable below ₹500 MFE (~5pts)
         "mae_pts": round(mae_pts, 2),
