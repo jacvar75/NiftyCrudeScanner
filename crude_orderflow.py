@@ -1093,7 +1093,7 @@ def run_crude_orderflow_scan():
 
                 if current_premium > highest_premium:
                     active_trade['highest_premium'] = current_premium
-                    active_trade['underlying_at_peak'] = active_trade.get('underlying_ltp', 0)
+                    active_trade['underlying_at_peak'] = underlying_ltp
                     highest_premium = current_premium
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
