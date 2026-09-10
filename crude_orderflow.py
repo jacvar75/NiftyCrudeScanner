@@ -86,13 +86,16 @@ BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this A
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.28"
+STRATEGY_VERSION = "v2.29"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15   # points deducted when 1H VWAP disagrees with entry bias
 
 VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
+
+SHADOW_RATCHET_LOCK_FRACTION = 0.5  # shadow-only: locks 50% of peak MFE, never controls real exits
+
 
 logging.basicConfig(
     filename=os.path.join(LOG_DIR, "crude_orderflow.log"),
@@ -813,6 +816,8 @@ def force_close_trade(reason_tag, log_prefix="FORCE CLOSE", underlying_ltp=None,
         "r_multiple": round(r_multiple, 2),
         "mfe_pts": round(mfe_pts, 2),
         "underlying_at_peak": trade_snap.get('underlying_at_peak'),
+        "shadow_ratchet_exited": trade_snap.get('shadow_exited', False),
+        "shadow_ratchet_exit_price": trade_snap.get('shadow_exit_price'),
         "giveback_pct": round((mfe_pts - exit_pnl) / mfe_pts * 100, 1) if mfe_pts >= 500 else None,
         "giveback_note": "suppressed_small_mfe" if mfe_pts < 500 else None,
         # unreliable below ₹500 MFE (~5pts)
@@ -1097,6 +1102,17 @@ def run_crude_orderflow_scan():
                     highest_premium = current_premium
                 else:
                     new_peak_this_scan = False
+
+                # --- SHADOW RATCHET (logging only — never affects the real trade) ---
+                mfe_now_shadow = highest_premium - entry_option_ltp
+                if mfe_now_shadow > 0:
+                    candidate_floor = entry_option_ltp + mfe_now_shadow * SHADOW_RATCHET_LOCK_FRACTION
+                    active_trade['shadow_ratchet_floor'] = max(
+                        active_trade.get('shadow_ratchet_floor', entry_option_ltp), candidate_floor)
+                if not active_trade.get('shadow_exited', False) and active_trade.get('shadow_ratchet_floor') is not None
+                    if current_premium <= active_trade['shadow_ratchet_floor']:
+                        active_trade['shadow_exited'] = True
+                        active_trade['shadow_exit_price'] = current_premium
 
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
