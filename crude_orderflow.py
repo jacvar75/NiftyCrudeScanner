@@ -1109,7 +1109,7 @@ def run_crude_orderflow_scan():
                     candidate_floor = entry_option_ltp + mfe_now_shadow * SHADOW_RATCHET_LOCK_FRACTION
                     active_trade['shadow_ratchet_floor'] = max(
                         active_trade.get('shadow_ratchet_floor', entry_option_ltp), candidate_floor)
-                if not active_trade.get('shadow_exited', False) and active_trade.get('shadow_ratchet_floor') is not None
+                if not active_trade.get('shadow_exited', False) and active_trade.get('shadow_ratchet_floor') is not None:
                     if current_premium <= active_trade['shadow_ratchet_floor']:
                         active_trade['shadow_exited'] = True
                         active_trade['shadow_exit_price'] = current_premium
