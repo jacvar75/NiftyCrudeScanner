@@ -1093,8 +1093,11 @@ def run_crude_orderflow_scan():
 
                 if current_premium > highest_premium:
                     active_trade['highest_premium'] = current_premium
-                    active_trade['underlying_at_peak'] = underlying_ltp
+                    new_peak_this_scan = True
                     highest_premium = current_premium
+                else
+                    new_peak_this_scan = False
+
                 if current_premium < lowest_premium:
                     active_trade['lowest_premium'] = current_premium
 
@@ -1121,6 +1124,9 @@ def run_crude_orderflow_scan():
                         logging.warning(
                             f"⚠️ Underlying LTP refresh failed for {fut_sym} (using stale price {underlying_ltp}): {e}")
 
+                if new_peak_this_scan:
+                    active_trade['underlying_at_peak'] = underlying_ltp
+                    
                 # --- ADD TAKE PROFIT (1.5:1x Risk) ---
                 # risk_points = active_trade.get('entry_risk_points', entry_option_ltp * CRUDE_SL_PCT)
                 # take_profit_price = entry_option_ltp + risk_points * TAKE_PROFIT_RISK_RATIO
