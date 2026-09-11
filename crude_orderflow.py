@@ -86,7 +86,7 @@ BREAKOUT_ADX_REJECT_MAX = 38   # reject breakout+high-score entries below this A
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-STRATEGY_VERSION = "v2.30"
+STRATEGY_VERSION = "v2.31"
 ENTRY_COOLDOWN_SECONDS = 120
 MAX_SPREAD_PCT = 5.0
 HTF_MISMATCH_PENALTY = 15                   # points deducted when 1H VWAP disagrees with entry bias
@@ -95,7 +95,7 @@ VOLATILITY_THRESHOLD_HIGH = 1.5
 VOLATILITY_THRESHOLD_MODERATE = 0.8
 
 SHADOW_RATCHET_LOCK_FRACTION = 0.5          # shadow-only: locks 50% of peak MFE, never controls real exits
-SHADOW_RATCHET_V2_MIN_MFE_MULTIPLE = 2.0    # v2 shadow-only: ratchet doesn't engage until MFE >= 2x trail_distance
+SHADOW_RATCHET_V2_MIN_MFE_MULTIPLE = 1.3    # v2 shadow-only: ratchet doesn't engage until MFE >= 1.3x trail_distance (lowered to actually engage inside the observed leak zone)
 
 
 logging.basicConfig(
